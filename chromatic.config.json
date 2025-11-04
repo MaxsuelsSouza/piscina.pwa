@@ -1,0 +1,8 @@
+{
+  "projectId": "PROJECT_ID_AQUI",
+  "buildScriptName": "build-storybook",
+  "exitZeroOnChanges": true,
+  "exitOnceUploaded": true,
+  "autoAcceptChanges": "main",
+  "ignoreLastBuildOnBranch": "main"
+}

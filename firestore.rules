@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Função helper para verificar se o usuário é admin
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == 'X7aWBsKSpkTQr25mAigi9DkGULG3';
+    }
+
+    // Função helper para verificar se está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Regras para agendamentos (bookings)
+    match /bookings/{bookingId} {
+      // Qualquer pessoa pode ler (para ver disponibilidade no calendário)
+      allow read: if true;
+
+      // Qualquer pessoa pode criar um novo agendamento
+      allow create: if true;
+
+      // Apenas admin pode atualizar status e deletar
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Regras para dias bloqueados (blockedDates)
+    match /blockedDates/{dateId} {
+      // Qualquer pessoa pode ler (para ver dias indisponíveis)
+      allow read: if true;
+
+      // Apenas admin pode criar e deletar datas bloqueadas
+      allow create, delete: if isAdmin();
+    }
+
+    // Regras para configurações do sistema (opcional - caso adicione no futuro)
+    match /settings/{settingId} {
+      // Apenas admin pode ler e modificar configurações
+      allow read, write: if isAdmin();
+    }
+
+    // Regras para usuários (opcional - caso queira guardar dados adicionais)
+    match /users/{userId} {
+      // Usuário pode ler seus próprios dados ou admin pode ler tudo
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+
+      // Usuário pode atualizar seus próprios dados ou admin pode atualizar tudo
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+
+      // Apenas admin pode criar e deletar usuários
+      allow create, delete: if isAdmin();
+    }
+  }
+}
