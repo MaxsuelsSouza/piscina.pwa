@@ -23,7 +23,6 @@ export default function LoginPage() {
   // Redireciona se já estiver autenticado
   useEffect(() => {
     if (user && !authLoading) {
-      console.log('✅ Usuário autenticado, redirecionando para /admin...');
       router.push('/admin');
     }
   }, [user, authLoading, router]);
@@ -34,9 +33,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      console.log('🎯 Tentando fazer login com:', email);
       await login(email, password);
-      console.log('✅ Login bem-sucedido!');
       // O redirecionamento será feito pelo useEffect acima
     } catch (err: any) {
       console.error('❌ Erro ao fazer login:', err);

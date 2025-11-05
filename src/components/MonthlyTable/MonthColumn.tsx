@@ -56,12 +56,6 @@ export const MonthColumn = memo(function MonthColumn({
 
   const handleSaveDescription = useCallback(
     (description: string) => {
-      console.log('Descrição salva:', {
-        date: modalState.date,
-        type: modalState.type,
-        value: modalState.value,
-        description,
-      });
       // TODO: Salvar descrição no backend/estado
     },
     [modalState]

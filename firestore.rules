@@ -26,8 +26,8 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Regras para dias bloqueados (blockedDates)
-    match /blockedDates/{dateId} {
+    // Regras para dias bloqueados (blocked_dates)
+    match /blocked_dates/{dateId} {
       // Qualquer pessoa pode ler (para ver dias indisponíveis)
       allow read: if true;
 

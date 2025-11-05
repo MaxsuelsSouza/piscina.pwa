@@ -46,10 +46,8 @@ if (typeof window !== 'undefined') {
   // Só inicializa no navegador (client-side)
   if (!getApps().length) {
     app = initializeApp(firebaseConfig);
-    console.log('🔥 Firebase inicializado');
   } else {
     app = getApps()[0];
-    console.log('🔥 Firebase já inicializado');
   }
 
   db = getFirestore(app);

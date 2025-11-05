@@ -27,8 +27,6 @@ export default function PublicBookingPage() {
 
   // Carrega agendamentos e datas bloqueadas do Firestore em tempo real
   useEffect(() => {
-    console.log('📡 Conectando ao Firestore para sincronização em tempo real...');
-
     // Escuta mudanças nos agendamentos
     const unsubscribeBookings = onBookingsChange((newBookings) => {
       // Filtra agendamentos expirados
@@ -49,7 +47,6 @@ export default function PublicBookingPage() {
 
     // Cleanup: desconecta ao desmontar o componente
     return () => {
-      console.log('🔌 Desconectando do Firestore...');
       unsubscribeBookings();
       unsubscribeBlockedDates();
     };
@@ -124,8 +121,6 @@ export default function PublicBookingPage() {
     }
 
     try {
-      console.log('💾 Salvando agendamentos no Firestore...');
-
       // Cria agendamento para cada dia selecionado
       const bookingPromises = selectedDates.map(async (date) => {
         const now = new Date();
@@ -136,7 +131,7 @@ export default function PublicBookingPage() {
           customerName: formData.customerName,
           customerPhone: formData.customerPhone,
           customerEmail: formData.customerEmail,
-          timeSlot: 'full-day',
+          timeSlot: 'full-day' as const,
           numberOfPeople: formData.numberOfPeople,
           status: 'pending' as const,
           notes: formData.notes,
@@ -150,7 +145,6 @@ export default function PublicBookingPage() {
       });
 
       const newBookings = await Promise.all(bookingPromises);
-      console.log('✅ Agendamentos salvos com sucesso!');
 
       // Cria mensagem para WhatsApp
       const bookingIds = newBookings.map(b => b.id).join(', ');
@@ -275,16 +269,6 @@ export default function PublicBookingPage() {
             />
           </div>
         )}
-
-        {/* Admin Link */}
-        <div className="py-12 text-center">
-          <button
-            onClick={() => router.push('/admin')}
-            className="text-sm text-gray-400 hover:text-gray-600 transition-colors font-light"
-          >
-            Acesso administrativo
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -32,16 +32,12 @@ function userToResponse(firebaseUser: User): LoginResponse {
  */
 export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
   try {
-    console.log('🔐 Tentando fazer login com:', credentials.email);
-    console.log('🔥 Auth object:', auth ? 'OK' : 'UNDEFINED');
-
     const userCredential = await signInWithEmailAndPassword(
       auth,
       credentials.email,
       credentials.password
     );
 
-    console.log('✅ Login bem-sucedido:', userCredential.user.email);
     return userToResponse(userCredential.user);
   } catch (error: any) {
     console.error('❌ Erro ao fazer login:', error);

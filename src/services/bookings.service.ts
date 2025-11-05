@@ -30,7 +30,6 @@ export async function createBooking(booking: Omit<Booking, 'id'>): Promise<strin
       ...booking,
       createdAt: booking.createdAt || new Date().toISOString(),
     });
-    console.log('✅ Agendamento criado no Firestore:', docRef.id);
     return docRef.id;
   } catch (error) {
     console.error('❌ Erro ao criar agendamento:', error);
@@ -54,7 +53,6 @@ export async function getBookings(): Promise<Booking[]> {
       } as Booking);
     });
 
-    console.log(`📚 ${bookings.length} agendamentos carregados do Firestore`);
     return bookings;
   } catch (error) {
     console.error('❌ Erro ao buscar agendamentos:', error);
@@ -69,7 +67,6 @@ export async function updateBooking(id: string, data: Partial<Booking>): Promise
   try {
     const bookingRef = doc(db, BOOKINGS_COLLECTION, id);
     await updateDoc(bookingRef, data);
-    console.log('✅ Agendamento atualizado:', id);
   } catch (error) {
     console.error('❌ Erro ao atualizar agendamento:', error);
     throw error;
@@ -103,7 +100,6 @@ export async function markExpirationNotificationSent(id: string): Promise<void> 
 export async function deleteBooking(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, BOOKINGS_COLLECTION, id));
-    console.log('✅ Agendamento deletado:', id);
   } catch (error) {
     console.error('❌ Erro ao deletar agendamento:', error);
     throw error;
@@ -125,7 +121,6 @@ export function onBookingsChange(callback: (bookings: Booking[]) => void): () =>
       } as Booking);
     });
 
-    console.log('🔄 Agendamentos atualizados em tempo real:', bookings.length);
     callback(bookings);
   }, (error) => {
     console.error('❌ Erro ao escutar mudanças:', error);
@@ -153,7 +148,6 @@ export async function getBlockedDates(): Promise<BlockedDate[]> {
       } as BlockedDate);
     });
 
-    console.log(`🚫 ${blockedDates.length} datas bloqueadas carregadas`);
     return blockedDates;
   } catch (error) {
     console.error('❌ Erro ao buscar datas bloqueadas:', error);
@@ -171,7 +165,6 @@ export async function blockDate(date: string, reason?: string): Promise<string> 
       reason: reason || 'Bloqueado pelo administrador',
       blockedAt: new Date().toISOString(),
     });
-    console.log('✅ Data bloqueada:', date);
     return docRef.id;
   } catch (error) {
     console.error('❌ Erro ao bloquear data:', error);
@@ -195,7 +188,6 @@ export async function unblockDate(date: string): Promise<void> {
     });
 
     await Promise.all(deletePromises);
-    console.log('✅ Data desbloqueada:', date);
   } catch (error) {
     console.error('❌ Erro ao desbloquear data:', error);
     throw error;
@@ -215,7 +207,6 @@ export function onBlockedDatesChange(callback: (blockedDates: BlockedDate[]) => 
       } as BlockedDate);
     });
 
-    console.log('🔄 Datas bloqueadas atualizadas:', blockedDates.length);
     callback(blockedDates);
   }, (error) => {
     console.error('❌ Erro ao escutar mudanças de datas bloqueadas:', error);

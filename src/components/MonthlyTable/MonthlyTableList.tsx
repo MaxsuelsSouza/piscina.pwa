@@ -169,13 +169,11 @@ const MonthlyTableList = forwardRef<MonthlyTableHandle, MonthlyTableProps>(
     }, []);
 
     const openModal = useCallback((date: string, data: any) => {
-      console.log('Open modal:', date, data);
       // Implementar modal
     }, []);
 
     const handleValueChange = useCallback(
       (date: string, type: 'entrada' | 'saida', value: number) => {
-        console.log('Value changed:', { date, type, value });
         // TODO: Atualizar registros com o novo valor
         // Isso deve chamar uma função para atualizar o estado/backend
       },

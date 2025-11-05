@@ -12,31 +12,25 @@ export function useAuth() {
   const [errors, setErrors] = useState<AuthError[]>([]);
 
   const login = async (credentials: LoginCredentials) => {
-    console.log('🎯 useAuth.login chamado com:', credentials.email);
     setLoading(true);
     setErrors([]);
 
     const validationErrors = validateLoginCredentials(credentials);
     if (validationErrors.length > 0) {
-      console.log('⚠️ Erros de validação:', validationErrors);
       setErrors(validationErrors);
       setLoading(false);
       return;
     }
 
     try {
-      console.log('📡 Chamando loginService...');
       const response = await loginService(credentials);
-      console.log('📥 Resposta do loginService:', response);
 
       if (!response.success) {
-        console.log('❌ Login falhou:', response.message);
         setErrors([{ field: 'general', message: response.message || 'Erro ao fazer login' }]);
         setLoading(false);
         return;
       }
 
-      console.log('✅ Login bem-sucedido, redirecionando para /admin...');
       router.push('/admin');
     } catch (error) {
       console.error('💥 Exceção no login:', error);
