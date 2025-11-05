@@ -9,9 +9,12 @@ import { useRouter } from 'next/navigation';
 import { BookingCalendar } from './(home)/_components/BookingCalendar';
 import { BookingForm } from './(home)/_components/BookingForm';
 import type { Booking, BlockedDate } from './(home)/_types/booking';
+import {
+  createBooking,
+  onBookingsChange,
+  onBlockedDatesChange,
+} from '@/services/bookings.service';
 
-const STORAGE_KEY = 'piscina_bookings';
-const BLOCKED_DATES_KEY = 'piscina_blocked_dates';
 const WHATSAPP_NUMBER = '5581997339707';
 
 export default function PublicBookingPage() {
@@ -22,34 +25,34 @@ export default function PublicBookingPage() {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
 
-  // Carrega agendamentos do localStorage
+  // Carrega agendamentos e datas bloqueadas do Firestore em tempo real
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsedBookings = JSON.parse(stored);
-      // Limpa agendamentos expirados (status pending e expiresAt passou)
+    console.log('📡 Conectando ao Firestore para sincronização em tempo real...');
+
+    // Escuta mudanças nos agendamentos
+    const unsubscribeBookings = onBookingsChange((newBookings) => {
+      // Filtra agendamentos expirados
       const now = new Date().toISOString();
-      const validBookings = parsedBookings.filter((b: Booking) => {
+      const validBookings = newBookings.filter((b) => {
         if (b.status === 'pending' && b.expiresAt && b.expiresAt < now) {
-          return false; // Remove agendamentos pendentes expirados
+          return false;
         }
         return true;
       });
       setBookings(validBookings);
+    });
 
-      // Atualiza localStorage se houve remoção
-      if (validBookings.length !== parsedBookings.length) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(validBookings));
-      }
-    }
-  }, []);
+    // Escuta mudanças nas datas bloqueadas
+    const unsubscribeBlockedDates = onBlockedDatesChange((dates) => {
+      setBlockedDates(dates);
+    });
 
-  // Carrega dias bloqueados do localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem(BLOCKED_DATES_KEY);
-    if (stored) {
-      setBlockedDates(JSON.parse(stored));
-    }
+    // Cleanup: desconecta ao desmontar o componente
+    return () => {
+      console.log('🔌 Desconectando do Firestore...');
+      unsubscribeBookings();
+      unsubscribeBlockedDates();
+    };
   }, []);
 
 
@@ -109,7 +112,7 @@ export default function PublicBookingPage() {
     setShowBookingForm(true);
   };
 
-  const handleSubmitBooking = (formData: any) => {
+  const handleSubmitBooking = async (formData: any) => {
     // Validação final antes de criar o agendamento
     const occupiedDates = selectedDates.filter(date =>
       bookings.some(b => b.date === date && b.status !== 'cancelled')
@@ -120,45 +123,54 @@ export default function PublicBookingPage() {
       return;
     }
 
-    // Cria agendamento para cada dia selecionado
-    const newBookings: Booking[] = selectedDates.map(date => {
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
+    try {
+      console.log('💾 Salvando agendamentos no Firestore...');
 
-      return {
-        id: `${Date.now()}-${Math.random()}`,
-        date,
-        customerName: formData.customerName,
-        customerPhone: formData.customerPhone,
-        customerEmail: formData.customerEmail,
-        timeSlot: 'full-day',
-        numberOfPeople: formData.numberOfPeople,
-        status: 'pending' as const,
-        notes: formData.notes,
-        createdAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-      };
-    });
+      // Cria agendamento para cada dia selecionado
+      const bookingPromises = selectedDates.map(async (date) => {
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
 
-    const updatedBookings = [...bookings, ...newBookings];
-    setBookings(updatedBookings);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedBookings));
+        const bookingData = {
+          date,
+          customerName: formData.customerName,
+          customerPhone: formData.customerPhone,
+          customerEmail: formData.customerEmail,
+          timeSlot: 'full-day',
+          numberOfPeople: formData.numberOfPeople,
+          status: 'pending' as const,
+          notes: formData.notes,
+          createdAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          expirationNotificationSent: false,
+        };
 
-    // Cria mensagem para WhatsApp
-    const bookingIds = newBookings.map(b => b.id).join(', ');
-    const dates = selectedDates.map(d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')).join(', ');
-    const message = encodeURIComponent(
-      `Comprovante do agendamento:\n\nNome: ${formData.customerName}\nTelefone: ${formData.customerPhone}\nDias: ${dates}\nPessoas: ${formData.numberOfPeople}\nID: ${bookingIds}\n\n*Este agendamento expira em 1 hora e precisa ser confirmado.*`
-    );
+        const id = await createBooking(bookingData);
+        return { id, ...bookingData };
+      });
 
-    // Redireciona para WhatsApp
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+      const newBookings = await Promise.all(bookingPromises);
+      console.log('✅ Agendamentos salvos com sucesso!');
 
-    // Reseta seleção
-    setSelectedDates([]);
-    setShowBookingForm(false);
+      // Cria mensagem para WhatsApp
+      const bookingIds = newBookings.map(b => b.id).join(', ');
+      const dates = selectedDates.map(d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')).join(', ');
+      const message = encodeURIComponent(
+        `Comprovante do agendamento:\n\nNome: ${formData.customerName}\nTelefone: ${formData.customerPhone}\nDias: ${dates}\nPessoas: ${formData.numberOfPeople}\nID: ${bookingIds}\n\n*Este agendamento expira em 1 hora e precisa ser confirmado.*`
+      );
 
-    alert('Agendamento realizado! Você será redirecionado para o WhatsApp para confirmar.');
+      // Redireciona para WhatsApp
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+
+      // Reseta seleção
+      setSelectedDates([]);
+      setShowBookingForm(false);
+
+      alert('Agendamento realizado! Você será redirecionado para o WhatsApp para confirmar.');
+    } catch (error) {
+      console.error('❌ Erro ao criar agendamento:', error);
+      alert('Erro ao criar agendamento. Por favor, tente novamente.');
+    }
   };
 
   const handleCancelBooking = () => {

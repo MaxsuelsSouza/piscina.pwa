@@ -1,93 +1,92 @@
 /**
- * Hook para gerenciar dados do painel administrativo
+ * Hook para gerenciar dados do painel administrativo com Firestore
  */
 
 import { useState, useEffect } from 'react';
 import type { Booking, BlockedDate } from '@/app/(home)/_types/booking';
-
-const STORAGE_KEY = 'piscina_bookings';
-const BLOCKED_DATES_KEY = 'piscina_blocked_dates';
+import {
+  onBookingsChange,
+  onBlockedDatesChange,
+  confirmBooking as confirmBookingService,
+  cancelBooking as cancelBookingService,
+  blockDate as blockDateService,
+  unblockDate as unblockDateService,
+  markExpirationNotificationSent as markExpirationService,
+} from '@/services/bookings.service';
 
 export function useAdminData() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
 
-  // Carrega agendamentos
+  // Escuta mudanças nos agendamentos em tempo real
   useEffect(() => {
-    const loadBookings = () => {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsedBookings = JSON.parse(stored);
-        setBookings(parsedBookings);
-      }
-    };
+    console.log('📡 Admin: Conectando ao Firestore...');
 
-    loadBookings();
-    const interval = setInterval(loadBookings, 10000);
-    return () => clearInterval(interval);
+    const unsubscribeBookings = onBookingsChange((newBookings) => {
+      console.log('🔄 Admin: Agendamentos atualizados:', newBookings.length);
+      setBookings(newBookings);
+    });
+
+    const unsubscribeBlockedDates = onBlockedDatesChange((dates) => {
+      console.log('🔄 Admin: Datas bloqueadas atualizadas:', dates.length);
+      setBlockedDates(dates);
+    });
+
+    return () => {
+      console.log('🔌 Admin: Desconectando do Firestore...');
+      unsubscribeBookings();
+      unsubscribeBlockedDates();
+    };
   }, []);
 
-  // Carrega dias bloqueados
-  useEffect(() => {
-    const loadBlockedDates = () => {
-      const stored = localStorage.getItem(BLOCKED_DATES_KEY);
-      if (stored) {
-        const parsedBlockedDates = JSON.parse(stored);
-        setBlockedDates(parsedBlockedDates);
-      }
-    };
-
-    loadBlockedDates();
-  }, []);
-
-  const updateBookings = (newBookings: Booking[]) => {
-    setBookings(newBookings);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newBookings));
-  };
-
-  const updateBlockedDates = (newBlockedDates: BlockedDate[]) => {
-    setBlockedDates(newBlockedDates);
-    localStorage.setItem(BLOCKED_DATES_KEY, JSON.stringify(newBlockedDates));
-  };
-
-  const confirmBooking = (id: string) => {
-    const updatedBookings = bookings.map(b =>
-      b.id === id ? { ...b, status: 'confirmed' as const, expiresAt: undefined } : b
-    );
-    updateBookings(updatedBookings);
-  };
-
-  const cancelBooking = (id: string) => {
-    const updatedBookings = bookings.map(b =>
-      b.id === id ? { ...b, status: 'cancelled' as const } : b
-    );
-    updateBookings(updatedBookings);
-  };
-
-  const blockDate = (date: string) => {
-    const newBlockedDate: BlockedDate = {
-      id: `blocked-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      date,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedBlockedDates = [...blockedDates, newBlockedDate];
-    updateBlockedDates(updatedBlockedDates);
-  };
-
-  const unblockDate = (date: string) => {
-    const blocked = blockedDates.find(d => d.date === date);
-    if (blocked) {
-      const updatedBlockedDates = blockedDates.filter(d => d.id !== blocked.id);
-      updateBlockedDates(updatedBlockedDates);
+  const confirmBooking = async (id: string) => {
+    try {
+      await confirmBookingService(id);
+      console.log('✅ Admin: Agendamento confirmado:', id);
+    } catch (error) {
+      console.error('❌ Admin: Erro ao confirmar agendamento:', error);
+      throw error;
     }
   };
 
-  const markExpirationNotificationSent = (id: string) => {
-    const updatedBookings = bookings.map(b =>
-      b.id === id ? { ...b, expirationNotificationSent: true } : b
-    );
-    updateBookings(updatedBookings);
+  const cancelBooking = async (id: string) => {
+    try {
+      await cancelBookingService(id);
+      console.log('✅ Admin: Agendamento cancelado:', id);
+    } catch (error) {
+      console.error('❌ Admin: Erro ao cancelar agendamento:', error);
+      throw error;
+    }
+  };
+
+  const blockDate = async (date: string) => {
+    try {
+      await blockDateService(date);
+      console.log('✅ Admin: Data bloqueada:', date);
+    } catch (error) {
+      console.error('❌ Admin: Erro ao bloquear data:', error);
+      throw error;
+    }
+  };
+
+  const unblockDate = async (date: string) => {
+    try {
+      await unblockDateService(date);
+      console.log('✅ Admin: Data desbloqueada:', date);
+    } catch (error) {
+      console.error('❌ Admin: Erro ao desbloquear data:', error);
+      throw error;
+    }
+  };
+
+  const markExpirationNotificationSent = async (id: string) => {
+    try {
+      await markExpirationService(id);
+      console.log('✅ Admin: Notificação marcada como enviada:', id);
+    } catch (error) {
+      console.error('❌ Admin: Erro ao marcar notificação:', error);
+      throw error;
+    }
   };
 
   return {

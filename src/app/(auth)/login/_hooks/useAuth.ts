@@ -36,8 +36,8 @@ export function useAuth() {
         return;
       }
 
-      console.log('✅ Login bem-sucedido, redirecionando...');
-      router.push('/');
+      console.log('✅ Login bem-sucedido, redirecionando para /admin...');
+      router.push('/admin');
     } catch (error) {
       console.error('💥 Exceção no login:', error);
       setErrors([{ field: 'general', message: 'Erro ao conectar com o servidor' }]);

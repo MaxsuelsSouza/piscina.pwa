@@ -26,13 +26,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Monitora mudanças no estado de autenticação
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAdmin(checkIsAdmin(currentUser?.uid));
+    // Só executa no cliente
+    if (typeof window === 'undefined') {
       setLoading(false);
-    });
+      return;
+    }
 
-    return () => unsubscribe();
+    try {
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setIsAdmin(checkIsAdmin(currentUser?.uid));
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Erro ao inicializar autenticação:', error);
+      setLoading(false);
+    }
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {

@@ -8,7 +8,7 @@ import type { Booking } from '@/app/(home)/_types/booking';
 
 interface ExpiredNotificationsProps {
   bookings: Booking[];
-  onMarkAsSent: (id: string) => void;
+  onMarkAsSent: (id: string) => Promise<void>;
 }
 
 export function ExpiredNotifications({ bookings, onMarkAsSent }: ExpiredNotificationsProps) {
@@ -21,7 +21,7 @@ export function ExpiredNotifications({ bookings, onMarkAsSent }: ExpiredNotifica
 
   if (expiredBookings.length === 0) return null;
 
-  const handleSendNotification = (booking: Booking) => {
+  const handleSendNotification = async (booking: Booking) => {
     const phoneNumber = booking.customerPhone.replace(/\D/g, '');
     const message = encodeURIComponent(
       `Olá ${booking.customerName}!\n\n` +
@@ -34,7 +34,12 @@ export function ExpiredNotifications({ bookings, onMarkAsSent }: ExpiredNotifica
     window.open(`https://wa.me/55${phoneNumber}?text=${message}`, '_blank');
 
     // Marca como enviado
-    onMarkAsSent(booking.id);
+    try {
+      await onMarkAsSent(booking.id);
+    } catch (error) {
+      console.error('Erro ao marcar notificação como enviada:', error);
+      alert('Erro ao marcar notificação. Tente novamente.');
+    }
   };
 
   return (

@@ -53,7 +53,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!isAdmin) return;
 
-    const checkExpiredBookings = () => {
+    const checkExpiredBookings = async () => {
       const expiredBookings = bookings.filter(b => {
         if (b.status !== 'pending') return false;
         if (!b.expiresAt) return false;
@@ -77,7 +77,11 @@ export default function AdminPage() {
         window.open(`https://wa.me/55${phoneNumber}?text=${message}`, '_blank');
 
         // Marca como notificado
-        markExpirationNotificationSent(booking.id);
+        try {
+          await markExpirationNotificationSent(booking.id);
+        } catch (error) {
+          console.error('Erro ao marcar notificação como enviada:', error);
+        }
       }
     };
 
@@ -105,19 +109,27 @@ export default function AdminPage() {
     setShowDateActionModal(true);
   };
 
-  const handleBlockDate = () => {
+  const handleBlockDate = async () => {
     if (!selectedDate) return;
-    blockDate(selectedDate);
-    setShowDateActionModal(false);
-    setSelectedDate('');
-  };
-
-  const handleUnblockDate = () => {
-    if (!selectedDate) return;
-    if (confirm('Deseja desbloquear esta data?')) {
-      unblockDate(selectedDate);
+    try {
+      await blockDate(selectedDate);
       setShowDateActionModal(false);
       setSelectedDate('');
+    } catch (error) {
+      alert('Erro ao bloquear data. Tente novamente.');
+    }
+  };
+
+  const handleUnblockDate = async () => {
+    if (!selectedDate) return;
+    if (confirm('Deseja desbloquear esta data?')) {
+      try {
+        await unblockDate(selectedDate);
+        setShowDateActionModal(false);
+        setSelectedDate('');
+      } catch (error) {
+        alert('Erro ao desbloquear data. Tente novamente.');
+      }
     }
   };
 

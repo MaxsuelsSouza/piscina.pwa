@@ -10,7 +10,7 @@ import type { Booking } from '../_types/booking';
 interface BookingDetailsModalProps {
   booking: Booking | null;
   onClose: () => void;
-  onCancel?: (id: string) => void;
+  onCancel?: (id: string) => Promise<void>;
 }
 
 const PRICE_PER_DAY = 400;

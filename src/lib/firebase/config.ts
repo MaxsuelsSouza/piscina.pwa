@@ -16,28 +16,49 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Debug: Log da configuração (remova em produção)
-if (typeof window !== 'undefined') {
-  console.log('Firebase Config:', {
-    apiKey: firebaseConfig.apiKey ? '✓' : '✗',
-    authDomain: firebaseConfig.authDomain,
-    projectId: firebaseConfig.projectId,
-  });
-}
+// Valida se todas as variáveis de ambiente estão definidas
+const validateConfig = () => {
+  const required = [
+    'apiKey',
+    'authDomain',
+    'projectId',
+    'storageBucket',
+    'messagingSenderId',
+    'appId',
+  ];
 
-// Inicializa o Firebase apenas uma vez
+  const missing = required.filter((key) => !firebaseConfig[key as keyof typeof firebaseConfig]);
+
+  if (missing.length > 0 && typeof window !== 'undefined') {
+    console.error('❌ Variáveis de ambiente do Firebase faltando:', missing);
+    console.error('📋 Verifique se o arquivo .env.local está configurado corretamente');
+  }
+};
+
+validateConfig();
+
+// Inicializa apenas uma vez e apenas no cliente
 let app: FirebaseApp;
 let db: Firestore;
 let auth: Auth;
 
-// Inicializa apenas no cliente (não no servidor)
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
+if (typeof window !== 'undefined') {
+  // Só inicializa no navegador (client-side)
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+    console.log('🔥 Firebase inicializado');
+  } else {
+    app = getApps()[0];
+    console.log('🔥 Firebase já inicializado');
+  }
 
-db = getFirestore(app);
-auth = getAuth(app);
+  db = getFirestore(app);
+  auth = getAuth(app);
+} else {
+  // No servidor, cria objetos vazios para evitar erros
+  app = {} as FirebaseApp;
+  db = {} as Firestore;
+  auth = {} as Auth;
+}
 
 export { app, db, auth };

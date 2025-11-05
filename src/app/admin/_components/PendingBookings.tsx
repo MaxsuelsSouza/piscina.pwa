@@ -8,7 +8,7 @@ import type { Booking } from '@/app/(home)/_types/booking';
 
 interface PendingBookingsProps {
   bookings: Booking[];
-  onConfirm: (id: string) => void;
+  onConfirm: (id: string) => Promise<void>;
   onView: (booking: Booking) => void;
 }
 
