@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { BookingCalendar } from '../(home)/_components/BookingCalendar';
 import { BookingDetailsModal } from '../(home)/_components/BookingDetailsModal';
 import { useAdminData } from './_hooks/useAdminData';
@@ -20,9 +21,9 @@ import {
 } from './_components';
 import type { Booking } from '../(home)/_types/booking';
 
-export default function AdminPage() {
+function AdminPageContent() {
   const router = useRouter();
-  const { user, isAdmin, logout } = useAuth();
+  const { logout } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDateActionModal, setShowDateActionModal] = useState(false);
@@ -40,18 +41,8 @@ export default function AdminPage() {
 
   const stats = calculateMonthlyStats(bookings, currentDate);
 
-  // Redireciona para login se não estiver autenticado ou não for admin
-  useEffect(() => {
-    if (user === null) {
-      router.push('/login');
-    } else if (user && !isAdmin) {
-      router.push('/');
-    }
-  }, [user, isAdmin, router]);
-
   // Detecta e envia notificações automaticamente para agendamentos expirados
   useEffect(() => {
-    if (!isAdmin) return;
 
     const checkExpiredBookings = async () => {
       const expiredBookings = bookings.filter(b => {
@@ -92,7 +83,7 @@ export default function AdminPage() {
     checkExpiredBookings();
 
     return () => clearInterval(interval);
-  }, [bookings, isAdmin, markExpirationNotificationSent]);
+  }, [bookings, markExpirationNotificationSent]);
 
   const handleLogout = async () => {
     await logout();
@@ -148,23 +139,6 @@ export default function AdminPage() {
     const bookingDate = new Date(b.date + 'T00:00:00');
     return bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear;
   });
-
-  // Mostra loading enquanto verifica autenticação
-  if (user === undefined || (user && isAdmin === undefined)) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Verificando acesso...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Se não for admin, não renderiza nada (o useEffect vai redirecionar)
-  if (!isAdmin) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -282,5 +256,16 @@ export default function AdminPage() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Página Admin com proteção de rota
+ */
+export default function AdminPage() {
+  return (
+    <ProtectedRoute requireAdmin={true}>
+      <AdminPageContent />
+    </ProtectedRoute>
   );
 }

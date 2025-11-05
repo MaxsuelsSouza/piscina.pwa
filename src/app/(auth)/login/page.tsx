@@ -6,12 +6,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { sanitizeEmail } from '@/lib/security/input-sanitizer';
+import { rateLimiter, RATE_LIMIT_CONFIGS, formatBlockedTime } from '@/lib/security/rate-limiter';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading, login } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -23,17 +26,39 @@ export default function LoginPage() {
   // Redireciona se já estiver autenticado
   useEffect(() => {
     if (user && !authLoading) {
-      router.push('/admin');
+      // Usa o parâmetro redirect da URL, ou vai para /admin por padrão
+      const redirectTo = searchParams.get('redirect') || '/admin';
+      router.push(redirectTo);
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // Verifica rate limiting
+    const rateLimitKey = `login:${email}`;
+    const rateLimitResult = rateLimiter.attempt(rateLimitKey, RATE_LIMIT_CONFIGS.login);
+
+    if (!rateLimitResult.allowed) {
+      const timeRemaining = rateLimitResult.blockedUntil
+        ? formatBlockedTime(rateLimitResult.blockedUntil)
+        : '30 minutos';
+      setError(`Muitas tentativas de login. Tente novamente em ${timeRemaining}.`);
+      return;
+    }
+
+    // Mostra aviso se está próximo do limite
+    if (rateLimitResult.remainingAttempts <= 2 && rateLimitResult.remainingAttempts > 0) {
+      setError(`Atenção: Restam apenas ${rateLimitResult.remainingAttempts} tentativa(s) antes do bloqueio temporário.`);
+    }
+
+    setLoading(true);
 
     try {
       await login(email, password);
+      // Login bem-sucedido - reseta o rate limit
+      rateLimiter.reset(rateLimitKey);
       // O redirecionamento será feito pelo useEffect acima
     } catch (err: any) {
       console.error('❌ Erro ao fazer login:', err);
@@ -79,7 +104,7 @@ export default function LoginPage() {
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
             className={cn(
               'w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm outline-none transition-all',
               error

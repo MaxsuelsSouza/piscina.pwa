@@ -7,6 +7,14 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { TimeSlot, TimeSlotInfo } from '../_types/booking';
+import {
+  sanitizeName,
+  sanitizePhone,
+  sanitizeEmail,
+  sanitizeNotes,
+  sanitizeNumberOfPeople,
+  sanitizeBookingFormData,
+} from '@/lib/security/input-sanitizer';
 
 interface BookingFormProps {
   selectedDate: string;
@@ -49,28 +57,26 @@ export function BookingForm({
   const [errors, setErrors] = useState<Partial<Record<keyof BookingFormData, string>>>({});
 
   const validate = () => {
-    const newErrors: Partial<Record<keyof BookingFormData, string>> = {};
-
-    if (!formData.customerName.trim()) {
-      newErrors.customerName = 'Nome é obrigatório';
-    }
-
-    if (!formData.customerPhone.trim()) {
-      newErrors.customerPhone = 'Telefone é obrigatório';
-    }
-
-    if (formData.numberOfPeople < 1) {
-      newErrors.numberOfPeople = 'Mínimo 1 pessoa';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const { isValid, errors: validationErrors } = sanitizeBookingFormData(formData);
+    setErrors(validationErrors);
+    return isValid;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      onSubmit(formData);
+
+    const { isValid, sanitizedData } = sanitizeBookingFormData(formData);
+
+    if (isValid) {
+      // Envia dados sanitizados
+      onSubmit({
+        ...formData,
+        customerName: sanitizedData.customerName,
+        customerPhone: sanitizedData.customerPhone,
+        customerEmail: sanitizedData.customerEmail,
+        numberOfPeople: sanitizedData.numberOfPeople,
+        notes: sanitizedData.notes,
+      });
     }
   };
 
@@ -106,7 +112,7 @@ export function BookingForm({
           <input
             type="text"
             value={formData.customerName}
-            onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, customerName: sanitizeName(e.target.value) })}
             className={cn(
               'w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:bg-white transition-all',
               errors.customerName
@@ -128,7 +134,7 @@ export function BookingForm({
           <input
             type="tel"
             value={formData.customerPhone}
-            onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, customerPhone: sanitizePhone(e.target.value) })}
             className={cn(
               'w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:bg-white transition-all',
               errors.customerPhone
@@ -150,7 +156,7 @@ export function BookingForm({
           <input
             type="email"
             value={formData.customerEmail}
-            onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, customerEmail: sanitizeEmail(e.target.value) })}
             className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
             placeholder="seu@email.com"
           />
@@ -164,9 +170,9 @@ export function BookingForm({
           <input
             type="number"
             min="1"
-            max="50"
+            max="100"
             value={formData.numberOfPeople}
-            onChange={(e) => setFormData({ ...formData, numberOfPeople: parseInt(e.target.value) || 1 })}
+            onChange={(e) => setFormData({ ...formData, numberOfPeople: sanitizeNumberOfPeople(parseInt(e.target.value)) })}
             className={cn(
               'w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:bg-white transition-all',
               errors.numberOfPeople
@@ -186,8 +192,9 @@ export function BookingForm({
           </label>
           <textarea
             value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, notes: sanitizeNotes(e.target.value) })}
             rows={3}
+            maxLength={500}
             className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
             placeholder="Alguma informação adicional..."
           />

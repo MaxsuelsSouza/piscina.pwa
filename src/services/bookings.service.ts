@@ -17,19 +17,48 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Booking, BlockedDate } from '@/app/(home)/_types/booking';
+import {
+  sanitizeName,
+  sanitizePhone,
+  sanitizeEmail,
+  sanitizeNotes,
+  sanitizeNumberOfPeople,
+} from '@/lib/security/input-sanitizer';
 
 const BOOKINGS_COLLECTION = 'bookings';
 const BLOCKED_DATES_COLLECTION = 'blocked_dates';
 
 /**
  * Cria um novo agendamento no Firestore
+ * Com validação e sanitização de dados
  */
 export async function createBooking(booking: Omit<Booking, 'id'>): Promise<string> {
   try {
-    const docRef = await addDoc(collection(db, BOOKINGS_COLLECTION), {
+    // Sanitiza todos os dados antes de salvar (proteção server-side)
+    const sanitizedBooking = {
       ...booking,
+      customerName: sanitizeName(booking.customerName),
+      customerPhone: sanitizePhone(booking.customerPhone),
+      customerEmail: sanitizeEmail(booking.customerEmail || ''),
+      numberOfPeople: sanitizeNumberOfPeople(booking.numberOfPeople),
+      notes: sanitizeNotes(booking.notes || ''),
       createdAt: booking.createdAt || new Date().toISOString(),
-    });
+    };
+
+    // Validações básicas
+    if (!sanitizedBooking.customerName || sanitizedBooking.customerName.length < 3) {
+      throw new Error('Nome inválido');
+    }
+
+    if (!sanitizedBooking.customerPhone) {
+      throw new Error('Telefone inválido');
+    }
+
+    if (sanitizedBooking.numberOfPeople < 1 || sanitizedBooking.numberOfPeople > 100) {
+      throw new Error('Número de pessoas inválido');
+    }
+
+    const docRef = await addDoc(collection(db, BOOKINGS_COLLECTION), sanitizedBooking);
     return docRef.id;
   } catch (error) {
     console.error('❌ Erro ao criar agendamento:', error);
