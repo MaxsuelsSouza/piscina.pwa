@@ -5,14 +5,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { sanitizeEmail } from '@/lib/security/input-sanitizer';
 import { rateLimiter, RATE_LIMIT_CONFIGS, formatBlockedTime } from '@/lib/security/rate-limiter';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading, login } = useAuth();
@@ -87,8 +87,19 @@ export default function LoginPage() {
       {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-4 shadow-lg">
-          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+          <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {/* Sol */}
+            <circle cx="12" cy="8" r="3" fill="currentColor" />
+            {/* Raios do sol */}
+            <line x1="12" y1="2" x2="12" y2="3.5" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="16.5" y1="4.5" x2="15.5" y2="5.5" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="18" y1="8" x2="16.5" y2="8" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="7.5" y1="4.5" x2="8.5" y2="5.5" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="6" y1="8" x2="7.5" y2="8" strokeWidth="1.5" strokeLinecap="round" />
+            {/* Ondas de água */}
+            <path d="M 3 15 Q 5 13.5 7 15 T 11 15 T 15 15 T 19 15 T 21 15" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M 3 18 Q 5 16.5 7 18 T 11 18 T 15 18 T 19 18 T 21 18" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M 3 21 Q 5 19.5 7 21 T 11 21 T 15 21 T 19 21 T 21 21" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Piscina</h1>
@@ -171,5 +182,19 @@ export default function LoginPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -58,7 +58,7 @@ export const MonthColumn = memo(function MonthColumn({
     (description: string) => {
       // TODO: Salvar descrição no backend/estado
     },
-    [modalState]
+    []
   );
 
   const handleCloseModal = useCallback(() => {
