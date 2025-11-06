@@ -83,11 +83,11 @@ function LoginForm() {
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 p-8">
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 p-6 sm:p-8">
       {/* Header */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-4 shadow-lg">
-          <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="text-center mb-6 sm:mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-3 sm:mb-4 shadow-lg">
+          <svg className="w-8 h-8 sm:w-9 sm:h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             {/* Sol */}
             <circle cx="12" cy="8" r="3" fill="currentColor" />
             {/* Raios do sol */}
@@ -102,8 +102,8 @@ function LoginForm() {
             <path d="M 3 21 Q 5 19.5 7 21 T 11 21 T 15 21 T 19 21 T 21 21" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Piscina</h1>
-        <p className="text-sm text-gray-500">Bem-vindo de volta</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Piscina</h1>
+        <p className="text-xs sm:text-sm text-gray-500">Bem-vindo de volta</p>
       </div>
 
       {/* Login Form */}
@@ -188,7 +188,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 p-8">
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 p-6 sm:p-8">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>

@@ -51,9 +51,9 @@ export default function AuthLayout({
   }, []);
 
   return (
-    <div className="h-screen flex bg-gradient-to-r from-black via-black via-50% to-white overflow-hidden">
-      {/* Lado esquerdo - Informações sobre agendamentos */}
-      <div className="w-[55%] flex items-center justify-center p-12">
+    <div className="h-screen flex bg-gradient-to-br from-blue-50 to-cyan-50 lg:bg-gradient-to-r lg:from-black lg:via-black lg:via-50% lg:to-white overflow-hidden">
+      {/* Lado esquerdo - Informações sobre agendamentos (apenas desktop) */}
+      <div className="hidden lg:flex w-[55%] items-center justify-center p-12">
         <div className="w-full max-w-2xl">
           <div className="relative h-[320px]">
             {slides.map((slide, index) => (
@@ -93,8 +93,8 @@ export default function AuthLayout({
         </div>
       </div>
 
-      {/* Lado direito - Login */}
-      <div className="w-[45%] flex items-center justify-center px-12">
+      {/* Lado direito - Login (tela cheia no mobile) */}
+      <div className="w-full lg:w-[45%] flex items-center justify-center px-4 sm:px-6 lg:px-12">
         <div className="w-full max-w-sm">
           {children}
         </div>
