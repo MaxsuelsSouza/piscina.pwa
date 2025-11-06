@@ -5,7 +5,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { isAdmin as checkIsAdmin } from '@/config/admin';
 
@@ -34,6 +34,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        if (currentUser) {
+          // Verifica se a sessão tem mais de 24 horas
+          const loginTime = localStorage.getItem('auth_login_time');
+          const now = Date.now();
+          const twentyFourHours = 24 * 60 * 60 * 1000; // 24 horas em ms
+
+          if (loginTime && (now - parseInt(loginTime)) > twentyFourHours) {
+            // Sessão expirada após 24 horas - faz logout automático
+            console.log('Sessão expirada após 24 horas');
+            signOut(auth);
+            localStorage.removeItem('auth_login_time');
+            setUser(null);
+            setIsAdmin(false);
+            setLoading(false);
+            return;
+          }
+        }
+
         setUser(currentUser);
         setIsAdmin(checkIsAdmin(currentUser?.uid));
         setLoading(false);
@@ -48,7 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
+      // Garante que a persistência está configurada para localStorage (permanente)
+      // Isso mantém o usuário logado mesmo após fechar o navegador
+      await setPersistence(auth, browserLocalPersistence);
+
+      // Faz o login com a persistência configurada
       await signInWithEmailAndPassword(auth, email, password);
+
+      // Salva o timestamp do login para controlar expiração de 24 horas
+      localStorage.setItem('auth_login_time', Date.now().toString());
     } catch (error) {
       console.error('Erro ao fazer login:', error);
       throw error;
@@ -58,6 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async (): Promise<void> => {
     try {
       await signOut(auth);
+      // Limpa o timestamp de login
+      localStorage.removeItem('auth_login_time');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
       throw error;

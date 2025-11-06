@@ -4,7 +4,7 @@
 
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getAuth, type Auth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
 
 // Configuração do Firebase obtida do Console
 const firebaseConfig = {
@@ -52,6 +52,12 @@ if (typeof window !== 'undefined') {
 
   db = getFirestore(app);
   auth = getAuth(app);
+
+  // Configura persistência para manter sessão mesmo após fechar o navegador
+  // Os tokens do Firebase são válidos e renovados automaticamente
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('❌ Erro ao configurar persistência de autenticação:', error);
+  });
 } else {
   // No servidor, cria objetos vazios para evitar erros
   app = {} as FirebaseApp;
