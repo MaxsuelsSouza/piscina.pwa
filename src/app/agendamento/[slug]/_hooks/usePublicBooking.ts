@@ -46,6 +46,26 @@ export function usePublicBooking(slug: string) {
   }, [slug]);
 
   /**
+   * Atualiza o título da aba do navegador dinamicamente
+   * com o nome do espaço do cliente
+   */
+  useEffect(() => {
+    if (client) {
+      // Prioriza businessName (nome do estabelecimento), depois displayName (nome da pessoa)
+      const title = client.businessName || client.displayName || 'Agendamento';
+      document.title = title;
+    } else {
+      // Título padrão enquanto carrega
+      document.title = 'Carregando...';
+    }
+
+    // Restaura o título original quando o componente for desmontado
+    return () => {
+      document.title = 'Piscina';
+    };
+  }, [client]);
+
+  /**
    * Escuta agendamentos e bloqueios em tempo real
    */
   useEffect(() => {
@@ -100,9 +120,12 @@ export function usePublicBooking(slug: string) {
    */
   const handleSubmitBooking = useCallback(
     async (formData: PublicBookingFormData) => {
-      if (!client || !selectedDate) return;
+      if (!client || !selectedDate || !slug) return;
 
-      const response = await createPublicBooking(client, selectedDate, formData);
+      // Passa o slug ao invés do client
+      // O slug será usado server-side para buscar o cliente correto
+      // Isso previne manipulação do ownerId no client-side
+      const response = await createPublicBooking(slug, selectedDate, formData);
 
       if (response.success) {
         alert(
@@ -114,7 +137,7 @@ export function usePublicBooking(slug: string) {
         alert(response.error || 'Erro ao criar agendamento. Por favor, tente novamente.');
       }
     },
-    [client, selectedDate]
+    [client, selectedDate, slug]
   );
 
   /**

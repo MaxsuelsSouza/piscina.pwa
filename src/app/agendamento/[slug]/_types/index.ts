@@ -12,6 +12,7 @@ export type { Booking, BlockedDate };
 export interface ClientInfo {
   uid: string;
   displayName?: string;
+  businessName?: string; // Nome do estabelecimento
   publicSlug?: string;
 }
 

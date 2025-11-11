@@ -25,21 +25,30 @@ service cloud.firestore {
 
     // Regras para agendamentos (bookings)
     match /bookings/{bookingId} {
-      // Leitura:
-      // - Público: agendamentos sem ownerId (do admin)
+      // Leitura individual (get):
       // - Admin: pode ler tudo
-      // - Cliente: apenas seus próprios agendamentos (com ownerId)
-      allow read: if !('ownerId' in resource.data) ||
-                     isAdmin() ||
-                     isOwner(resource.data.ownerId);
+      // - Cliente autenticado: apenas agendamentos com seu ownerId
+      // - Público não autenticado: pode ler agendamentos com ownerId (para páginas públicas)
+      allow get: if isAdmin() ||
+                    (isAuthenticated() && 'ownerId' in resource.data && isOwner(resource.data.ownerId)) ||
+                    (!isAuthenticated() && 'ownerId' in resource.data);
+
+      // Leitura de lista (queries):
+      // - Admin: pode ler tudo sem restrição
+      // - Cliente autenticado: pode fazer queries (filtro por ownerId é aplicado no client-side)
+      // - Público não autenticado: pode fazer queries limitadas
+      // NOTA: O Firestore não filtra automaticamente por ownerId, isso é feito no código
+      allow list: if isAdmin() ||
+                     (isAuthenticated()) ||
+                     (!isAuthenticated() && request.query.limit <= 100);
 
       // Criação:
-      // - Admin: pode criar sem ownerId ou com qualquer ownerId
+      // - Admin: pode criar com qualquer ownerId
       // - Cliente autenticado: pode criar com seu próprio ownerId
-      // - Público: pode criar agendamentos do admin (sem ownerId)
-      allow create: if !('ownerId' in request.resource.data) ||
-                       isAdmin() ||
-                       (isAuthenticated() && request.resource.data.ownerId == request.auth.uid);
+      // - Público: pode criar agendamentos para um cliente específico (com ownerId)
+      allow create: if isAdmin() ||
+                       (isAuthenticated() && 'ownerId' in request.resource.data && request.resource.data.ownerId == request.auth.uid) ||
+                       (!isAuthenticated() && 'ownerId' in request.resource.data);
 
       // Atualização:
       // - Admin: pode atualizar tudo
@@ -56,16 +65,24 @@ service cloud.firestore {
 
     // Regras para dias bloqueados (blocked_dates)
     match /blocked_dates/{dateId} {
-      // Leitura:
-      // - Público: datas bloqueadas sem ownerId (do admin)
+      // Leitura individual (get):
       // - Admin: pode ler tudo
-      // - Cliente: apenas seus próprios bloqueios
-      allow read: if !('ownerId' in resource.data) ||
-                     isAdmin() ||
-                     isOwner(resource.data.ownerId);
+      // - Cliente autenticado: apenas bloqueios com seu ownerId
+      // - Público não autenticado: pode ler bloqueios com ownerId
+      allow get: if isAdmin() ||
+                    (isAuthenticated() && 'ownerId' in resource.data && isOwner(resource.data.ownerId)) ||
+                    (!isAuthenticated() && 'ownerId' in resource.data);
+
+      // Leitura de lista (queries):
+      // - Admin: pode ler tudo
+      // - Cliente autenticado: pode fazer queries
+      // - Público não autenticado: pode fazer queries limitadas
+      allow list: if isAdmin() ||
+                     (isAuthenticated()) ||
+                     (!isAuthenticated() && request.query.limit <= 100);
 
       // Criação:
-      // - Admin: pode criar sem ownerId ou com qualquer ownerId
+      // - Admin: pode criar com qualquer ownerId ou sem ownerId
       // - Cliente autenticado: pode criar com seu próprio ownerId
       allow create: if isAdmin() ||
                        (isAuthenticated() &&

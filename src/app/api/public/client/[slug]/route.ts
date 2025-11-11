@@ -43,6 +43,7 @@ export async function GET(
       client: {
         uid: client.uid,
         displayName: client.displayName,
+        businessName: client.businessName,
         publicSlug: client.publicSlug,
       },
     });

@@ -13,6 +13,7 @@ export interface CreateUserFormData {
   email: string;
   password: string;
   displayName?: string;
+  businessName?: string; // Nome do estabelecimento/espaço
   role: 'client' | 'admin';
 }
 
@@ -23,6 +24,7 @@ export interface UserFormState {
   email: string;
   password: string;
   displayName: string;
+  businessName: string; // Nome do estabelecimento
   role: 'client' | 'admin';
 }
 

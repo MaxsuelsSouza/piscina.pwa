@@ -48,17 +48,30 @@ export async function GET(request: NextRequest) {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
+        businessName: user.businessName,
         role: user.role,
         isActive: user.isActive,
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
+        createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
+        updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
         createdBy: user.createdBy,
+        publicSlug: user.publicSlug,
+        subscriptionDueDate: user.subscriptionDueDate instanceof Date ? user.subscriptionDueDate.toISOString() : user.subscriptionDueDate,
+        mustChangePassword: user.mustChangePassword,
       })),
     });
   } catch (error: any) {
     console.error('Erro ao listar usuários:', error);
+    console.error('Detalhes do erro:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
+
     return NextResponse.json(
-      { error: 'Erro ao listar usuários. Tente novamente.' },
+      {
+        error: 'Erro ao listar usuários. Tente novamente.',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

@@ -18,7 +18,8 @@ export async function createUserDocument(
   role: 'admin' | 'client' = 'client',
   displayName?: string,
   createdBy?: string,
-  publicSlug?: string
+  publicSlug?: string,
+  businessName?: string
 ): Promise<void> {
   const db = adminDb();
   const userRef = db.collection(USERS_COLLECTION).doc(uid);
@@ -32,6 +33,7 @@ export async function createUserDocument(
     uid,
     email,
     displayName,
+    businessName,
     role,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -116,11 +118,19 @@ export async function getAllUsers(): Promise<AppUser[]> {
     const usersRef = db.collection(USERS_COLLECTION);
     const querySnapshot = await usersRef.orderBy('createdAt', 'desc').get();
 
-    return querySnapshot.docs.map((doc) =>
-      userDocumentToAppUser(doc.data() as UserDocument)
-    );
-  } catch (error) {
+    return querySnapshot.docs.map((doc) => {
+      try {
+        const userData = doc.data() as UserDocument;
+        return userDocumentToAppUser(userData);
+      } catch (error) {
+        console.error('Erro ao converter documento de usuário:', doc.id, error);
+        console.error('Dados do documento:', doc.data());
+        throw error;
+      }
+    });
+  } catch (error: any) {
     console.error('Erro ao listar usuários:', error);
+    console.error('Detalhes:', error.message, error.code);
     throw error;
   }
 }

@@ -2,45 +2,56 @@
  * Serviços para criação de agendamentos públicos
  */
 
-import { createBooking as createBookingFirestore } from '@/services/bookings.service';
-import type { PublicBookingFormData, ClientInfo } from '../_types';
+import type { PublicBookingFormData } from '../_types';
 
 export interface CreateBookingResponse {
   success: boolean;
+  bookingId?: string;
   error?: string;
 }
 
 /**
  * Cria um novo agendamento público
+ *
+ * IMPORTANTE: Usa API route server-side para garantir segurança
+ * O ownerId é determinado pelo slug no servidor, não pelo client-side
+ * Isso previne manipulação do ownerId no navegador
  */
 export async function createPublicBooking(
-  client: ClientInfo,
+  slug: string,
   selectedDate: string,
   formData: PublicBookingFormData
 ): Promise<CreateBookingResponse> {
   try {
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
+    // Envia para API route que valida server-side
+    const response = await fetch('/api/public/booking/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        slug, // Slug é usado server-side para buscar o cliente correto
+        date: selectedDate,
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        customerEmail: formData.customerEmail,
+        numberOfPeople: formData.numberOfPeople,
+        notes: formData.notes,
+      }),
+    });
 
-    const bookingData = {
-      date: selectedDate,
-      customerName: formData.customerName,
-      customerPhone: formData.customerPhone,
-      customerEmail: formData.customerEmail,
-      timeSlot: 'full-day' as const,
-      numberOfPeople: formData.numberOfPeople,
-      status: 'pending' as const,
-      notes: formData.notes,
-      createdAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      expirationNotificationSent: false,
-      ownerId: client.uid,
-    };
+    const result = await response.json();
 
-    await createBookingFirestore(bookingData);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.error || 'Erro ao criar agendamento',
+      };
+    }
 
     return {
       success: true,
+      bookingId: result.bookingId,
     };
   } catch (error: any) {
     console.error('Erro ao criar agendamento:', error);

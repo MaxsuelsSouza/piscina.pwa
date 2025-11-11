@@ -58,7 +58,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           // Busca dados do usuário no Firestore
           try {
-            const userDataFromFirestore = await getUserByUid(currentUser.uid);
+            let userDataFromFirestore = await getUserByUid(currentUser.uid);
+
+            // Se o documento não existe no Firestore, cria um novo
+            if (!userDataFromFirestore) {
+              console.log('Documento do usuário não encontrado. Criando automaticamente...');
+
+              // Determina o role baseado na verificação de admin
+              const isUserAdmin = checkIsAdmin(currentUser.uid);
+              const userRole = isUserAdmin ? 'admin' : 'client';
+
+              // Importa dinamicamente a função de criar usuário
+              const { createUserDocument } = await import('@/lib/firebase/firestore/users');
+
+              // Cria o documento com informações básicas
+              await createUserDocument(
+                currentUser.uid,
+                currentUser.email || '',
+                userRole,
+                currentUser.displayName || undefined,
+                currentUser.uid // Auto-criado
+              );
+
+              // Busca novamente para ter os dados completos
+              userDataFromFirestore = await getUserByUid(currentUser.uid);
+              console.log('✅ Documento do usuário criado automaticamente');
+            }
+
             setUserData(userDataFromFirestore);
 
             // Usa o role do Firestore se disponível, caso contrário usa a verificação por UID

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Lê os dados do request
-    const { email, password, displayName, role = 'user' } = await request.json();
+    const { email, password, displayName, businessName, role = 'user' } = await request.json();
 
     // Validações
     if (!email || !password) {
@@ -83,7 +83,8 @@ export async function POST(request: NextRequest) {
       role,
       displayName,
       decodedToken.uid, // UID do admin que criou o usuário
-      publicSlug
+      publicSlug,
+      businessName
     );
 
     return NextResponse.json({

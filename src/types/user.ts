@@ -7,7 +7,8 @@ export type UserRole = 'admin' | 'client';
 export interface AppUser {
   uid: string;
   email: string;
-  displayName?: string;
+  displayName?: string; // Nome da pessoa (ex: "João Silva")
+  businessName?: string; // Nome do estabelecimento/espaço (ex: "Muca Fest", "Max Fest")
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -22,13 +23,15 @@ export interface CreateUserData {
   email: string;
   password: string;
   displayName?: string;
+  businessName?: string; // Nome do estabelecimento
   role?: UserRole;
 }
 
 export interface UserDocument {
   uid: string;
   email: string;
-  displayName?: string;
+  displayName?: string; // Nome da pessoa
+  businessName?: string; // Nome do estabelecimento
   role: UserRole;
   createdAt: string; // ISO string para serialização no Firestore
   updatedAt: string;
@@ -42,13 +45,59 @@ export interface UserDocument {
 /**
  * Converte UserDocument do Firestore para AppUser
  */
-export function userDocumentToAppUser(doc: UserDocument): AppUser {
-  return {
-    ...doc,
-    createdAt: new Date(doc.createdAt),
-    updatedAt: new Date(doc.updatedAt),
-    subscriptionDueDate: doc.subscriptionDueDate ? new Date(doc.subscriptionDueDate) : undefined,
-  };
+export function userDocumentToAppUser(doc: UserDocument | any): AppUser {
+  try {
+    // Função auxiliar para converter timestamps do Firestore ou strings ISO para Date
+    const convertToDate = (value: any): Date => {
+      if (!value) {
+        return new Date();
+      }
+
+      // Se for um Timestamp do Firestore (tem _seconds)
+      if (value && typeof value === 'object' && '_seconds' in value) {
+        return new Date(value._seconds * 1000);
+      }
+
+      // Se for um Timestamp do Firestore Admin SDK (tem toDate)
+      if (value && typeof value === 'object' && 'toDate' in value) {
+        return value.toDate();
+      }
+
+      // Se for uma string ISO ou número
+      return new Date(value);
+    };
+
+    const createdAt = convertToDate(doc.createdAt);
+    const updatedAt = convertToDate(doc.updatedAt);
+    const subscriptionDueDate = doc.subscriptionDueDate ? convertToDate(doc.subscriptionDueDate) : undefined;
+
+    // Verifica se as datas são válidas
+    if (isNaN(createdAt.getTime())) {
+      console.warn('Data de criação inválida para usuário:', doc.uid);
+    }
+    if (isNaN(updatedAt.getTime())) {
+      console.warn('Data de atualização inválida para usuário:', doc.uid);
+    }
+
+    return {
+      uid: doc.uid,
+      email: doc.email,
+      displayName: doc.displayName,
+      businessName: doc.businessName,
+      role: doc.role,
+      createdAt,
+      updatedAt,
+      isActive: doc.isActive,
+      createdBy: doc.createdBy,
+      publicSlug: doc.publicSlug,
+      subscriptionDueDate,
+      mustChangePassword: doc.mustChangePassword,
+    };
+  } catch (error) {
+    console.error('Erro ao converter UserDocument para AppUser:', error);
+    console.error('Documento problemático:', doc);
+    throw error;
+  }
 }
 
 /**

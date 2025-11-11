@@ -45,11 +45,34 @@ export function useAdminData(params?: UseAdminDataParams) {
   // Filtra os dados baseado no tipo de usuário
   const bookings = isAdmin
     ? allBookings
-    : allBookings.filter(b => b.ownerId === ownerId);
+    : allBookings.filter(b => {
+        // Debug: log para verificar filtragem
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 Filtrando agendamento:', {
+            bookingId: b.id,
+            bookingOwnerId: b.ownerId,
+            userOwnerId: ownerId,
+            match: b.ownerId === ownerId
+          });
+        }
+        return b.ownerId === ownerId;
+      });
 
   const blockedDates = isAdmin
     ? allBlockedDates
     : allBlockedDates.filter(d => d.ownerId === ownerId);
+
+  // Debug: log do resultado da filtragem
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📊 Dados do painel:', {
+      isAdmin,
+      ownerId,
+      totalBookings: allBookings.length,
+      filteredBookings: bookings.length,
+      totalBlockedDates: allBlockedDates.length,
+      filteredBlockedDates: blockedDates.length
+    });
+  }
 
   const confirmBooking = async (id: string) => {
     try {

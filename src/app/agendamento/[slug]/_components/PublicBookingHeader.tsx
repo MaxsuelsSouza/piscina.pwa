@@ -8,12 +8,16 @@ interface PublicBookingHeaderProps {
 
 export function PublicBookingHeader({ clientName }: PublicBookingHeaderProps) {
   return (
-    <div className="bg-gradient-to-br from-blue-900 to-blue-800 pt-12 pb-24">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 pt-16 pb-28 relative overflow-hidden">
+      {/* Efeito decorativo de fundo */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE0YzMuMzE0IDAgNiAyLjY4NiA2IDZzLTIuNjg2IDYtNiA2LTYtMi42ODYtNi02IDIuNjg2LTYgNi02ek0yNCAzNmMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40"></div>
+
+      <div className="max-w-4xl mx-auto px-4 relative">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-4">
+          {/* Ícone do calendário */}
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/15 backdrop-blur-md rounded-3xl mb-6 shadow-xl border border-white/20">
             <svg
-              className="w-8 h-8 text-white"
+              className="w-10 h-10 text-white"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -26,12 +30,23 @@ export function PublicBookingHeader({ clientName }: PublicBookingHeaderProps) {
               />
             </svg>
           </div>
-          <h1 className="text-4xl font-light text-white mb-2 tracking-tight">
-            Agendar com {clientName || 'Cliente'}
+
+          {/* Título principal com fonte Poppins */}
+          <h1 className="text-5xl md:text-6xl font-display font-bold text-white mb-3 tracking-tight leading-tight">
+            {clientName || 'Carregando...'}
           </h1>
-          <p className="text-blue-200 text-sm font-light">
+
+          {/* Subtítulo */}
+          <p className="text-blue-100 text-lg md:text-xl font-medium max-w-2xl mx-auto">
             Selecione uma data disponível para fazer seu agendamento
           </p>
+
+          {/* Linha decorativa */}
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <div className="w-12 h-1 bg-white/30 rounded-full"></div>
+            <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+            <div className="w-12 h-1 bg-white/30 rounded-full"></div>
+          </div>
         </div>
       </div>
     </div>

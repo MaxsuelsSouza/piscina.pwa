@@ -32,6 +32,7 @@ export default function UsuariosPage() {
     email: '',
     password: '',
     displayName: '',
+    businessName: '',
     role: 'client',
   });
 
@@ -59,6 +60,7 @@ export default function UsuariosPage() {
         email: '',
         password: '',
         displayName: '',
+        businessName: '',
         role: 'client',
       });
     }
@@ -167,7 +169,7 @@ export default function UsuariosPage() {
 
                 <div>
                   <label htmlFor="displayName" className="block text-sm text-gray-700 mb-2">
-                    Nome (opcional)
+                    Nome da Pessoa (opcional)
                   </label>
                   <input
                     type="text"
@@ -176,6 +178,20 @@ export default function UsuariosPage() {
                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
                     placeholder="João Silva"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="businessName" className="block text-sm text-gray-700 mb-2">
+                    Nome do Estabelecimento (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    id="businessName"
+                    value={formData.businessName}
+                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
+                    placeholder="Muca Fest, Max Fest, etc."
                   />
                 </div>
 
@@ -242,6 +258,7 @@ export default function UsuariosPage() {
                       <tr className="border-b border-gray-200">
                         <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Email</th>
                         <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Nome</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Estabelecimento</th>
                         <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Função</th>
                         <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">Ações</th>
@@ -255,6 +272,9 @@ export default function UsuariosPage() {
                           </td>
                           <td className="py-4 px-4 text-sm text-gray-600">
                             {u.displayName || '—'}
+                          </td>
+                          <td className="py-4 px-4 text-sm text-gray-900 font-medium">
+                            {u.businessName || '—'}
                           </td>
                           <td className="py-4 px-4">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
