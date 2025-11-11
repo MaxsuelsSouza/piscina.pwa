@@ -4,6 +4,31 @@
 
 export type UserRole = 'admin' | 'client';
 
+/**
+ * Informações de localização do estabelecimento
+ */
+export interface VenueLocation {
+  street: string; // Rua
+  number: string; // Número
+  neighborhood: string; // Bairro
+  city: string; // Cidade
+  state: string; // Estado
+  zipCode: string; // CEP
+  complement?: string; // Complemento (opcional)
+  reference?: string; // Ponto de referência (opcional)
+  latitude?: number; // Latitude para geolocalização
+  longitude?: number; // Longitude para geolocalização
+}
+
+/**
+ * Informações do espaço/estabelecimento
+ */
+export interface VenueInfo {
+  description?: string; // Descrição do espaço
+  capacity?: number; // Capacidade máxima de pessoas
+  phone?: string; // Telefone/WhatsApp
+}
+
 export interface AppUser {
   uid: string;
   email: string;
@@ -17,6 +42,10 @@ export interface AppUser {
   publicSlug?: string; // Slug único para URL pública (ex: "joao-silva")
   subscriptionDueDate?: Date; // Data de vencimento da assinatura
   mustChangePassword?: boolean; // Força troca de senha no primeiro login
+
+  // FASE 1 - Dados de localização e informações do espaço
+  location?: VenueLocation; // Endereço completo
+  venueInfo?: VenueInfo; // Informações do espaço
 }
 
 export interface CreateUserData {
@@ -25,6 +54,10 @@ export interface CreateUserData {
   displayName?: string;
   businessName?: string; // Nome do estabelecimento
   role?: UserRole;
+
+  // FASE 1 - Dados de localização e informações
+  location?: VenueLocation;
+  venueInfo?: VenueInfo;
 }
 
 export interface UserDocument {
@@ -40,6 +73,10 @@ export interface UserDocument {
   publicSlug?: string; // Slug único para URL pública
   subscriptionDueDate?: string; // Data de vencimento da assinatura (ISO string)
   mustChangePassword?: boolean; // Força troca de senha no primeiro login
+
+  // FASE 1 - Dados de localização e informações do espaço
+  location?: VenueLocation;
+  venueInfo?: VenueInfo;
 }
 
 /**
@@ -92,6 +129,8 @@ export function userDocumentToAppUser(doc: UserDocument | any): AppUser {
       publicSlug: doc.publicSlug,
       subscriptionDueDate,
       mustChangePassword: doc.mustChangePassword,
+      location: doc.location,
+      venueInfo: doc.venueInfo,
     };
   } catch (error) {
     console.error('Erro ao converter UserDocument para AppUser:', error);
@@ -109,6 +148,8 @@ export function appUserToUserDocument(user: AppUser): UserDocument {
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
     subscriptionDueDate: user.subscriptionDueDate?.toISOString(),
+    location: user.location,
+    venueInfo: user.venueInfo,
   };
 }
 

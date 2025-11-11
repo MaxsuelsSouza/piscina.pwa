@@ -4,7 +4,7 @@
  */
 
 import { adminDb } from '../../firebase/admin';
-import type { AppUser, UserDocument } from '@/types/user';
+import type { AppUser, UserDocument, VenueLocation, VenueInfo } from '@/types/user';
 import { userDocumentToAppUser } from '@/types/user';
 
 const USERS_COLLECTION = 'users';
@@ -19,7 +19,9 @@ export async function createUserDocument(
   displayName?: string,
   createdBy?: string,
   publicSlug?: string,
-  businessName?: string
+  businessName?: string,
+  location?: VenueLocation,
+  venueInfo?: VenueInfo
 ): Promise<void> {
   const db = adminDb();
   const userRef = db.collection(USERS_COLLECTION).doc(uid);
@@ -42,6 +44,8 @@ export async function createUserDocument(
     publicSlug,
     subscriptionDueDate,
     mustChangePassword: true, // Força troca de senha no primeiro login
+    location,
+    venueInfo,
   };
 
   await userRef.set(userData);
@@ -152,6 +156,41 @@ export async function getActiveUsers(): Promise<AppUser[]> {
     );
   } catch (error) {
     console.error('Erro ao listar usuários ativos:', error);
+    throw error;
+  }
+}
+
+/**
+ * Lista apenas clientes ativos (Admin)
+ */
+export async function getAllActiveClients(): Promise<AppUser[]> {
+  try {
+    const db = adminDb();
+    const usersRef = db.collection(USERS_COLLECTION);
+
+    // Query simplificada sem orderBy para evitar necessidade de índice composto
+    const querySnapshot = await usersRef
+      .where('role', '==', 'client')
+      .where('isActive', '==', true)
+      .get();
+
+    // Converte e ordena em memória
+    const clients = querySnapshot.docs.map((doc) => {
+      try {
+        const userData = doc.data() as UserDocument;
+        return userDocumentToAppUser(userData);
+      } catch (error) {
+        console.error('Erro ao converter documento de cliente:', doc.id, error);
+        console.error('Dados do documento:', doc.data());
+        throw error;
+      }
+    });
+
+    // Ordena por data de criação em memória
+    return clients.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  } catch (error: any) {
+    console.error('Erro ao listar clientes ativos:', error);
+    console.error('Detalhes:', error.message, error.code);
     throw error;
   }
 }

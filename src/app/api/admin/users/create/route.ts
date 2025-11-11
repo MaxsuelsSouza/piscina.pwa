@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Lê os dados do request
-    const { email, password, displayName, businessName, role = 'user' } = await request.json();
+    const { email, password, displayName, businessName, role = 'user', location, venueInfo } = await request.json();
 
     // Validações
     if (!email || !password) {
@@ -84,7 +84,9 @@ export async function POST(request: NextRequest) {
       displayName,
       decodedToken.uid, // UID do admin que criou o usuário
       publicSlug,
-      businessName
+      businessName,
+      location,
+      venueInfo
     );
 
     return NextResponse.json({

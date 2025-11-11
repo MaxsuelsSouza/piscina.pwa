@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useUsers } from './_hooks/useUsers';
 import type { CreateUserFormData } from './_types';
+import { fetchAddressByCEP, formatCEP } from '@/services/cep.service';
 
 export default function UsuariosPage() {
   const { user, isAdmin, loading } = useAuth();
@@ -34,7 +35,28 @@ export default function UsuariosPage() {
     displayName: '',
     businessName: '',
     role: 'client',
+    // Dados de localização
+    location: {
+      street: '',
+      number: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      complement: '',
+      reference: '',
+    },
+    // Informações do espaço
+    venueInfo: {
+      description: '',
+      capacity: undefined,
+      phone: '',
+    },
   });
+
+  // Estado para busca de CEP
+  const [loadingCEP, setLoadingCEP] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
 
   // Redireciona se não for admin
   useEffect(() => {
@@ -62,7 +84,67 @@ export default function UsuariosPage() {
         displayName: '',
         businessName: '',
         role: 'client',
+        location: {
+          street: '',
+          number: '',
+          neighborhood: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          complement: '',
+          reference: '',
+        },
+        venueInfo: {
+          description: '',
+          capacity: undefined,
+          phone: '',
+        },
       });
+    }
+  };
+
+  // Busca endereço pelo CEP
+  const handleCEPChange = async (cep: string) => {
+    // Formata o CEP enquanto digita
+    const formattedCEP = formatCEP(cep);
+
+    setFormData({
+      ...formData,
+      location: { ...formData.location!, zipCode: formattedCEP }
+    });
+
+    // Remove caracteres não numéricos para validação
+    const cleanCEP = cep.replace(/\D/g, '');
+
+    // Limpa erro anterior
+    setCepError(null);
+
+    // Se tiver 8 dígitos, busca o endereço
+    if (cleanCEP.length === 8) {
+      setLoadingCEP(true);
+
+      const addressData = await fetchAddressByCEP(cleanCEP);
+
+      if (addressData) {
+        // Preenche os campos automaticamente
+        setFormData({
+          ...formData,
+          location: {
+            ...formData.location!,
+            zipCode: formattedCEP,
+            street: addressData.logradouro,
+            neighborhood: addressData.bairro,
+            city: addressData.localidade,
+            state: addressData.uf,
+            complement: addressData.complemento || formData.location?.complement || '',
+          }
+        });
+        setCepError(null);
+      } else {
+        setCepError('CEP não encontrado');
+      }
+
+      setLoadingCEP(false);
     }
   };
 
@@ -135,85 +217,327 @@ export default function UsuariosPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
-                    placeholder="usuario@exemplo.com"
-                  />
+              <form onSubmit={handleSubmit} className="space-y-6 max-h-[calc(100vh-16rem)] overflow-y-auto pr-2">
+                {/* Seção: Informações Básicas */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+                    Informações Básicas
+                  </h3>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm text-gray-700 mb-2">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                      placeholder="usuario@exemplo.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="password" className="block text-sm text-gray-700 mb-2">
+                      Senha (mín. 6 caracteres) *
+                    </label>
+                    <input
+                      type="password"
+                      id="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      minLength={6}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                      placeholder="••••••"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="role" className="block text-sm text-gray-700 mb-2">
+                      Função *
+                    </label>
+                    <select
+                      id="role"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as 'client' | 'admin' })}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                    >
+                      <option value="client">Cliente (Espaço de Festa)</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="displayName" className="block text-sm text-gray-700 mb-2">
+                      Nome da Pessoa
+                    </label>
+                    <input
+                      type="text"
+                      id="displayName"
+                      value={formData.displayName}
+                      onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                      placeholder="João Silva"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="businessName" className="block text-sm text-gray-700 mb-2">
+                      Nome do Estabelecimento *
+                    </label>
+                    <input
+                      type="text"
+                      id="businessName"
+                      value={formData.businessName}
+                      onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                      required={formData.role === 'client'}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                      placeholder="Muca Fest, Max Fest, etc."
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label htmlFor="password" className="block text-sm text-gray-700 mb-2">
-                    Senha (mín. 6 caracteres)
-                  </label>
-                  <input
-                    type="password"
-                    id="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    minLength={6}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
-                    placeholder="••••••"
-                  />
-                </div>
+                {/* Seção: Informações do Espaço - Apenas para Clientes */}
+                {formData.role === 'client' && (
+                  <>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+                        Informações do Espaço
+                      </h3>
 
-                <div>
-                  <label htmlFor="displayName" className="block text-sm text-gray-700 mb-2">
-                    Nome da Pessoa (opcional)
-                  </label>
-                  <input
-                    type="text"
-                    id="displayName"
-                    value={formData.displayName}
-                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
-                    placeholder="João Silva"
-                  />
-                </div>
+                      <div>
+                        <label htmlFor="phone" className="block text-sm text-gray-700 mb-2">
+                          Telefone/WhatsApp *
+                        </label>
+                        <input
+                          type="tel"
+                          id="phone"
+                          value={formData.venueInfo?.phone || ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            venueInfo: { ...formData.venueInfo, phone: e.target.value }
+                          })}
+                          required
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                          placeholder="(00) 00000-0000"
+                        />
+                      </div>
 
-                <div>
-                  <label htmlFor="businessName" className="block text-sm text-gray-700 mb-2">
-                    Nome do Estabelecimento (opcional)
-                  </label>
-                  <input
-                    type="text"
-                    id="businessName"
-                    value={formData.businessName}
-                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
-                    placeholder="Muca Fest, Max Fest, etc."
-                  />
-                </div>
+                      <div>
+                        <label htmlFor="description" className="block text-sm text-gray-700 mb-2">
+                          Descrição do Espaço *
+                        </label>
+                        <textarea
+                          id="description"
+                          value={formData.venueInfo?.description || ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            venueInfo: { ...formData.venueInfo, description: e.target.value }
+                          })}
+                          required
+                          rows={3}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors resize-none"
+                          placeholder="Descreva o espaço, comodidades, diferenciais..."
+                        />
+                      </div>
 
-                <div>
-                  <label htmlFor="role" className="block text-sm text-gray-700 mb-2">
-                    Função
-                  </label>
-                  <select
-                    id="role"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'client' | 'admin' })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
-                  >
-                    <option value="client">Cliente</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                </div>
+                      <div>
+                        <label htmlFor="capacity" className="block text-sm text-gray-700 mb-2">
+                          Capacidade Máxima (pessoas) *
+                        </label>
+                        <input
+                          type="number"
+                          id="capacity"
+                          value={formData.venueInfo?.capacity || ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            venueInfo: { ...formData.venueInfo, capacity: parseInt(e.target.value) || undefined }
+                          })}
+                          required
+                          min="1"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                          placeholder="Ex: 100"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Seção: Endereço */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+                        Endereço
+                      </h3>
+
+                      <div>
+                        <label htmlFor="zipCode" className="block text-sm text-gray-700 mb-2">
+                          CEP *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            id="zipCode"
+                            value={formData.location?.zipCode || ''}
+                            onChange={(e) => handleCEPChange(e.target.value)}
+                            required
+                            maxLength={9}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                            placeholder="00000-000"
+                          />
+                          {loadingCEP && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                        {cepError && (
+                          <p className="text-xs text-red-600 mt-1">{cepError}</p>
+                        )}
+                        {!cepError && formData.location?.city && (
+                          <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Endereço encontrado
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <label htmlFor="street" className="block text-sm text-gray-700 mb-2">
+                            Rua *
+                          </label>
+                          <input
+                            type="text"
+                            id="street"
+                            value={formData.location?.street || ''}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              location: { ...formData.location!, street: e.target.value }
+                            })}
+                            required
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                            placeholder="Nome da rua"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="number" className="block text-sm text-gray-700 mb-2">
+                            Número *
+                          </label>
+                          <input
+                            type="text"
+                            id="number"
+                            value={formData.location?.number || ''}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              location: { ...formData.location!, number: e.target.value }
+                            })}
+                            required
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                            placeholder="123"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="neighborhood" className="block text-sm text-gray-700 mb-2">
+                          Bairro *
+                        </label>
+                        <input
+                          type="text"
+                          id="neighborhood"
+                          value={formData.location?.neighborhood || ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            location: { ...formData.location!, neighborhood: e.target.value }
+                          })}
+                          required
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                          placeholder="Nome do bairro"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label htmlFor="city" className="block text-sm text-gray-700 mb-2">
+                            Cidade *
+                          </label>
+                          <input
+                            type="text"
+                            id="city"
+                            value={formData.location?.city || ''}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              location: { ...formData.location!, city: e.target.value }
+                            })}
+                            required
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                            placeholder="Nome da cidade"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="state" className="block text-sm text-gray-700 mb-2">
+                            Estado *
+                          </label>
+                          <input
+                            type="text"
+                            id="state"
+                            value={formData.location?.state || ''}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              location: { ...formData.location!, state: e.target.value }
+                            })}
+                            required
+                            maxLength={2}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors uppercase"
+                            placeholder="SP"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="complement" className="block text-sm text-gray-700 mb-2">
+                          Complemento
+                        </label>
+                        <input
+                          type="text"
+                          id="complement"
+                          value={formData.location?.complement || ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            location: { ...formData.location!, complement: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                          placeholder="Apto, sala, etc."
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="reference" className="block text-sm text-gray-700 mb-2">
+                          Ponto de Referência
+                        </label>
+                        <input
+                          type="text"
+                          id="reference"
+                          value={formData.location?.reference || ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            location: { ...formData.location!, reference: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                          placeholder="Próximo ao shopping, padaria, etc."
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <button
                   type="submit"
                   disabled={isCreating}
-                  className="w-full py-2.5 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  className="w-full py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
                   {isCreating ? 'Criando...' : 'Criar Usuário'}
                 </button>
