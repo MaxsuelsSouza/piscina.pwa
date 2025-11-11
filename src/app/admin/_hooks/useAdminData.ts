@@ -1,5 +1,6 @@
 /**
  * Hook para gerenciar dados do painel administrativo com Firestore
+ * Suporta filtro por ownerId para clientes
  */
 
 import { useState, useEffect } from 'react';
@@ -13,19 +14,26 @@ import {
   unblockDate as unblockDateService,
   markExpirationNotificationSent as markExpirationService,
 } from '@/services/bookings.service';
+import { createBlockedDate, deleteBlockedDate } from '@/lib/firebase/firestore/blockedDates';
 
-export function useAdminData() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
+interface UseAdminDataParams {
+  isAdmin?: boolean;
+  ownerId?: string;
+}
+
+export function useAdminData(params?: UseAdminDataParams) {
+  const { isAdmin = true, ownerId } = params || {};
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [allBlockedDates, setAllBlockedDates] = useState<BlockedDate[]>([]);
 
   // Escuta mudanças nos agendamentos em tempo real
   useEffect(() => {
     const unsubscribeBookings = onBookingsChange((newBookings) => {
-      setBookings(newBookings);
+      setAllBookings(newBookings);
     });
 
     const unsubscribeBlockedDates = onBlockedDatesChange((dates) => {
-      setBlockedDates(dates);
+      setAllBlockedDates(dates);
     });
 
     return () => {
@@ -33,6 +41,15 @@ export function useAdminData() {
       unsubscribeBlockedDates();
     };
   }, []);
+
+  // Filtra os dados baseado no tipo de usuário
+  const bookings = isAdmin
+    ? allBookings
+    : allBookings.filter(b => b.ownerId === ownerId);
+
+  const blockedDates = isAdmin
+    ? allBlockedDates
+    : allBlockedDates.filter(d => d.ownerId === ownerId);
 
   const confirmBooking = async (id: string) => {
     try {
@@ -54,18 +71,33 @@ export function useAdminData() {
 
   const blockDate = async (date: string) => {
     try {
-      await blockDateService(date);
+      if (isAdmin) {
+        // Admin bloqueia sem ownerId (bloqueio público)
+        await blockDateService(date);
+      } else if (ownerId) {
+        // Cliente bloqueia com seu ownerId
+        await createBlockedDate(date, ownerId);
+      }
     } catch (error) {
-      console.error('❌ Admin: Erro ao bloquear data:', error);
+      console.error('❌ Erro ao bloquear data:', error);
       throw error;
     }
   };
 
   const unblockDate = async (date: string) => {
     try {
-      await unblockDateService(date);
+      if (isAdmin) {
+        // Admin usa a função padrão
+        await unblockDateService(date);
+      } else {
+        // Cliente deleta apenas seus bloqueios
+        const blockedDate = allBlockedDates.find(d => d.date === date && d.ownerId === ownerId);
+        if (blockedDate) {
+          await deleteBlockedDate(blockedDate.id);
+        }
+      }
     } catch (error) {
-      console.error('❌ Admin: Erro ao desbloquear data:', error);
+      console.error('❌ Erro ao desbloquear data:', error);
       throw error;
     }
   };

@@ -13,26 +13,70 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Função helper para verificar se o usuário é o dono do recurso
+    function isOwner(ownerId) {
+      return request.auth != null && request.auth.uid == ownerId;
+    }
+
+    // Função helper para verificar se é admin ou dono
+    function isAdminOrOwner(ownerId) {
+      return isAdmin() || isOwner(ownerId);
+    }
+
     // Regras para agendamentos (bookings)
     match /bookings/{bookingId} {
-      // Qualquer pessoa pode ler (para ver disponibilidade no calendário)
-      allow read: if true;
+      // Leitura:
+      // - Público: agendamentos sem ownerId (do admin)
+      // - Admin: pode ler tudo
+      // - Cliente: apenas seus próprios agendamentos (com ownerId)
+      allow read: if !('ownerId' in resource.data) ||
+                     isAdmin() ||
+                     isOwner(resource.data.ownerId);
 
-      // Qualquer pessoa pode criar um novo agendamento
-      allow create: if true;
+      // Criação:
+      // - Admin: pode criar sem ownerId ou com qualquer ownerId
+      // - Cliente autenticado: pode criar com seu próprio ownerId
+      // - Público: pode criar agendamentos do admin (sem ownerId)
+      allow create: if !('ownerId' in request.resource.data) ||
+                       isAdmin() ||
+                       (isAuthenticated() && request.resource.data.ownerId == request.auth.uid);
 
-      // Apenas admin pode atualizar status e deletar
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // Atualização:
+      // - Admin: pode atualizar tudo
+      // - Cliente: apenas seus próprios agendamentos
+      allow update: if isAdmin() ||
+                       ('ownerId' in resource.data && isOwner(resource.data.ownerId));
+
+      // Deleção:
+      // - Admin: pode deletar tudo
+      // - Cliente: apenas seus próprios agendamentos
+      allow delete: if isAdmin() ||
+                       ('ownerId' in resource.data && isOwner(resource.data.ownerId));
     }
 
     // Regras para dias bloqueados (blocked_dates)
     match /blocked_dates/{dateId} {
-      // Qualquer pessoa pode ler (para ver dias indisponíveis)
-      allow read: if true;
+      // Leitura:
+      // - Público: datas bloqueadas sem ownerId (do admin)
+      // - Admin: pode ler tudo
+      // - Cliente: apenas seus próprios bloqueios
+      allow read: if !('ownerId' in resource.data) ||
+                     isAdmin() ||
+                     isOwner(resource.data.ownerId);
 
-      // Apenas admin pode criar e deletar datas bloqueadas
-      allow create, delete: if isAdmin();
+      // Criação:
+      // - Admin: pode criar sem ownerId ou com qualquer ownerId
+      // - Cliente autenticado: pode criar com seu próprio ownerId
+      allow create: if isAdmin() ||
+                       (isAuthenticated() &&
+                        'ownerId' in request.resource.data &&
+                        request.resource.data.ownerId == request.auth.uid);
+
+      // Deleção:
+      // - Admin: pode deletar tudo
+      // - Cliente: apenas seus próprios bloqueios
+      allow delete: if isAdmin() ||
+                       ('ownerId' in resource.data && isOwner(resource.data.ownerId));
     }
 
     // Regras para configurações do sistema (opcional - caso adicione no futuro)

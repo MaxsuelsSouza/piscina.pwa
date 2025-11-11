@@ -12,12 +12,14 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ProtectedRouteProps {
   children: ReactNode;
   requireAdmin?: boolean;
+  blockAdmin?: boolean; // Bloqueia admin (rota exclusiva para clientes)
   fallback?: ReactNode;
 }
 
 export function ProtectedRoute({
   children,
   requireAdmin = false,
+  blockAdmin = false,
   fallback
 }: ProtectedRouteProps) {
   const router = useRouter();
@@ -38,6 +40,15 @@ export function ProtectedRoute({
       return;
     }
 
+    // Se bloqueia admin e usuário É admin (rota exclusiva para clientes)
+    if (blockAdmin && isAdmin) {
+      if (!hasRedirected) {
+        setHasRedirected(true);
+        router.replace('/admin/painel');
+      }
+      return;
+    }
+
     // Se requer admin mas usuário não é admin
     if (requireAdmin && !isAdmin) {
       if (!hasRedirected) {
@@ -49,7 +60,7 @@ export function ProtectedRoute({
 
     // Usuário autorizado
     setIsAuthorized(true);
-  }, [user, isAdmin, loading, requireAdmin, router, hasRedirected]);
+  }, [user, isAdmin, loading, requireAdmin, blockAdmin, router, hasRedirected]);
 
   // Mostra loading enquanto verifica
   if (loading) {

@@ -19,7 +19,7 @@ import type { BlockedDate } from '@/app/(home)/_types/booking';
 const BLOCKED_DATES_COLLECTION = 'blockedDates';
 
 /**
- * Cria um novo dia bloqueado
+ * Cria um novo dia bloqueado (sem owner - usado pelo admin)
  */
 export async function blockDate(date: string): Promise<string> {
   try {
@@ -32,6 +32,41 @@ export async function blockDate(date: string): Promise<string> {
     return docRef.id;
   } catch (error) {
     console.error('Erro ao bloquear data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Cria um novo dia bloqueado com ownerId (usado por clientes)
+ */
+export async function createBlockedDate(date: string, ownerId: string): Promise<BlockedDate> {
+  try {
+    const newBlockedDate: Omit<BlockedDate, 'id'> = {
+      date,
+      createdAt: new Date().toISOString(),
+      ownerId,
+    };
+
+    const docRef = await addDoc(collection(db, BLOCKED_DATES_COLLECTION), newBlockedDate);
+
+    return {
+      id: docRef.id,
+      ...newBlockedDate,
+    };
+  } catch (error) {
+    console.error('Erro ao criar data bloqueada:', error);
+    throw error;
+  }
+}
+
+/**
+ * Deleta um bloqueio pelo ID
+ */
+export async function deleteBlockedDate(id: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, BLOCKED_DATES_COLLECTION, id));
+  } catch (error) {
+    console.error('Erro ao deletar data bloqueada:', error);
     throw error;
   }
 }

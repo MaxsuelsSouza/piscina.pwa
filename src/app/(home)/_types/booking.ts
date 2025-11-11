@@ -15,6 +15,7 @@ export interface Booking {
   createdAt: string;
   expiresAt?: string; // Flag temporário: se status=pending e expiresAt passou, libera o dia
   expirationNotificationSent?: boolean; // Controla se já enviou notificação de expiração
+  ownerId?: string; // UID do cliente que gerencia este agendamento (opcional para retrocompatibilidade)
 }
 
 export type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'full-day';
@@ -32,4 +33,5 @@ export interface BlockedDate {
   id: string;
   date: string; // formato: YYYY-MM-DD
   createdAt: string;
+  ownerId?: string; // UID do cliente que gerencia este bloqueio (opcional para retrocompatibilidade)
 }

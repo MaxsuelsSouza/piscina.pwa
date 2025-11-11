@@ -15,7 +15,7 @@ import { rateLimiter, RATE_LIMIT_CONFIGS, formatBlockedTime } from '@/lib/securi
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: authLoading, login } = useAuth();
+  const { user, userData, loading: authLoading, login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,12 +25,28 @@ function LoginForm() {
 
   // Redireciona se já estiver autenticado
   useEffect(() => {
-    if (user && !authLoading) {
-      // Usa o parâmetro redirect da URL, ou vai para /admin por padrão
-      const redirectTo = searchParams.get('redirect') || '/admin';
-      router.push(redirectTo);
+    if (user && !authLoading && userData) {
+      // Verifica se precisa trocar senha
+      if (userData.mustChangePassword) {
+        router.push('/change-password');
+        return;
+      }
+
+      // Usa o parâmetro redirect da URL se existir
+      const redirectParam = searchParams.get('redirect');
+
+      if (redirectParam) {
+        router.push(redirectParam);
+      } else {
+        // Admin vai para painel admin, clientes vão para /admin
+        if (userData.role === 'admin') {
+          router.push('/admin/painel');
+        } else {
+          router.push('/admin');
+        }
+      }
     }
-  }, [user, authLoading, router, searchParams]);
+  }, [user, userData, authLoading, router, searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

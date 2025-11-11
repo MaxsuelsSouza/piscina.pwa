@@ -8,9 +8,12 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { isAdmin as checkIsAdmin } from '@/config/admin';
+import { getUserByUid } from '@/lib/firebase/firestore/users';
+import type { AppUser } from '@/types/user';
 
 interface AuthContextType {
   user: User | null | undefined;
+  userData: AppUser | null;
   isAdmin: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -21,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [userData, setUserData] = useState<AppUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
           // Verifica se a sessão tem mais de 24 horas
           const loginTime = localStorage.getItem('auth_login_time');
@@ -46,14 +50,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             signOut(auth);
             localStorage.removeItem('auth_login_time');
             setUser(null);
+            setUserData(null);
             setIsAdmin(false);
             setLoading(false);
             return;
           }
+
+          // Busca dados do usuário no Firestore
+          try {
+            const userDataFromFirestore = await getUserByUid(currentUser.uid);
+            setUserData(userDataFromFirestore);
+
+            // Usa o role do Firestore se disponível, caso contrário usa a verificação por UID
+            const adminStatus = userDataFromFirestore?.role === 'admin' || checkIsAdmin(currentUser.uid);
+            setIsAdmin(adminStatus);
+          } catch (error) {
+            console.error('Erro ao buscar dados do usuário:', error);
+            // Fallback para verificação por UID
+            setIsAdmin(checkIsAdmin(currentUser.uid));
+          }
+        } else {
+          setUserData(null);
+          setIsAdmin(false);
         }
 
         setUser(currentUser);
-        setIsAdmin(checkIsAdmin(currentUser?.uid));
         setLoading(false);
       });
 
@@ -93,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, userData, isAdmin, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,14 +10,21 @@
     "type-check": "tsc --noEmit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "chromatic": "chromatic --exit-zero-on-changes"
+    "chromatic": "chromatic --exit-zero-on-changes",
+    "clean": "rm -rf .next out .turbo storybook-static",
+    "clean:cache": "npm cache clean --force",
+    "clean:all": "rm -rf .next out .turbo storybook-static node_modules package-lock.json",
+    "clean:reinstall": "npm run clean:all && npm install",
+    "fresh": "npm run clean && npm run dev"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.8",
     "@hookform/resolvers": "^3.9.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
     "firebase": "^11.0.1",
+    "firebase-admin": "^13.6.0",
     "lucide-react": "^0.446.0",
     "next": "14.2.18",
     "next-auth": "^5.0.0-beta.25",

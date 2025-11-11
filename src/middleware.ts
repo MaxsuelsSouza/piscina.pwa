@@ -12,7 +12,7 @@ import type { NextRequest } from 'next/server';
 // Lista de UIDs de administradores (mesmo que src/config/admin.ts)
 const ADMIN_UIDS = ['X7aWBsKSpkTQr25mAigi9DkGULG3'];
 
-// Rotas protegidas que requerem autenticação de admin
+// Rotas protegidas que requerem autenticação (admin ou cliente)
 const PROTECTED_ROUTES = ['/admin'];
 
 // Rotas de autenticação
@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
   }
 
   /**
-   * PROTEÇÃO SERVER-SIDE DE ROTAS ADMINISTRATIVAS
+   * PROTEÇÃO SERVER-SIDE DE ROTAS PROTEGIDAS
    *
    * NOTA IMPORTANTE: Firebase Auth usa tokens no localStorage/IndexedDB,
    * não cookies HTTP. Por isso, não podemos validar autenticação no middleware.
@@ -39,6 +39,7 @@ export async function middleware(request: NextRequest) {
    * SOLUÇÃO ATUAL:
    * - Middleware adiciona apenas headers de segurança
    * - Proteção real via ProtectedRoute (client-side) + Firestore Rules (server-side)
+   * - Rotas protegidas: /admin (admin), /cliente (clientes)
    *
    * SOLUÇÃO FUTURA:
    * - Implementar Firebase session cookies para validação server-side completa

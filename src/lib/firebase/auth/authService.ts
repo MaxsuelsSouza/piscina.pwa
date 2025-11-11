@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   type User,
   type UserCredential,
 } from 'firebase/auth';
@@ -75,5 +76,20 @@ export async function isAdmin(): Promise<boolean> {
   } catch (error) {
     console.error('Erro ao verificar admin:', error);
     return false;
+  }
+}
+
+/**
+ * Envia email de redefinição de senha
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  try {
+    await sendPasswordResetEmail(auth, email, {
+      url: `${window.location.origin}/login`,
+      handleCodeInApp: false,
+    });
+  } catch (error) {
+    console.error('Erro ao enviar email de redefinição:', error);
+    throw error;
   }
 }
