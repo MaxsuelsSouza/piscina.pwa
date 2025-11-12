@@ -235,18 +235,43 @@ function AdminPageContent() {
                 <div className="mt-4">
                   {/* Se link já foi revelado OU perfil >= 80%, mostra o link permanentemente */}
                   {userData.linkRevealed || profileCompleteness.percentage >= 80 ? (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        <span className="text-sm text-white/90 font-light">
-                          {typeof window !== 'undefined' ? `${window.location.origin}/agendamento/${userData.publicSlug}` : ''}
-                        </span>
+                    <>
+                      {/* Versão Desktop (>1024px) - URL completa + botão copiar */}
+                      <div className="hidden lg:flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                          <span className="text-sm text-white/90 font-light">
+                            {typeof window !== 'undefined' ? `${window.location.origin}/agendamento/${userData.publicSlug}` : ''}
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleCopyLink}
+                          className="px-4 py-2 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-xl text-white hover:bg-blue-500/30 transition-all text-sm font-light flex items-center gap-2"
+                        >
+                          {linkCopied ? (
+                            <>
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Copiado!
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              Copiar Link
+                            </>
+                          )}
+                        </button>
                       </div>
+
+                      {/* Versão Mobile/Tablet (<1024px) - Apenas botão "Link de agendamento" */}
                       <button
                         onClick={handleCopyLink}
-                        className="px-4 py-2 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-xl text-white hover:bg-blue-500/30 transition-all text-sm font-light flex items-center gap-2"
+                        className="flex lg:hidden items-center gap-2 px-4 py-2 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-xl text-white hover:bg-blue-500/30 transition-all text-sm font-light"
                       >
                         {linkCopied ? (
                           <>
@@ -258,13 +283,13 @@ function AdminPageContent() {
                         ) : (
                           <>
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                             </svg>
-                            Copiar Link
+                            Link de Agendamento
                           </>
                         )}
                       </button>
-                    </div>
+                    </>
                   ) : (
                     /* Botão "Gerar Link Público" - aparece quando ainda não revelou E < 80% */
                     <button
@@ -283,10 +308,10 @@ function AdminPageContent() {
                 </div>
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 md:gap-3">
               <button
                 onClick={() => router.push('/perfil')}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
+                className="flex items-center gap-2 px-2.5 md:px-5 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
               >
                 <svg
                   className="w-4 h-4"
@@ -301,13 +326,26 @@ function AdminPageContent() {
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   />
                 </svg>
-                Perfil
+                <span className="hidden md:inline">Perfil</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="px-6 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
+                className="flex items-center gap-2 px-2.5 md:px-6 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
               >
-                Sair
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                <span className="hidden md:inline">Sair</span>
               </button>
             </div>
           </div>
