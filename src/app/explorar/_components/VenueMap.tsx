@@ -4,15 +4,18 @@
 
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Venue } from '../_types';
+import { MapVenueCard } from './MapVenueCard';
 
 interface VenueMapProps {
   selectedVenue: Venue | null;
+  userLocation?: { latitude: number; longitude: number } | null;
 }
 
-export function VenueMap({ selectedVenue }: VenueMapProps) {
+export function VenueMap({ selectedVenue, userLocation }: VenueMapProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [showCard, setShowCard] = useState(false);
 
   useEffect(() => {
     if (iframeRef.current && selectedVenue) {
@@ -41,10 +44,21 @@ export function VenueMap({ selectedVenue }: VenueMapProps) {
       // Atualiza o src do iframe
       const encodedQuery = encodeURIComponent(searchQuery);
       iframeRef.current.src = `https://maps.google.com/maps?q=${encodedQuery}&output=embed&z=15`;
-    }
-  }, [selectedVenue]);
 
-  if (!selectedVenue) {
+      // Mostra o card
+      setShowCard(true);
+    } else if (iframeRef.current && userLocation) {
+      // Se não tiver venue mas tiver localização do usuário, mostra o mapa na localização
+      const searchQuery = `${userLocation.latitude},${userLocation.longitude}`;
+      const encodedQuery = encodeURIComponent(searchQuery);
+      iframeRef.current.src = `https://maps.google.com/maps?q=${encodedQuery}&output=embed&z=13`;
+      setShowCard(false);
+    } else {
+      setShowCard(false);
+    }
+  }, [selectedVenue, userLocation]);
+
+  if (!selectedVenue && !userLocation) {
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center px-4">
@@ -79,6 +93,14 @@ export function VenueMap({ selectedVenue }: VenueMapProps) {
         allowFullScreen
         referrerPolicy="no-referrer-when-downgrade"
       />
+
+      {/* Card flutuante sobre o mapa */}
+      {selectedVenue && showCard && (
+        <MapVenueCard
+          venue={selectedVenue}
+          onClose={() => setShowCard(false)}
+        />
+      )}
     </div>
   );
 }

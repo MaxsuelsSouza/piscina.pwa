@@ -31,22 +31,24 @@ export async function createUserDocument(
     ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     : undefined;
 
-  const userData: UserDocument = {
+  const userData: any = {
     uid,
     email,
-    displayName,
-    businessName,
     role,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     isActive: true,
-    createdBy,
-    publicSlug,
-    subscriptionDueDate,
     mustChangePassword: true, // Força troca de senha no primeiro login
-    location,
-    venueInfo,
   };
+
+  // Adiciona campos opcionais apenas se tiverem valor
+  if (displayName) userData.displayName = displayName;
+  if (businessName) userData.businessName = businessName;
+  if (createdBy) userData.createdBy = createdBy;
+  if (publicSlug) userData.publicSlug = publicSlug;
+  if (subscriptionDueDate) userData.subscriptionDueDate = subscriptionDueDate;
+  if (location) userData.location = location;
+  if (venueInfo) userData.venueInfo = venueInfo;
 
   await userRef.set(userData);
 }
@@ -206,16 +208,17 @@ export async function updateUser(
     const db = adminDb();
     const userRef = db.collection(USERS_COLLECTION).doc(uid);
 
-    const updateData: Partial<UserDocument> = {
+    const updateData: any = {
       ...data,
       updatedAt: new Date().toISOString(),
     };
 
-    if (data.createdAt) {
-      delete (updateData as any).createdAt;
+    // Converte subscriptionDueDate de Date para string ISO se for Date
+    if (updateData.subscriptionDueDate && updateData.subscriptionDueDate instanceof Date) {
+      updateData.subscriptionDueDate = updateData.subscriptionDueDate.toISOString();
     }
 
-    await userRef.update(updateData as any);
+    await userRef.update(updateData);
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
     throw error;

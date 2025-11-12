@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
    * SOLUÇÃO ATUAL:
    * - Middleware adiciona apenas headers de segurança
    * - Proteção real via ProtectedRoute (client-side) + Firestore Rules (server-side)
-   * - Rotas protegidas: /admin (admin), /cliente (clientes)
+   * - Rotas protegidas: /admin (clientes), /admin/painel (admin)
    *
    * SOLUÇÃO FUTURA:
    * - Implementar Firebase session cookies para validação server-side completa

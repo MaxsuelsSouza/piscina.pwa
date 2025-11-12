@@ -1,0 +1,180 @@
+/**
+ * Hook customizado para gerenciar o formulário de perfil
+ */
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { updateUserProfile } from '@/lib/firebase/firestore/users';
+import { ProfileFormData, initialFormData } from '../_types';
+
+export function useProfileForm() {
+  const router = useRouter();
+  const { user, userData, loading: authLoading, isAdmin } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [formData, setFormData] = useState<ProfileFormData>(initialFormData);
+
+  // Carrega os dados do usuário quando disponível
+  useEffect(() => {
+    if (userData) {
+      setFormData({
+        displayName: userData.displayName || '',
+        businessName: userData.businessName || '',
+        street: userData.location?.street || '',
+        number: userData.location?.number || '',
+        neighborhood: userData.location?.neighborhood || '',
+        city: userData.location?.city || '',
+        state: userData.location?.state || '',
+        zipCode: userData.location?.zipCode || '',
+        phone: userData.venueInfo?.phone || '',
+        capacity: userData.venueInfo?.capacity?.toString() || '',
+        description: userData.venueInfo?.description || '',
+        instagram: userData.venueInfo?.instagram || '',
+        facebook: userData.venueInfo?.facebook || '',
+        amenities: {
+          pool: userData.venueInfo?.amenities?.pool || false,
+          grill: userData.venueInfo?.amenities?.grill || false,
+          sound: userData.venueInfo?.amenities?.sound || false,
+          wifi: userData.venueInfo?.amenities?.wifi || false,
+          airConditioning: userData.venueInfo?.amenities?.airConditioning || false,
+          kitchen: userData.venueInfo?.amenities?.kitchen || false,
+          parking: userData.venueInfo?.amenities?.parking || false,
+          coveredArea: userData.venueInfo?.amenities?.coveredArea || false,
+          outdoorArea: userData.venueInfo?.amenities?.outdoorArea || false,
+          bathroom: userData.venueInfo?.amenities?.bathroom || false,
+          furniture: userData.venueInfo?.amenities?.furniture || false,
+        },
+      });
+    }
+  }, [userData]);
+
+  // Redireciona se não estiver autenticado
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleAmenityChange = (amenity: string) => {
+    setFormData({
+      ...formData,
+      amenities: {
+        ...formData.amenities,
+        [amenity]: !formData.amenities[amenity as keyof typeof formData.amenities],
+      },
+    });
+  };
+
+  // Busca endereço pelo CEP
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cep = e.target.value.replace(/\D/g, '');
+
+    setFormData({
+      ...formData,
+      zipCode: e.target.value,
+    });
+
+    if (cep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+
+        if (!data.erro) {
+          setFormData({
+            ...formData,
+            zipCode: e.target.value,
+            street: data.logradouro || formData.street,
+            neighborhood: data.bairro || formData.neighborhood,
+            city: data.localidade || formData.city,
+            state: data.uf || formData.state,
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP:', error);
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!user?.uid) {
+      setError('Usuário não autenticado');
+      return;
+    }
+
+    if (!formData.businessName.trim()) {
+      setError('Nome do estabelecimento é obrigatório');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await updateUserProfile(user.uid, {
+        displayName: formData.displayName.trim(),
+        businessName: formData.businessName.trim(),
+        location: {
+          street: formData.street.trim(),
+          number: formData.number.trim(),
+          neighborhood: formData.neighborhood.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim(),
+          zipCode: formData.zipCode.trim(),
+        },
+        venueInfo: {
+          phone: formData.phone.trim(),
+          capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+          description: formData.description.trim(),
+          instagram: formData.instagram.trim(),
+          facebook: formData.facebook.trim(),
+          amenities: formData.amenities,
+        },
+      });
+
+      setSuccess('Perfil atualizado com sucesso!');
+
+      setTimeout(() => {
+        if (isAdmin) {
+          router.push('/admin/painel');
+        } else {
+          router.push('/admin');
+        }
+      }, 1500);
+    } catch (err: any) {
+      console.error('Erro ao atualizar perfil:', err);
+      setError('Erro ao atualizar perfil. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    router.push('/admin');
+  };
+
+  return {
+    formData,
+    loading,
+    error,
+    success,
+    authLoading,
+    userData,
+    handleChange,
+    handleAmenityChange,
+    handleCepChange,
+    handleSubmit,
+    handleCancel,
+  };
+}

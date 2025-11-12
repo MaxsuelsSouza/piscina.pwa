@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
       emailVerified: false,
     });
 
-    // Gera slug público único (apenas para clientes)
-    const publicSlug = role === 'client' ? generateSlug(displayName, email) : undefined;
+    // Gera slug público único (apenas para clientes) usando o nome do estabelecimento
+    const publicSlug = role === 'client' ? generateSlug(displayName, email, businessName) : undefined;
 
     // Cria o documento do usuário no Firestore
     await createUserDocument(

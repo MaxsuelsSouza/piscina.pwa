@@ -68,14 +68,11 @@ export default function ChangePasswordPage() {
         return;
       }
 
-      // Sucesso - redireciona baseado no role
-      alert('Senha alterada com sucesso!');
+      // Sucesso - redireciona para perfil para completar cadastro
+      alert('Senha alterada com sucesso! Complete seu perfil para continuar.');
 
-      if (userData?.role === 'admin') {
-        router.push('/admin/painel');
-      } else {
-        router.push('/admin');
-      }
+      // Redireciona para página de perfil para completar os dados
+      router.push('/perfil');
     } catch (err: any) {
       console.error('Erro ao trocar senha:', err);
       setError('Erro ao trocar senha. Tente novamente.');

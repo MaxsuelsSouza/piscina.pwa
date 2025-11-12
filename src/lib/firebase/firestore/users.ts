@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config';
 import type { AppUser, UserDocument } from '@/types/user';
-import { userDocumentToAppUser, appUserToUserDocument } from '@/types/user';
+import { userDocumentToAppUser, appUserToUserDocument, generateSlug } from '@/types/user';
 
 const USERS_COLLECTION = 'users';
 
@@ -137,16 +137,36 @@ export async function updateUser(
   try {
     const userRef = doc(db, USERS_COLLECTION, uid);
 
-    const updateData: Partial<UserDocument> = {
+    // Busca o usuário atual para verificar se o businessName mudou
+    const currentUserSnap = await getDoc(userRef);
+    const currentUser = currentUserSnap.exists() ? currentUserSnap.data() as UserDocument : null;
+
+    const updateData: any = {
       ...data,
       updatedAt: new Date().toISOString(),
     };
 
-    if (data.createdAt) {
-      delete (updateData as any).createdAt;
+    // Regenera o publicSlug se o businessName mudou e o usuário for cliente
+    if (
+      currentUser &&
+      currentUser.role === 'client' &&
+      data.businessName &&
+      data.businessName !== currentUser.businessName
+    ) {
+      const newSlug = generateSlug(
+        data.displayName || currentUser.displayName,
+        currentUser.email,
+        data.businessName
+      );
+      updateData.publicSlug = newSlug;
     }
 
-    await updateDoc(userRef, updateData as any);
+    // Converte subscriptionDueDate de Date para string ISO se for Date
+    if (updateData.subscriptionDueDate && updateData.subscriptionDueDate instanceof Date) {
+      updateData.subscriptionDueDate = updateData.subscriptionDueDate.toISOString();
+    }
+
+    await updateDoc(userRef, updateData);
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
     throw error;
@@ -190,3 +210,7 @@ export async function deleteUserDocument(uid: string): Promise<void> {
     throw error;
   }
 }
+
+// Aliases for compatibility
+export const getUserById = getUserByUid;
+export const updateUserProfile = updateUser;

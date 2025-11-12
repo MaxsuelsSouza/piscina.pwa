@@ -11,11 +11,13 @@ interface BookingDetailsModalProps {
   booking: Booking | null;
   onClose: () => void;
   onCancel?: (id: string) => Promise<void>;
+  onConfirm?: (id: string) => Promise<void>;
+  isAdmin?: boolean;
 }
 
 const PRICE_PER_DAY = 400;
 
-export function BookingDetailsModal({ booking, onClose, onCancel }: BookingDetailsModalProps) {
+export function BookingDetailsModal({ booking, onClose, onCancel, onConfirm, isAdmin }: BookingDetailsModalProps) {
   if (!booking) return null;
 
   const formatDate = (dateStr: string) => {
@@ -54,6 +56,13 @@ export function BookingDetailsModal({ booking, onClose, onCancel }: BookingDetai
   const handleCancel = () => {
     if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
       onCancel?.(booking.id);
+      onClose();
+    }
+  };
+
+  const handleConfirm = () => {
+    if (confirm('Confirmar este agendamento?')) {
+      onConfirm?.(booking.id);
       onClose();
     }
   };
@@ -211,12 +220,20 @@ export function BookingDetailsModal({ booking, onClose, onCancel }: BookingDetai
                 </svg>
                 WhatsApp
               </button>
+              {booking.status === 'pending' && isAdmin && onConfirm && (
+                <button
+                  onClick={handleConfirm}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Confirmar
+                </button>
+              )}
               {booking.status === 'pending' && onCancel && (
                 <button
                   onClick={handleCancel}
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                 >
-                  Cancelar Agendamento
+                  Cancelar
                 </button>
               )}
             </div>

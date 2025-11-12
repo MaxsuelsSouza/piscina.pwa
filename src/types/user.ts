@@ -21,12 +21,32 @@ export interface VenueLocation {
 }
 
 /**
+ * Amenidades disponíveis no espaço
+ */
+export interface VenueAmenities {
+  pool?: boolean; // Piscina
+  grill?: boolean; // Churrasqueira
+  sound?: boolean; // Som/Música
+  wifi?: boolean; // Wi-Fi
+  airConditioning?: boolean; // Ar condicionado
+  kitchen?: boolean; // Cozinha equipada
+  parking?: boolean; // Estacionamento
+  coveredArea?: boolean; // Área coberta
+  outdoorArea?: boolean; // Área ao ar livre
+  bathroom?: boolean; // Banheiro
+  furniture?: boolean; // Mesas e cadeiras
+}
+
+/**
  * Informações do espaço/estabelecimento
  */
 export interface VenueInfo {
   description?: string; // Descrição do espaço
   capacity?: number; // Capacidade máxima de pessoas
   phone?: string; // Telefone/WhatsApp
+  instagram?: string; // Instagram do espaço
+  facebook?: string; // Facebook do espaço
+  amenities?: VenueAmenities; // Amenidades disponíveis
 }
 
 export interface AppUser {
@@ -40,6 +60,7 @@ export interface AppUser {
   isActive: boolean;
   createdBy?: string; // UID do admin que criou este usuário
   publicSlug?: string; // Slug único para URL pública (ex: "joao-silva")
+  linkRevealed?: boolean; // Flag que indica se o link público já foi revelado ao usuário (>= 80%)
   subscriptionDueDate?: Date; // Data de vencimento da assinatura
   mustChangePassword?: boolean; // Força troca de senha no primeiro login
 
@@ -71,6 +92,7 @@ export interface UserDocument {
   isActive: boolean;
   createdBy?: string;
   publicSlug?: string; // Slug único para URL pública
+  linkRevealed?: boolean; // Flag que indica se o link público já foi revelado ao usuário (>= 80%)
   subscriptionDueDate?: string; // Data de vencimento da assinatura (ISO string)
   mustChangePassword?: boolean; // Força troca de senha no primeiro login
 
@@ -154,10 +176,16 @@ export function appUserToUserDocument(user: AppUser): UserDocument {
 }
 
 /**
- * Gera um slug único a partir do nome ou email
+ * Gera um slug único a partir do nome do estabelecimento, nome da pessoa ou email
+ * Prioridade: businessName > displayName > email
  */
-export function generateSlug(displayName: string | undefined, email: string): string {
-  const base = displayName || email.split('@')[0];
+export function generateSlug(
+  displayName: string | undefined,
+  email: string,
+  businessName?: string | undefined
+): string {
+  // Prioriza o nome do estabelecimento
+  const base = businessName || displayName || email.split('@')[0];
 
   // Remove acentos e caracteres especiais
   const slug = base
