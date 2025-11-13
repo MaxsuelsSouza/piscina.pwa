@@ -75,7 +75,7 @@ export function AdminStats({
             Receita
           </h3>
         </div>
-        <p className="text-xl sm:text-3xl font-light text-purple-600">
+        <p className="text-lg sm:text-3xl font-light text-purple-600 whitespace-nowrap overflow-hidden text-ellipsis">
           R$ {monthlyRevenue.toLocaleString('pt-BR')}
         </p>
         <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2 font-light">Confirmados × R$ 400</p>

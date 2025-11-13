@@ -303,7 +303,7 @@ function PainelAdminContent() {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">
+            <p className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
               {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </p>
             <p className="text-sm text-gray-600">Receita Total</p>

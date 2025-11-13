@@ -11,6 +11,7 @@ interface ProfileFormProps {
   loading: boolean;
   error: string | null;
   success: string | null;
+  hasChanges: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   onCepChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -23,6 +24,7 @@ export function ProfileForm({
   loading,
   error,
   success,
+  hasChanges,
   onSubmit,
   onChange,
   onCepChange,
@@ -436,7 +438,7 @@ export function ProfileForm({
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !hasChanges}
             className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Salvando...' : 'Salvar Alterações'}

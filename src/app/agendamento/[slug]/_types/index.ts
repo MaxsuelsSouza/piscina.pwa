@@ -14,6 +14,7 @@ export interface ClientInfo {
   displayName?: string;
   businessName?: string; // Nome do estabelecimento
   publicSlug?: string;
+  phone?: string; // Telefone/WhatsApp do cliente
 }
 
 /**

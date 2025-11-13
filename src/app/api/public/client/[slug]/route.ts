@@ -48,6 +48,7 @@ export async function GET(
         displayName: client.displayName,
         businessName: client.businessName,
         publicSlug: client.publicSlug,
+        phone: client.phone,
       },
     });
   } catch (error: any) {

@@ -128,9 +128,58 @@ export function usePublicBooking(slug: string) {
       const response = await createPublicBooking(slug, selectedDate, formData);
 
       if (response.success) {
-        alert(
-          'Agendamento realizado com sucesso! O proprietário entrará em contato para confirmar.'
+        // Formata a data para exibição
+        const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR');
+
+        // Nome do estabelecimento ou do cliente
+        const businessName = client.businessName || client.displayName || 'o estabelecimento';
+
+        // Cria mensagem para WhatsApp
+        const message = encodeURIComponent(
+          `🎉 *NOVO AGENDAMENTO - ${businessName.toUpperCase()}*\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n` +
+          `📅 *Data:* ${formattedDate}\n` +
+          `⏰ *Período:* Dia Inteiro (08:00 - 22:00)\n` +
+          `👤 *Nome:* ${formData.customerName}\n` +
+          `📱 *Telefone:* ${formData.customerPhone}\n` +
+          `👥 *Quantidade:* ${formData.numberOfPeople} ${formData.numberOfPeople === 1 ? 'pessoa' : 'pessoas'}\n` +
+          `💰 *Valor:* R$ 400,00\n` +
+          `${formData.notes ? `📝 *Observações:* ${formData.notes}\n` : ''}` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⚠️ *Status:* PENDENTE\n\n` +
+          `Por favor, envie:\n` +
+          `✅ Dados para pagamento (PIX/Transferência)\n` +
+          `✅ Comprovante após realizar o pagamento\n\n` +
+          `Aguardo retorno para confirmação! 😊`
         );
+
+        // Usa o telefone do dono do estabelecimento (cliente)
+        // Se o cliente não tiver telefone, usa o número do admin/sistema
+        // Remove todos os caracteres não numéricos
+        const clientPhone = client.phone?.replace(/\D/g, '') || '';
+        const adminPhone = '5581997339707'; // WhatsApp do admin/sistema
+        const whatsappNumber = clientPhone || adminPhone;
+
+        console.log('🔍 Debug WhatsApp:', {
+          clientPhone: client.phone,
+          clientPhoneCleaned: clientPhone,
+          usingAdminPhone: !clientPhone,
+          whatsappNumber,
+          message: message.substring(0, 50) + '...'
+        });
+
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
+        console.log('📱 Abrindo WhatsApp:', whatsappUrl);
+
+        // Tenta abrir em uma nova aba
+        const newWindow = window.open(whatsappUrl, '_blank');
+
+        if (!newWindow) {
+          console.error('❌ Popup bloqueado! Tentando abrir na mesma aba...');
+          window.location.href = whatsappUrl;
+        }
+
+        // Fecha o formulário e limpa a seleção
         setShowForm(false);
         setSelectedDate('');
       } else {

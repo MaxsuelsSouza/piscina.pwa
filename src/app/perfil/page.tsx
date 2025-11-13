@@ -19,6 +19,7 @@ export default function PerfilPage() {
     success,
     authLoading,
     userData,
+    hasChanges,
     handleChange,
     handleAmenityChange,
     handleCepChange,
@@ -67,6 +68,7 @@ export default function PerfilPage() {
           loading={loading}
           error={error}
           success={success}
+          hasChanges={hasChanges}
           onSubmit={handleSubmit}
           onChange={handleChange}
           onCepChange={handleCepChange}

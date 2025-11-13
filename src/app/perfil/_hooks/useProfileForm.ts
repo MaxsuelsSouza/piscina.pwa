@@ -2,7 +2,7 @@
  * Hook customizado para gerenciar o formulário de perfil
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile } from '@/lib/firebase/firestore/users';
@@ -15,11 +15,12 @@ export function useProfileForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState<ProfileFormData>(initialFormData);
+  const [initialData, setInitialData] = useState<ProfileFormData>(initialFormData);
 
   // Carrega os dados do usuário quando disponível
   useEffect(() => {
     if (userData) {
-      setFormData({
+      const loadedData = {
         displayName: userData.displayName || '',
         businessName: userData.businessName || '',
         street: userData.location?.street || '',
@@ -46,7 +47,9 @@ export function useProfileForm() {
           bathroom: userData.venueInfo?.amenities?.bathroom || false,
           furniture: userData.venueInfo?.amenities?.furniture || false,
         },
-      });
+      };
+      setFormData(loadedData);
+      setInitialData(loadedData);
     }
   }, [userData]);
 
@@ -56,6 +59,32 @@ export function useProfileForm() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  // Verifica se há mudanças no formulário
+  const hasChanges = useMemo(() => {
+    // Compara os campos básicos
+    if (formData.displayName !== initialData.displayName) return true;
+    if (formData.businessName !== initialData.businessName) return true;
+    if (formData.street !== initialData.street) return true;
+    if (formData.number !== initialData.number) return true;
+    if (formData.neighborhood !== initialData.neighborhood) return true;
+    if (formData.city !== initialData.city) return true;
+    if (formData.state !== initialData.state) return true;
+    if (formData.zipCode !== initialData.zipCode) return true;
+    if (formData.phone !== initialData.phone) return true;
+    if (formData.capacity !== initialData.capacity) return true;
+    if (formData.description !== initialData.description) return true;
+    if (formData.instagram !== initialData.instagram) return true;
+    if (formData.facebook !== initialData.facebook) return true;
+
+    // Compara amenidades
+    const amenitiesKeys = Object.keys(formData.amenities) as Array<keyof typeof formData.amenities>;
+    for (const key of amenitiesKeys) {
+      if (formData.amenities[key] !== initialData.amenities[key]) return true;
+    }
+
+    return false;
+  }, [formData, initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -171,6 +200,7 @@ export function useProfileForm() {
     success,
     authLoading,
     userData,
+    hasChanges,
     handleChange,
     handleAmenityChange,
     handleCepChange,
