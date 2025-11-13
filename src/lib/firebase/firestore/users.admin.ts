@@ -101,15 +101,21 @@ export async function getUserBySlug(slug: string): Promise<AppUser | null> {
   try {
     const db = adminDb();
     const usersRef = db.collection(USERS_COLLECTION);
-    const querySnapshot = await usersRef.where('publicSlug', '==', slug).get();
+
+    // Normaliza o slug para busca (lowercase)
+    const normalizedSlug = slug.toLowerCase().trim();
+
+    const querySnapshot = await usersRef.where('publicSlug', '==', normalizedSlug).get();
 
     if (querySnapshot.empty) {
       return null;
     }
 
     const userDoc = querySnapshot.docs[0];
-    return userDocumentToAppUser(userDoc.data() as UserDocument);
-  } catch (error) {
+    const userData = userDoc.data() as UserDocument;
+
+    return userDocumentToAppUser(userData);
+  } catch (error: any) {
     console.error('Erro ao buscar usuário por slug:', error);
     throw error;
   }

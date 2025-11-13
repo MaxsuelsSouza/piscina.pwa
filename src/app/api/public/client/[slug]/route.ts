@@ -19,8 +19,11 @@ export async function GET(
       );
     }
 
+    // Normaliza o slug (lowercase, trim)
+    const normalizedSlug = slug.toLowerCase().trim();
+
     // Busca o cliente pelo slug
-    const client = await getUserBySlug(slug);
+    const client = await getUserBySlug(normalizedSlug);
 
     if (!client) {
       return NextResponse.json(
