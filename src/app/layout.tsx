@@ -3,7 +3,9 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ConfirmProvider } from "@/contexts/ConfirmContext";
 import { PWAInstallControl } from "@/components/PWAInstallControl";
+import { ToastContainer } from "@/components/Toast";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -56,8 +58,11 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${inter.variable} ${poppins.variable} font-sans`}>
         <AuthProvider>
-          <PWAInstallControl />
-          {children}
+          <ConfirmProvider>
+            <PWAInstallControl />
+            <ToastContainer />
+            {children}
+          </ConfirmProvider>
         </AuthProvider>
       </body>
     </html>

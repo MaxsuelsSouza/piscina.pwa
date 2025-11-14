@@ -8,15 +8,19 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/contexts/ConfirmContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAdminData } from '../_hooks/useAdminData';
 import { calculateMonthlyStats } from '../_utils/calculations';
 import { toggleUserStatus, listUsers, updateSubscriptionDueDate } from '@/services/users.service';
 import type { AppUser } from '@/types/user';
+import { useToast } from '@/hooks/useToast';
 
 function PainelAdminContent() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { confirm } = useConfirm();
+  const toast = useToast();
   const [currentDate] = useState(new Date());
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -51,7 +55,16 @@ function PainelAdminContent() {
 
   const handleToggleStatus = async (uid: string, currentStatus: boolean) => {
     const action = currentStatus ? 'desativar' : 'ativar';
-    if (!confirm(`Deseja ${action} este usuário?`)) {
+
+    const confirmed = await confirm({
+      title: `${action === 'ativar' ? 'Ativar' : 'Desativar'} Usuário`,
+      message: `Deseja ${action} este usuário?`,
+      confirmText: `Sim, ${action}`,
+      cancelText: 'Cancelar',
+      variant: action === 'desativar' ? 'danger' : 'info',
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -59,11 +72,12 @@ function PainelAdminContent() {
       const response = await toggleUserStatus(uid, !currentStatus);
       if (response.success) {
         await loadAllUsers();
+        toast.success(`Usuário ${action === 'ativar' ? 'ativado' : 'desativado'} com sucesso!`);
       } else {
-        alert(response.error || `Erro ao ${action} usuário`);
+        toast.error(response.error || `Erro ao ${action} usuário`);
       }
     } catch (err) {
-      alert(`Erro ao ${action} usuário. Tente novamente.`);
+      toast.error(`Erro ao ${action} usuário. Tente novamente.`);
     }
   };
 
@@ -92,16 +106,16 @@ function PainelAdminContent() {
       const response = await updateSubscriptionDueDate(selectedUser.uid, dueDate);
 
       if (response.success) {
-        alert(`Data de vencimento atualizada para ${dueDate.toLocaleDateString('pt-BR')}!`);
+        toast.success(`Data de vencimento atualizada para ${dueDate.toLocaleDateString('pt-BR')}!`);
         setShowDueDateModal(false);
         setSelectedUser(null);
         setNewDueDate('');
         await loadAllUsers();
       } else {
-        alert(response.error || 'Erro ao atualizar data de vencimento');
+        toast.error(response.error || 'Erro ao atualizar data de vencimento');
       }
     } catch (err) {
-      alert('Erro ao atualizar data de vencimento. Tente novamente.');
+      toast.error('Erro ao atualizar data de vencimento. Tente novamente.');
     }
   };
 
@@ -208,13 +222,16 @@ function PainelAdminContent() {
                 Visão geral do sistema
               </p>
             </div>
+
+            {/* Botões - Mobile: apenas ícones / Desktop: ícone + texto */}
             <div className="flex gap-2">
               <button
                 onClick={() => router.push('/admin/usuarios')}
-                className="flex items-center gap-2 px-2.5 md:px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex items-center justify-center md:gap-2 p-2.5 md:px-4 md:py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Usuários"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5 md:w-4 md:h-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -230,10 +247,11 @@ function PainelAdminContent() {
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-2.5 md:px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex items-center justify-center md:gap-2 p-2.5 md:px-4 md:py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Sair"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5 md:w-4 md:h-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -254,59 +272,59 @@ function PainelAdminContent() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8">
           {/* Total de Clientes */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+            <div className="flex items-center justify-between mb-2 md:mb-4">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">{totalClients}</p>
-            <p className="text-sm text-gray-600">Clientes Ativos</p>
+            <p className="text-xl md:text-3xl font-semibold text-gray-900 mb-1">{totalClients}</p>
+            <p className="text-xs md:text-sm text-gray-600">Clientes Ativos</p>
           </div>
 
           {/* Total de Agendamentos */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+            <div className="flex items-center justify-between mb-2 md:mb-4">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">{totalBookingsAllTime}</p>
-            <p className="text-sm text-gray-600">Total de Agendamentos</p>
+            <p className="text-xl md:text-3xl font-semibold text-gray-900 mb-1">{totalBookingsAllTime}</p>
+            <p className="text-xs md:text-sm text-gray-600">Total de Agendamentos</p>
           </div>
 
           {/* Agendamentos do Mês */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+            <div className="flex items-center justify-between mb-2 md:mb-4">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">{stats.confirmedBookings}</p>
-            <p className="text-sm text-gray-600">Confirmados este Mês</p>
+            <p className="text-xl md:text-3xl font-semibold text-gray-900 mb-1">{stats.confirmedBookings}</p>
+            <p className="text-xs md:text-sm text-gray-600">Confirmados este Mês</p>
           </div>
 
           {/* Receita Total */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+            <div className="flex items-center justify-between mb-2 md:mb-4">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
-            <p className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
+            <p className="text-xl md:text-3xl font-semibold text-gray-900 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
               {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </p>
-            <p className="text-sm text-gray-600">Receita Total</p>
+            <p className="text-xs md:text-sm text-gray-600">Receita Total</p>
           </div>
         </div>
 

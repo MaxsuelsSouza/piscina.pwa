@@ -9,8 +9,6 @@ import { ProfileFormData } from '../_types';
 interface ProfileFormProps {
   formData: ProfileFormData;
   loading: boolean;
-  error: string | null;
-  success: string | null;
   hasChanges: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
@@ -22,8 +20,6 @@ interface ProfileFormProps {
 export function ProfileForm({
   formData,
   loading,
-  error,
-  success,
   hasChanges,
   onSubmit,
   onChange,
@@ -33,18 +29,6 @@ export function ProfileForm({
 }: ProfileFormProps) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl">
-          <p className="text-sm text-green-600">{success}</p>
-        </div>
-      )}
-
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Informações Básicas */}
         <div>

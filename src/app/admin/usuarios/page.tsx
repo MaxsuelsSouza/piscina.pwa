@@ -7,12 +7,14 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/contexts/ConfirmContext';
 import { useRouter } from 'next/navigation';
 import { useUsers } from './_hooks/useUsers';
 import type { CreateUserFormData } from './_types';
 
 export default function UsuariosPage() {
   const { user, isAdmin, loading } = useAuth();
+  const { confirm } = useConfirm();
   const router = useRouter();
 
   const {
@@ -68,16 +70,35 @@ export default function UsuariosPage() {
 
   const handleToggleStatus = async (uid: string, currentStatus: boolean) => {
     const action = currentStatus ? 'desativar' : 'ativar';
-    if (!confirm(`Deseja ${action} este usuário?`)) {
+
+    const confirmed = await confirm({
+      title: `${action === 'ativar' ? 'Ativar' : 'Desativar'} Usuário`,
+      message: `Deseja ${action} este usuário?`,
+      confirmText: `Sim, ${action}`,
+      cancelText: 'Cancelar',
+      variant: action === 'desativar' ? 'danger' : 'info',
+    });
+
+    if (!confirmed) {
       return;
     }
+
     await toggleStatus(uid, currentStatus);
   };
 
   const handleResetPassword = async (email: string) => {
-    if (!confirm(`Enviar email de redefinição de senha para ${email}?`)) {
+    const confirmed = await confirm({
+      title: 'Redefinir Senha',
+      message: `Enviar email de redefinição de senha para ${email}?`,
+      confirmText: 'Sim, enviar',
+      cancelText: 'Cancelar',
+      variant: 'info',
+    });
+
+    if (!confirmed) {
       return;
     }
+
     await resetPassword(email);
   };
 

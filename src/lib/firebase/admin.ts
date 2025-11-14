@@ -30,6 +30,9 @@ const getFirebaseCredentials = () => {
     // A chave privada pode vir com \n como string literal, então precisamos converter
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
+    // Remove aspas duplas se existirem ao redor da chave
+    privateKey = privateKey.replace(/^"(.*)"$/, '$1');
+
     // Verifica se a chave já está no formato correto (com quebras de linha reais)
     if (!privateKey.includes('\n')) {
       // Se não tem quebras de linha reais, substitui os literais \n

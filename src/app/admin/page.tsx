@@ -7,6 +7,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/contexts/ConfirmContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { BookingCalendar } from '../(home)/_components/BookingCalendar';
 import { BookingDetailsModal } from '../(home)/_components/BookingDetailsModal';
@@ -22,10 +23,13 @@ import {
   ExpiredNotifications
 } from './_components';
 import type { Booking } from '../(home)/_types/booking';
+import { useToast } from '@/hooks/useToast';
 
 function AdminPageContent() {
   const router = useRouter();
   const { user, userData, isAdmin, logout } = useAuth();
+  const { confirm } = useConfirm();
+  const toast = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDateActionModal, setShowDateActionModal] = useState(false);
@@ -33,6 +37,7 @@ function AdminPageContent() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [showInactiveModal, setShowInactiveModal] = useState(false);
   const [showProfileIncompleteModal, setShowProfileIncompleteModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Calcula completude do perfil
   const profileCompleteness = useMemo(() => {
@@ -51,8 +56,6 @@ function AdminPageContent() {
     isAdmin,
     ownerId: user?.uid
   });
-
-  const stats = calculateMonthlyStats(bookings, currentDate);
 
   // Detecta e envia notificações automaticamente para agendamentos expirados
   useEffect(() => {
@@ -126,24 +129,50 @@ function AdminPageContent() {
 
   const handleBlockDate = async () => {
     if (!selectedDate) return;
+
+    // Verifica se a data já está bloqueada
+    const isAlreadyBlocked = blockedDates.some(d => d.date === selectedDate);
+
+    if (isAlreadyBlocked) {
+      console.log('⚠️ Data já bloqueada:', selectedDate);
+      toast.error('Esta data já está bloqueada!');
+      setShowDateActionModal(false);
+      setSelectedDate('');
+      return;
+    }
+
     try {
+      console.log('🔒 Bloqueando data:', selectedDate);
       await blockDate(selectedDate);
       setShowDateActionModal(false);
       setSelectedDate('');
+      toast.success('Data bloqueada com sucesso!');
+      console.log('✅ Data bloqueada com sucesso:', selectedDate);
     } catch (error) {
-      alert('Erro ao bloquear data. Tente novamente.');
+      console.error('❌ Erro ao bloquear data:', error);
+      toast.error('Erro ao bloquear data. Tente novamente.');
     }
   };
 
   const handleUnblockDate = async () => {
     if (!selectedDate) return;
-    if (confirm('Deseja desbloquear esta data?')) {
+
+    const confirmed = await confirm({
+      title: 'Desbloquear Data',
+      message: 'Deseja desbloquear esta data?',
+      confirmText: 'Sim, desbloquear',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+
+    if (confirmed) {
       try {
         await unblockDate(selectedDate);
         setShowDateActionModal(false);
         setSelectedDate('');
+        toast.success('Data desbloqueada com sucesso!');
       } catch (error) {
-        alert('Erro ao desbloquear data. Tente novamente.');
+        toast.error('Erro ao desbloquear data. Tente novamente.');
       }
     }
   };
@@ -199,6 +228,49 @@ function AdminPageContent() {
     return bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear;
   });
 
+  // Filtra agendamentos com base no termo de pesquisa
+  const filteredBookings = useMemo(() => {
+    if (!searchTerm.trim()) return bookings;
+
+    const search = searchTerm.toLowerCase().trim();
+    return bookings.filter(booking => {
+      // Pesquisa por ID
+      if (booking.id.toLowerCase().includes(search)) return true;
+
+      // Pesquisa por nome do cliente
+      if (booking.customerName?.toLowerCase().includes(search)) return true;
+
+      // Pesquisa por telefone do cliente
+      if (booking.customerPhone?.replace(/\D/g, '').includes(search.replace(/\D/g, ''))) return true;
+
+      // Pesquisa por data (formato brasileiro)
+      const bookingDate = new Date(booking.date + 'T00:00:00').toLocaleDateString('pt-BR');
+      if (bookingDate.includes(search)) return true;
+
+      return false;
+    });
+  }, [bookings, searchTerm]);
+
+  // Filtra agendamentos mensais com base na pesquisa
+  const filteredMonthlyBookings = useMemo(() => {
+    if (!searchTerm.trim()) return monthlyBookings;
+
+    const search = searchTerm.toLowerCase().trim();
+    return monthlyBookings.filter(booking => {
+      if (booking.id.toLowerCase().includes(search)) return true;
+      if (booking.customerName?.toLowerCase().includes(search)) return true;
+      if (booking.customerPhone?.replace(/\D/g, '').includes(search.replace(/\D/g, ''))) return true;
+      const bookingDate = new Date(booking.date + 'T00:00:00').toLocaleDateString('pt-BR');
+      if (bookingDate.includes(search)) return true;
+      return false;
+    });
+  }, [monthlyBookings, searchTerm]);
+
+  // Calcula estatísticas com base nos agendamentos filtrados ou todos
+  const stats = useMemo(() => {
+    return calculateMonthlyStats(searchTerm ? filteredBookings : bookings, currentDate);
+  }, [bookings, filteredBookings, currentDate, searchTerm]);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Alerta de Assinatura Inativa */}
@@ -219,10 +291,10 @@ function AdminPageContent() {
       )}
 
       {/* Header Hero */}
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 pt-12 pb-24">
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 pt-6 md:pt-12 pb-24">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center">
-            <div>
+          <div className="flex justify-between items-start">
+            <div className="flex-1 mt-9">
               <h1 className="text-4xl font-light text-white mb-2 tracking-tight">
                 {isAdmin ? 'Painel Administrativo' : 'Meus Agendamentos'}
               </h1>
@@ -308,13 +380,16 @@ function AdminPageContent() {
                 </div>
               )}
             </div>
+
+            {/* Botões - Mobile: apenas ícones / Desktop: ícone + texto */}
             <div className="flex gap-2 md:gap-3">
               <button
                 onClick={() => router.push('/perfil')}
-                className="flex items-center gap-2 px-2.5 md:px-5 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
+                className="flex items-center justify-center md:gap-2 p-2.5 md:px-5 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
+                aria-label="Perfil"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5 md:w-4 md:h-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -330,10 +405,11 @@ function AdminPageContent() {
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-2.5 md:px-6 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
+                className="flex items-center justify-center md:gap-2 p-2.5 md:px-6 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
+                aria-label="Sair"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5 md:w-4 md:h-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -361,6 +437,29 @@ function AdminPageContent() {
           bookings={bookings}
           onMarkAsSent={markExpirationNotificationSent}
         />
+
+        {/* Campo de Pesquisa */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Pesquisar por nome, telefone, data ou ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 pr-12 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+          {searchTerm && (
+            <p className="mt-2 text-sm text-gray-600">
+              {filteredBookings.length} {filteredBookings.length === 1 ? 'agendamento encontrado' : 'agendamentos encontrados'}
+            </p>
+          )}
+        </div>
 
         {/* Layout em duas colunas: Calendário + Pendentes */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8">
@@ -394,7 +493,7 @@ function AdminPageContent() {
               <div className="scale-[0.85] origin-top -my-4">
                 <BookingCalendar
                   currentDate={currentDate}
-                  bookings={bookings}
+                  bookings={filteredBookings}
                   selectedDates={[]}
                   onSelectDate={handleDateClick}
                   onViewBooking={handleDateClick}
@@ -408,7 +507,7 @@ function AdminPageContent() {
 
           {/* Agendamentos Pendentes - 1 coluna */}
           <PendingBookings
-            bookings={monthlyBookings}
+            bookings={filteredMonthlyBookings}
             onConfirm={confirmBooking}
             onView={setSelectedBooking}
           />
@@ -416,7 +515,7 @@ function AdminPageContent() {
 
         {/* Seção de Cancelados e Expirados */}
         <CancelledExpiredBookings
-          bookings={bookings}
+          bookings={filteredBookings}
           onView={setSelectedBooking}
         />
       </div>

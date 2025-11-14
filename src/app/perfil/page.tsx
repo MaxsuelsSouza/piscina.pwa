@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { ProfileCompleteness } from './_components/ProfileCompleteness';
 import { ProfileForm } from './_components';
 import { useProfileForm } from './_hooks';
+import { Toast } from '@/components/Toast';
 
 export default function PerfilPage() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function PerfilPage() {
     handleCepChange,
     handleSubmit,
     handleCancel,
+    clearMessages,
   } = useProfileForm();
 
   if (authLoading) {
@@ -66,8 +68,6 @@ export default function PerfilPage() {
         <ProfileForm
           formData={formData}
           loading={loading}
-          error={error}
-          success={success}
           hasChanges={hasChanges}
           onSubmit={handleSubmit}
           onChange={handleChange}
@@ -76,6 +76,24 @@ export default function PerfilPage() {
           onCancel={handleCancel}
         />
       </div>
+
+      {/* Toast de Sucesso */}
+      {success && (
+        <Toast
+          message={success}
+          type="success"
+          onClose={clearMessages}
+        />
+      )}
+
+      {/* Toast de Erro */}
+      {error && (
+        <Toast
+          message={error}
+          type="error"
+          onClose={clearMessages}
+        />
+      )}
     </div>
   );
 }

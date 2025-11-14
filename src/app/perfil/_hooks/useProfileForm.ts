@@ -10,7 +10,7 @@ import { ProfileFormData, initialFormData } from '../_types';
 
 export function useProfileForm() {
   const router = useRouter();
-  const { user, userData, loading: authLoading, isAdmin } = useAuth();
+  const { user, userData, loading: authLoading, isAdmin, refreshUserData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -172,15 +172,13 @@ export function useProfileForm() {
         },
       });
 
-      setSuccess('Perfil atualizado com sucesso!');
+      // Recarrega os dados do usuário do Firestore
+      await refreshUserData();
 
-      setTimeout(() => {
-        if (isAdmin) {
-          router.push('/admin/painel');
-        } else {
-          router.push('/admin');
-        }
-      }, 1500);
+      // Atualiza os dados iniciais para refletir o novo estado salvo
+      setInitialData(formData);
+
+      setSuccess('Perfil atualizado com sucesso!');
     } catch (err: any) {
       console.error('Erro ao atualizar perfil:', err);
       setError('Erro ao atualizar perfil. Tente novamente.');
@@ -191,6 +189,11 @@ export function useProfileForm() {
 
   const handleCancel = () => {
     router.push('/admin');
+  };
+
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
   };
 
   return {
@@ -206,5 +209,6 @@ export function useProfileForm() {
     handleCepChange,
     handleSubmit,
     handleCancel,
+    clearMessages,
   };
 }

@@ -26,7 +26,7 @@ import {
 } from '@/lib/security/input-sanitizer';
 
 const BOOKINGS_COLLECTION = 'bookings';
-const BLOCKED_DATES_COLLECTION = 'blocked_dates';
+const BLOCKED_DATES_COLLECTION = 'blockedDates';
 
 /**
  * Cria um novo agendamento no Firestore

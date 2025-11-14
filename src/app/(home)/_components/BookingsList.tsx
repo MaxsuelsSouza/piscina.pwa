@@ -5,6 +5,8 @@
 "use client";
 
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/contexts/ConfirmContext';
+import { useToast } from '@/hooks/useToast';
 import type { Booking } from '../_types/booking';
 
 interface BookingsListProps {
@@ -33,6 +35,9 @@ const STATUS_COLORS = {
 };
 
 export function BookingsList({ date, bookings, onCancelBooking }: BookingsListProps) {
+  const { confirm } = useConfirm();
+  const toast = useToast();
+
   const formatDate = (dateStr: string) => {
     const dateObj = new Date(dateStr + 'T00:00:00');
     return dateObj.toLocaleDateString('pt-BR', {
@@ -174,9 +179,23 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
             {booking.status !== 'cancelled' && onCancelBooking && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => {
-                    if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
-                      onCancelBooking(booking.id);
+                  onClick={async () => {
+                    const confirmed = await confirm({
+                      title: 'Cancelar Agendamento',
+                      message: 'Tem certeza que deseja cancelar este agendamento?',
+                      confirmText: 'Sim, cancelar',
+                      cancelText: 'Não',
+                      variant: 'danger',
+                    });
+
+                    if (confirmed) {
+                      try {
+                        onCancelBooking(booking.id);
+                        toast.success('Agendamento cancelado com sucesso!');
+                      } catch (error) {
+                        console.error('Erro ao cancelar agendamento:', error);
+                        toast.error('Não foi possível cancelar o agendamento. Tente novamente.');
+                      }
                     }
                   }}
                   className="text-sm text-red-600 hover:text-red-700 font-medium"

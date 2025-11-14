@@ -5,6 +5,7 @@
 'use client';
 
 import type { Booking } from '@/app/(home)/_types/booking';
+import { useToast } from '@/hooks/useToast';
 
 interface ExpiredNotificationsProps {
   bookings: Booking[];
@@ -12,6 +13,7 @@ interface ExpiredNotificationsProps {
 }
 
 export function ExpiredNotifications({ bookings, onMarkAsSent }: ExpiredNotificationsProps) {
+  const toast = useToast();
   const expiredBookings = bookings.filter(b => {
     if (b.status !== 'pending') return false;
     if (!b.expiresAt) return false;
@@ -36,9 +38,10 @@ export function ExpiredNotifications({ bookings, onMarkAsSent }: ExpiredNotifica
     // Marca como enviado
     try {
       await onMarkAsSent(booking.id);
+      toast.success('Notificação enviada e marcada com sucesso!');
     } catch (error) {
       console.error('Erro ao marcar notificação como enviada:', error);
-      alert('Erro ao marcar notificação. Tente novamente.');
+      toast.error('Erro ao marcar notificação. Tente novamente.');
     }
   };
 

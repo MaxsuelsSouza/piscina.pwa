@@ -63,8 +63,8 @@ service cloud.firestore {
                        ('ownerId' in resource.data && isOwner(resource.data.ownerId));
     }
 
-    // Regras para dias bloqueados (blocked_dates)
-    match /blocked_dates/{dateId} {
+    // Regras para dias bloqueados (blockedDates)
+    match /blockedDates/{dateId} {
       // Leitura individual (get):
       // - Admin: pode ler tudo
       // - Cliente autenticado: apenas bloqueios com seu ownerId

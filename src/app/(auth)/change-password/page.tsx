@@ -10,10 +10,12 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/lib/firebase/config';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
   const { userData } = useAuth();
+  const toast = useToast();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -69,10 +71,12 @@ export default function ChangePasswordPage() {
       }
 
       // Sucesso - redireciona para perfil para completar cadastro
-      alert('Senha alterada com sucesso! Complete seu perfil para continuar.');
+      toast.success('Senha alterada com sucesso! Complete seu perfil para continuar.');
 
       // Redireciona para página de perfil para completar os dados
-      router.push('/perfil');
+      setTimeout(() => {
+        router.push('/perfil');
+      }, 1500);
     } catch (err: any) {
       console.error('Erro ao trocar senha:', err);
       setError('Erro ao trocar senha. Tente novamente.');

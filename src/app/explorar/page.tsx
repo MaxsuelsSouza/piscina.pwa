@@ -16,9 +16,11 @@ import {
   VenueMap,
 } from './_components';
 import { getUserLocation, calculateDistance, type UserLocation } from '@/services/geolocation.service';
+import { useToast } from '@/hooks/useToast';
 
 export default function ExplorePage() {
   const { venues, loading, error } = useVenues();
+  const toast = useToast();
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,7 +51,7 @@ export default function ExplorePage() {
         setLocationState(location.state);
       }
     } else {
-      alert('Não foi possível obter sua localização. Verifique as permissões do navegador.');
+      toast.error('Não foi possível obter sua localização. Verifique as permissões do navegador.');
     }
 
     setLoadingLocation(false);

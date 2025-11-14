@@ -18,6 +18,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -139,8 +140,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUserData = async (): Promise<void> => {
+    if (!user?.uid) {
+      console.warn('Não é possível recarregar dados: usuário não autenticado');
+      return;
+    }
+
+    try {
+      const userDataFromFirestore = await getUserByUid(user.uid);
+      if (userDataFromFirestore) {
+        setUserData(userDataFromFirestore);
+
+        // Atualiza status de admin se necessário
+        const adminStatus = userDataFromFirestore.role === 'admin' || checkIsAdmin(user.uid);
+        setIsAdmin(adminStatus);
+      }
+    } catch (error) {
+      console.error('Erro ao recarregar dados do usuário:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userData, isAdmin, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, userData, isAdmin, loading, login, logout, refreshUserData }}>
       {children}
     </AuthContext.Provider>
   );

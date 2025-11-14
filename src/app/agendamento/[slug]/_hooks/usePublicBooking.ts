@@ -9,8 +9,10 @@ import {
 } from '@/services/bookings.service';
 import { fetchClientBySlug, createPublicBooking } from '../_services';
 import type { ClientInfo, Booking, BlockedDate, PublicBookingFormData } from '../_types';
+import { useToast } from '@/hooks/useToast';
 
 export function usePublicBooking(slug: string) {
+  const toast = useToast();
   const [client, setClient] = useState<ClientInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,10 +185,10 @@ export function usePublicBooking(slug: string) {
         setShowForm(false);
         setSelectedDate('');
       } else {
-        alert(response.error || 'Erro ao criar agendamento. Por favor, tente novamente.');
+        toast.error(response.error || 'Erro ao criar agendamento. Por favor, tente novamente.');
       }
     },
-    [client, selectedDate, slug]
+    [client, selectedDate, slug, toast]
   );
 
   /**

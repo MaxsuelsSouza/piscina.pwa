@@ -19,11 +19,8 @@ export async function GET(
       );
     }
 
-    // Normaliza o slug (lowercase, trim)
-    const normalizedSlug = slug.toLowerCase().trim();
-
-    // Busca o cliente pelo slug
-    const client = await getUserBySlug(normalizedSlug);
+    // Busca o cliente pelo slug usando Firebase Admin SDK
+    const client = await getUserBySlug(slug);
 
     if (!client) {
       return NextResponse.json(
