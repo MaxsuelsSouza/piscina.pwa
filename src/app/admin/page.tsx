@@ -24,12 +24,17 @@ import {
 } from './_components';
 import type { Booking } from '../(home)/_types/booking';
 import { useToast } from '@/hooks/useToast';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useNotifications } from '@/hooks/useNotifications';
+import { NotificationsModal } from '@/components/NotificationsModal';
 
 function AdminPageContent() {
   const router = useRouter();
   const { user, userData, isAdmin, logout } = useAuth();
   const { confirm } = useConfirm();
   const toast = useToast();
+  const { permission, requestPermission, loading: notificationLoading, isSupported: notificationsSupported } = usePushNotifications();
+  const { unreadCount } = useNotifications();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDateActionModal, setShowDateActionModal] = useState(false);
@@ -37,6 +42,7 @@ function AdminPageContent() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [showInactiveModal, setShowInactiveModal] = useState(false);
   const [showProfileIncompleteModal, setShowProfileIncompleteModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Calcula completude do perfil
@@ -104,6 +110,17 @@ function AdminPageContent() {
   const handleLogout = async () => {
     await logout();
     router.push('/login');
+  };
+
+  const handleToggleNotifications = () => {
+    // Sempre abre o modal de notificações
+    // O modal mostrará as notificações históricas mesmo que push não seja suportado
+    setShowNotificationsModal(true);
+
+    // Se suporta push notifications e ainda não tem permissão, tenta ativar
+    if (notificationsSupported && permission !== 'granted' && permission !== 'denied') {
+      requestPermission();
+    }
   };
 
   // Intercepta ações quando usuário está inativo
@@ -384,6 +401,43 @@ function AdminPageContent() {
             {/* Botões - Mobile: apenas ícones / Desktop: ícone + texto */}
             <div className="flex gap-2 md:gap-3">
               <button
+                onClick={handleToggleNotifications}
+                disabled={notificationLoading}
+                className={`relative flex items-center justify-center md:gap-2 p-2.5 md:px-5 md:py-2.5 backdrop-blur-sm border rounded-xl transition-all text-sm font-light ${
+                  notificationsSupported && permission === 'granted'
+                    ? 'bg-blue-500/20 border-blue-400/40 text-white hover:bg-blue-500/30'
+                    : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                aria-label="Notificações"
+                title={
+                  !notificationsSupported
+                    ? 'Ver histórico de notificações (Push não suportado neste navegador)'
+                    : permission === 'granted'
+                    ? 'Ver notificações'
+                    : 'Ver notificações e ativar push'
+                }
+              >
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-red-500 border-2 border-gray-800 rounded-full text-xs font-semibold flex items-center justify-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+                <svg
+                  className="w-5 h-5 md:w-4 md:h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+                <span className="hidden md:inline">Notificações</span>
+              </button>
+              <button
                 onClick={() => router.push('/perfil')}
                 className="flex items-center justify-center md:gap-2 p-2.5 md:px-5 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
                 aria-label="Perfil"
@@ -585,6 +639,12 @@ function AdminPageContent() {
           onClose={() => setShowProfileIncompleteModal(false)}
         />
       )}
+
+      {/* Modal de Notificações */}
+      <NotificationsModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+      />
     </div>
   );
 }

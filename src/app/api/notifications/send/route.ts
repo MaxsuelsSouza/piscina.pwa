@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import admin from '@/lib/firebase/admin';
 import { getAdminFCMTokens, getUserFCMTokens } from '@/lib/firebase/firestore/fcmTokens.admin';
+import { saveNotificationsForUsers } from '@/lib/firebase/firestore/notifications.admin';
+import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,16 +21,39 @@ export async function POST(request: NextRequest) {
     }
 
     let tokens: string[] = [];
+    let userIds: string[] = [];
 
-    // Busca tokens dos destinatários
+    // Busca tokens e IDs dos destinatários
     if (toAdmins) {
       const adminTokens = await getAdminFCMTokens();
       tokens = [...tokens, ...adminTokens];
+
+      // Busca IDs dos admins
+      const db = adminDb();
+      const usersSnapshot = await db
+        .collection('users')
+        .where('role', '==', 'admin')
+        .where('isActive', '==', true)
+        .get();
+
+      const adminIds = usersSnapshot.docs.map((doc) => doc.data().uid);
+      userIds = [...userIds, ...adminIds];
     }
 
     if (toUser) {
       const userTokens = await getUserFCMTokens(toUser);
       tokens = [...tokens, ...userTokens];
+      userIds.push(toUser);
+    }
+
+    // Salva as notificações no Firestore para que apareçam no modal
+    if (userIds.length > 0) {
+      try {
+        await saveNotificationsForUsers(userIds, title, messageBody, data);
+      } catch (error) {
+        console.error('Erro ao salvar notificações no Firestore:', error);
+        // Continua mesmo se falhar ao salvar no Firestore
+      }
     }
 
     if (tokens.length === 0) {

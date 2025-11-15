@@ -14,9 +14,15 @@ export function NotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  // Mostra o prompt apenas para admins que ainda não deram permissão
+  // Mostra o prompt apenas para usuários que ainda não deram permissão
   useEffect(() => {
-    if (!user || !isSupported) return;
+    if (!user) return;
+
+    // Se não é suportado, não mostra o prompt
+    if (!isSupported) {
+      console.log('Notificações push não suportadas neste navegador');
+      return;
+    }
 
     // Verifica se já foi dismissed nesta sessão
     const wasDismissed = sessionStorage.getItem('notificationPromptDismissed');

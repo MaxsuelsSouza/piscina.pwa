@@ -8,10 +8,38 @@ import { app } from './config';
 let messaging: Messaging | null = null;
 
 /**
+ * Verifica se o navegador suporta notificações
+ */
+export const isMessagingSupported = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  // Verifica se o navegador suporta Service Workers
+  if (!('serviceWorker' in navigator)) {
+    return false;
+  }
+
+  // Verifica se o navegador suporta Notifications
+  if (!('Notification' in window)) {
+    return false;
+  }
+
+  // Verifica se está em contexto seguro (HTTPS ou localhost)
+  const isSecureContext = window.isSecureContext ||
+    window.location.protocol === 'https:' ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+
+  return isSecureContext;
+};
+
+/**
  * Inicializa o Firebase Messaging (apenas no cliente)
  */
 export const initializeMessaging = (): Messaging | null => {
-  if (typeof window === 'undefined') {
+  if (!isMessagingSupported()) {
+    console.log('Firebase Messaging não suportado neste ambiente');
     return null;
   }
 
@@ -31,9 +59,9 @@ export const initializeMessaging = (): Messaging | null => {
  */
 export const requestNotificationPermission = async (): Promise<string | null> => {
   try {
-    // Verifica se o navegador suporta notificações
-    if (!('Notification' in window)) {
-      console.log('Este navegador não suporta notificações');
+    // Verifica se o ambiente suporta messaging
+    if (!isMessagingSupported()) {
+      console.log('Firebase Messaging não suportado neste ambiente');
       return null;
     }
 
@@ -81,6 +109,11 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
  * Escuta mensagens em primeiro plano
  */
 export const onMessageListener = (callback: (payload: any) => void) => {
+  if (!isMessagingSupported()) {
+    console.log('Messaging não suportado, não é possível escutar mensagens');
+    return () => {};
+  }
+
   const messagingInstance = initializeMessaging();
 
   if (!messagingInstance) {

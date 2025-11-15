@@ -59,6 +59,43 @@ export async function createBooking(booking: Omit<Booking, 'id'>): Promise<strin
     }
 
     const docRef = await addDoc(collection(db, BOOKINGS_COLLECTION), sanitizedBooking);
+
+    // Envia notificação para os admins
+    try {
+      const formattedDate = new Date(sanitizedBooking.date + 'T00:00:00').toLocaleDateString('pt-BR');
+
+      console.log('📨 Enviando notificação para admins...', {
+        bookingId: docRef.id,
+        customerName: sanitizedBooking.customerName,
+        date: formattedDate,
+      });
+
+      const response = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: '🎉 Novo Agendamento!',
+          body: `${sanitizedBooking.customerName} agendou para ${formattedDate}`,
+          data: {
+            bookingId: docRef.id,
+            date: sanitizedBooking.date,
+            customerName: sanitizedBooking.customerName,
+            link: '/admin',
+            tag: `booking-${docRef.id}`,
+          },
+          toAdmins: true,
+        }),
+      });
+
+      const result = await response.json();
+      console.log('✅ Resposta da notificação:', result);
+    } catch (notificationError) {
+      // Não falha a criação do agendamento se a notificação falhar
+      console.error('❌ Erro ao enviar notificação:', notificationError);
+    }
+
     return docRef.id;
   } catch (error) {
     console.error('❌ Erro ao criar agendamento:', error);

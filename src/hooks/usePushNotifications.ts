@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { requestNotificationPermission, onMessageListener } from '@/lib/firebase/messaging';
+import { requestNotificationPermission, onMessageListener, isMessagingSupported } from '@/lib/firebase/messaging';
 import { saveFCMToken } from '@/lib/firebase/firestore/fcmTokens';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -22,11 +22,14 @@ export function usePushNotifications() {
     }
   }, []);
 
+  // Verifica suporte a notificações
+  const isSupported = typeof window !== 'undefined' && isMessagingSupported();
+
   /**
    * Solicita permissão e obtém o token FCM
    */
   const requestPermission = useCallback(async () => {
-    if (loading) return;
+    if (loading || !isSupported) return;
 
     setLoading(true);
     try {
@@ -49,13 +52,13 @@ export function usePushNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [user, loading]);
+  }, [user, loading, isSupported]);
 
   /**
    * Escuta mensagens em primeiro plano
    */
   useEffect(() => {
-    if (permission !== 'granted') return;
+    if (!isSupported || permission !== 'granted') return;
 
     const unsubscribe = onMessageListener((payload) => {
       console.log('Notificação recebida:', payload);
@@ -79,24 +82,24 @@ export function usePushNotifications() {
         unsubscribe();
       }
     };
-  }, [permission]);
+  }, [permission, isSupported]);
 
   /**
    * Registra o token quando o usuário faz login
    */
   useEffect(() => {
-    if (user?.uid && token && permission === 'granted') {
+    if (user?.uid && token && permission === 'granted' && isSupported) {
       saveFCMToken(user.uid, token).catch((error) => {
         console.error('Erro ao salvar token FCM:', error);
       });
     }
-  }, [user, token, permission]);
+  }, [user, token, permission, isSupported]);
 
   return {
     permission,
     token,
     loading,
     requestPermission,
-    isSupported: typeof window !== 'undefined' && 'Notification' in window,
+    isSupported,
   };
 }
