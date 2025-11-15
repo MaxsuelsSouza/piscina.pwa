@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ConfirmProvider } from "@/contexts/ConfirmContext";
 import { PWAInstallControl } from "@/components/PWAInstallControl";
 import { ToastContainer } from "@/components/Toast";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
           <ConfirmProvider>
             <PWAInstallControl />
             <ToastContainer />
+            <NotificationPrompt />
             {children}
           </ConfirmProvider>
         </AuthProvider>

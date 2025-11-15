@@ -114,6 +114,36 @@ export async function POST(request: NextRequest) {
     const db = adminDb();
     const docRef = await db.collection('bookings').add(bookingData);
 
+    // Envia notificação push para os admins
+    try {
+      const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
+      const businessName = client.businessName || client.displayName || 'Estabelecimento';
+
+      await fetch(`${request.nextUrl.origin}/api/notifications/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: '🎉 Novo Agendamento!',
+          body: `${sanitizedData.customerName} agendou para ${formattedDate} - ${businessName}`,
+          data: {
+            bookingId: docRef.id,
+            date,
+            customerName: sanitizedData.customerName,
+            link: '/admin',
+            tag: `booking-${docRef.id}`,
+          },
+          toAdmins: true,
+        }),
+      });
+
+      console.log('Notificação enviada para admins sobre novo agendamento');
+    } catch (notificationError) {
+      // Não falha a criação do agendamento se a notificação falhar
+      console.error('Erro ao enviar notificação:', notificationError);
+    }
+
     return NextResponse.json({
       success: true,
       bookingId: docRef.id,

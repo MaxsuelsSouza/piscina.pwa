@@ -6,6 +6,7 @@
  */
 
 import { useParams } from 'next/navigation';
+import { useRef, useEffect } from 'react';
 import { BookingCalendar } from '@/app/(home)/_components/BookingCalendar';
 import { BookingForm } from '@/app/(home)/_components/BookingForm';
 import { usePublicBooking } from './_hooks';
@@ -19,6 +20,7 @@ import {
 export default function PublicBookingPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const formRef = useRef<HTMLDivElement>(null);
 
   const {
     client,
@@ -36,6 +38,19 @@ export default function PublicBookingPage() {
     handleCancelBooking,
     setShowForm,
   } = usePublicBooking(slug);
+
+  // Scroll automático para o formulário quando aparecer
+  useEffect(() => {
+    if (showForm && formRef.current) {
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      }, 300);
+    }
+  }, [showForm]);
 
   if (loading) {
     return <LoadingState />;
@@ -71,7 +86,7 @@ export default function PublicBookingPage() {
 
         {/* Formulário de agendamento */}
         {showForm && selectedDate && (
-          <div className="bg-white rounded-3xl shadow-2xl border border-gray-200/50 p-8 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div ref={formRef} className="bg-white rounded-3xl shadow-2xl border border-gray-200/50 p-8 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-display font-bold text-gray-900">
                 Novo Agendamento
@@ -95,9 +110,9 @@ export default function PublicBookingPage() {
         )}
 
         {/* Informações */}
-        <div className="text-center py-10 text-gray-600">
+        <div className="text-center py-2 md:py-6 text-gray-600">
           <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-sm border border-gray-200/50">
-            <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-left">
