@@ -19,22 +19,16 @@ import {
   AdminStats,
   PendingBookings,
   CancelledExpiredBookings,
-  DateActionModal,
-  ExpiredNotifications
+  DateActionModal
 } from './_components';
 import type { Booking } from '../(home)/_types/booking';
 import { useToast } from '@/hooks/useToast';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { useNotifications } from '@/hooks/useNotifications';
-import { NotificationsModal } from '@/components/NotificationsModal';
 
 function AdminPageContent() {
   const router = useRouter();
   const { user, userData, isAdmin, logout } = useAuth();
   const { confirm } = useConfirm();
   const toast = useToast();
-  const { permission, requestPermission, loading: notificationLoading, isSupported: notificationsSupported } = usePushNotifications();
-  const { unreadCount } = useNotifications();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDateActionModal, setShowDateActionModal] = useState(false);
@@ -42,7 +36,6 @@ function AdminPageContent() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [showInactiveModal, setShowInactiveModal] = useState(false);
   const [showProfileIncompleteModal, setShowProfileIncompleteModal] = useState(false);
-  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Calcula completude do perfil
@@ -63,9 +56,8 @@ function AdminPageContent() {
     ownerId: user?.uid
   });
 
-  // Detecta e envia notificações automaticamente para agendamentos expirados
+  // Detecta e envia mensagem WhatsApp para agendamentos expirados
   useEffect(() => {
-
     const checkExpiredBookings = async () => {
       const expiredBookings = bookings.filter(b => {
         if (b.status !== 'pending') return false;
@@ -74,13 +66,14 @@ function AdminPageContent() {
         return new Date(b.expiresAt) <= new Date();
       });
 
-      // Envia notificação para o primeiro agendamento expirado não notificado
+      // Abre WhatsApp para o primeiro agendamento expirado não notificado
       if (expiredBookings.length > 0) {
         const booking = expiredBookings[0];
+        const formattedDate = new Date(booking.date + 'T00:00:00').toLocaleDateString('pt-BR');
         const phoneNumber = booking.customerPhone.replace(/\D/g, '');
         const message = encodeURIComponent(
           `Olá ${booking.customerName}!\n\n` +
-          `Seu agendamento para o dia ${new Date(booking.date + 'T00:00:00').toLocaleDateString('pt-BR')} expirou.\n\n` +
+          `Seu agendamento para o dia ${formattedDate} expirou.\n\n` +
           `O prazo de 1 hora para envio do comprovante de pagamento foi atingido e o agendamento foi cancelado automaticamente.\n\n` +
           `Se ainda tiver interesse, por favor faça um novo agendamento.\n\n` +
           `Obrigado!`
@@ -110,17 +103,6 @@ function AdminPageContent() {
   const handleLogout = async () => {
     await logout();
     router.push('/login');
-  };
-
-  const handleToggleNotifications = () => {
-    // Sempre abre o modal de notificações
-    // O modal mostrará as notificações históricas mesmo que push não seja suportado
-    setShowNotificationsModal(true);
-
-    // Se suporta push notifications e ainda não tem permissão, tenta ativar
-    if (notificationsSupported && permission !== 'granted' && permission !== 'denied') {
-      requestPermission();
-    }
   };
 
   // Intercepta ações quando usuário está inativo
@@ -288,6 +270,22 @@ function AdminPageContent() {
     return calculateMonthlyStats(searchTerm ? filteredBookings : bookings, currentDate);
   }, [bookings, filteredBookings, currentDate, searchTerm]);
 
+  // Filtra agendamentos expirados do calendário
+  // Expirados só devem aparecer na seção "Cancelados e Expirados"
+  const bookingsForCalendar = useMemo(() => {
+    return filteredBookings.filter(b => {
+      // Se o agendamento está pendente e expirou, não mostra no calendário
+      if (b.status === 'pending' && b.expiresAt) {
+        const expirationDate = new Date(b.expiresAt);
+        const now = new Date();
+        if (expirationDate <= now) {
+          return false; // Agendamento expirado - não mostra no calendário
+        }
+      }
+      return true;
+    });
+  }, [filteredBookings]);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Alerta de Assinatura Inativa */}
@@ -310,12 +308,12 @@ function AdminPageContent() {
       {/* Header Hero */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 pt-6 md:pt-12 pb-24">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-start">
-            <div className="flex-1 mt-9">
-              <h1 className="text-4xl font-light text-white mb-2 tracking-tight">
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex-1 min-w-0 mt-6 md:mt-9">
+              <h1 className="text-2xl md:text-4xl font-light text-white mb-2 tracking-tight">
                 {isAdmin ? 'Painel Administrativo' : 'Meus Agendamentos'}
               </h1>
-              <p className="text-gray-400 text-sm font-light">
+              <p className="text-gray-400 text-xs md:text-sm font-light">
                 {isAdmin ? 'Gerencie agendamentos e visualize métricas' : 'Gerencie seus agendamentos e bloqueios'}
               </p>
 
@@ -399,47 +397,10 @@ function AdminPageContent() {
             </div>
 
             {/* Botões - Mobile: apenas ícones / Desktop: ícone + texto */}
-            <div className="flex gap-2 md:gap-3">
-              <button
-                onClick={handleToggleNotifications}
-                disabled={notificationLoading}
-                className={`relative flex items-center justify-center md:gap-2 p-2.5 md:px-5 md:py-2.5 backdrop-blur-sm border rounded-xl transition-all text-sm font-light ${
-                  notificationsSupported && permission === 'granted'
-                    ? 'bg-blue-500/20 border-blue-400/40 text-white hover:bg-blue-500/30'
-                    : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                aria-label="Notificações"
-                title={
-                  !notificationsSupported
-                    ? 'Ver histórico de notificações (Push não suportado neste navegador)'
-                    : permission === 'granted'
-                    ? 'Ver notificações'
-                    : 'Ver notificações e ativar push'
-                }
-              >
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-red-500 border-2 border-gray-800 rounded-full text-xs font-semibold flex items-center justify-center">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-                <svg
-                  className="w-5 h-5 md:w-4 md:h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-                <span className="hidden md:inline">Notificações</span>
-              </button>
+            <div className="flex gap-1.5 md:gap-3 flex-shrink-0">
               <button
                 onClick={() => router.push('/perfil')}
-                className="flex items-center justify-center md:gap-2 p-2.5 md:px-5 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
+                className="flex items-center justify-center md:gap-2 p-2 md:px-5 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
                 aria-label="Perfil"
               >
                 <svg
@@ -459,7 +420,7 @@ function AdminPageContent() {
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center md:gap-2 p-2.5 md:px-6 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
+                className="flex items-center justify-center md:gap-2 p-2 md:px-6 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
                 aria-label="Sair"
               >
                 <svg
@@ -485,12 +446,6 @@ function AdminPageContent() {
       <div className="max-w-7xl mx-auto px-4 -mt-16">
         {/* Cards de métricas */}
         <AdminStats {...stats} />
-
-        {/* Notificações de expiração */}
-        <ExpiredNotifications
-          bookings={bookings}
-          onMarkAsSent={markExpirationNotificationSent}
-        />
 
         {/* Campo de Pesquisa */}
         <div className="mb-6">
@@ -547,7 +502,7 @@ function AdminPageContent() {
               <div className="scale-[0.85] origin-top -my-4">
                 <BookingCalendar
                   currentDate={currentDate}
-                  bookings={filteredBookings}
+                  bookings={bookingsForCalendar}
                   selectedDates={[]}
                   onSelectDate={handleDateClick}
                   onViewBooking={handleDateClick}
@@ -639,12 +594,6 @@ function AdminPageContent() {
           onClose={() => setShowProfileIncompleteModal(false)}
         />
       )}
-
-      {/* Modal de Notificações */}
-      <NotificationsModal
-        isOpen={showNotificationsModal}
-        onClose={() => setShowNotificationsModal(false)}
-      />
     </div>
   );
 }
