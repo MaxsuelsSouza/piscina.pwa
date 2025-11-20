@@ -52,7 +52,7 @@ export function ConfirmModal({
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black/50 z-[60]"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
         onClick={onCancel}
       />
 

@@ -80,8 +80,18 @@ export function usePublicBooking(slug: string) {
     });
 
     const unsubscribeBlockedDates = onBlockedDatesChange((allDates) => {
-      // Filtra apenas bloqueios deste cliente
-      const clientBlockedDates = allDates.filter((d) => d.ownerId === client.uid);
+      // Filtra apenas bloqueios deste cliente e que não expiraram (data >= hoje)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Zera as horas para comparar apenas a data
+
+      const clientBlockedDates = allDates.filter((d) => {
+        if (d.ownerId !== client.uid) return false;
+
+        // Verifica se a data não expirou
+        const blockedDate = new Date(d.date + 'T00:00:00');
+        return blockedDate >= today;
+      });
+
       setBlockedDates(clientBlockedDates);
     });
 
