@@ -184,3 +184,36 @@ export function subscribeToBookings(callback: (bookings: Booking[]) => void): Un
     throw error;
   }
 }
+
+/**
+ * Atualiza o status de pagamento de um agendamento
+ */
+export async function updateBookingPaymentStatus(
+  bookingId: string,
+  paymentData: {
+    status: 'pending' | 'paid' | 'failed' | 'refunded';
+    paymentId?: string;
+    paidAt?: Date;
+    paymentMethod?: 'pix' | 'credit_card' | 'debit_card';
+    amount?: number;
+  }
+): Promise<void> {
+  try {
+    const docRef = doc(db, BOOKINGS_COLLECTION, bookingId);
+    await updateDoc(docRef, {
+      'payment.status': paymentData.status,
+      'payment.paymentId': paymentData.paymentId,
+      'payment.paidAt': paymentData.paidAt,
+      'payment.method': paymentData.paymentMethod,
+      'payment.amount': paymentData.amount,
+      // Se o pagamento foi aprovado, confirmar o booking automaticamente
+      ...(paymentData.status === 'paid' && {
+        status: 'confirmed',
+        expiresAt: undefined,
+      }),
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar status de pagamento:', error);
+    throw error;
+  }
+}

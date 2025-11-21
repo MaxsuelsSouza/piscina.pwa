@@ -34,6 +34,11 @@ export function useProfileForm() {
         description: userData.venueInfo?.description || '',
         instagram: userData.venueInfo?.instagram || '',
         facebook: userData.venueInfo?.facebook || '',
+        condominiumPrice: userData.venueInfo?.condominiumPrice?.toString() || '',
+        pixKey: userData.venueInfo?.bankingInfo?.pixKey || '',
+        pixKeyType: (userData.venueInfo?.bankingInfo?.pixKeyType || '') as ProfileFormData['pixKeyType'],
+        accountHolder: userData.venueInfo?.bankingInfo?.accountHolder || '',
+        bankName: userData.venueInfo?.bankingInfo?.bankName || '',
         amenities: {
           pool: userData.venueInfo?.amenities?.pool || false,
           grill: userData.venueInfo?.amenities?.grill || false,
@@ -76,6 +81,11 @@ export function useProfileForm() {
     if (formData.description !== initialData.description) return true;
     if (formData.instagram !== initialData.instagram) return true;
     if (formData.facebook !== initialData.facebook) return true;
+    if (formData.condominiumPrice !== initialData.condominiumPrice) return true;
+    if (formData.pixKey !== initialData.pixKey) return true;
+    if (formData.pixKeyType !== initialData.pixKeyType) return true;
+    if (formData.accountHolder !== initialData.accountHolder) return true;
+    if (formData.bankName !== initialData.bankName) return true;
 
     // Compara amenidades
     const amenitiesKeys = Object.keys(formData.amenities) as Array<keyof typeof formData.amenities>;
@@ -168,7 +178,14 @@ export function useProfileForm() {
           description: formData.description.trim(),
           instagram: formData.instagram.trim(),
           facebook: formData.facebook.trim(),
+          condominiumPrice: formData.condominiumPrice ? parseFloat(formData.condominiumPrice) : undefined,
           amenities: formData.amenities,
+          bankingInfo: {
+            pixKey: formData.pixKey.trim(),
+            pixKeyType: formData.pixKeyType || undefined,
+            accountHolder: formData.accountHolder.trim(),
+            bankName: formData.bankName.trim(),
+          },
         },
       });
 

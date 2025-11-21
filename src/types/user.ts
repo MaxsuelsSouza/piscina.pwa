@@ -38,6 +38,16 @@ export interface VenueAmenities {
 }
 
 /**
+ * Dados bancários para recebimento via PIX
+ */
+export interface BankingInfo {
+  pixKey?: string; // Chave PIX (CPF, CNPJ, email, telefone ou aleatória)
+  pixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random'; // Tipo da chave PIX
+  accountHolder?: string; // Nome do titular da conta
+  bankName?: string; // Nome do banco
+}
+
+/**
  * Informações do espaço/estabelecimento
  */
 export interface VenueInfo {
@@ -47,6 +57,8 @@ export interface VenueInfo {
   instagram?: string; // Instagram do espaço
   facebook?: string; // Facebook do espaço
   amenities?: VenueAmenities; // Amenidades disponíveis
+  condominiumPrice?: number; // Valor do condomínio/aluguel por dia
+  bankingInfo?: BankingInfo; // Dados bancários para recebimento
 }
 
 export interface AppUser {

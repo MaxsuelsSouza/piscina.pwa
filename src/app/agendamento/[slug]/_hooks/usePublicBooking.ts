@@ -22,6 +22,20 @@ export function usePublicBooking(slug: string) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [creatingBooking, setCreatingBooking] = useState(false);
+  const [paymentData, setPaymentData] = useState<{
+    qrCodeBase64: string;
+    qrCode: string;
+    amount: number;
+    bookingId: string;
+    bookingDate: string;
+    customerName: string;
+    customerPhone: string;
+    numberOfPeople: number;
+    notes?: string;
+    clientPhone?: string;
+    businessName?: string;
+  } | null>(null);
 
   /**
    * Carrega informações do cliente
@@ -134,68 +148,53 @@ export function usePublicBooking(slug: string) {
     async (formData: PublicBookingFormData) => {
       if (!client || !selectedDate || !slug) return;
 
-      // Passa o slug ao invés do client
-      // O slug será usado server-side para buscar o cliente correto
-      // Isso previne manipulação do ownerId no client-side
-      const response = await createPublicBooking(slug, selectedDate, formData);
+      setCreatingBooking(true);
 
-      if (response.success) {
-        // Formata a data para exibição
-        const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR');
+      try {
+        // Passa o slug ao invés do client
+        // O slug será usado server-side para buscar o cliente correto
+        // Isso previne manipulação do ownerId no client-side
+        const response = await createPublicBooking(slug, selectedDate, formData);
 
-        // Nome do estabelecimento ou do cliente
-        const businessName = client.businessName || client.displayName || 'o estabelecimento';
+        if (response.success) {
+          // Fecha o formulário
+          setShowForm(false);
+          setSelectedDate('');
 
-        // Cria mensagem para WhatsApp
-        const message = encodeURIComponent(
-          `🎉 *NOVO AGENDAMENTO - ${businessName.toUpperCase()}*\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n` +
-          `📅 *Data:* ${formattedDate}\n` +
-          `⏰ *Período:* Dia Inteiro (08:00 - 22:00)\n` +
-          `👤 *Nome:* ${formData.customerName}\n` +
-          `📱 *Telefone:* ${formData.customerPhone}\n` +
-          `👥 *Quantidade:* ${formData.numberOfPeople} ${formData.numberOfPeople === 1 ? 'pessoa' : 'pessoas'}\n` +
-          `💰 *Valor:* R$ 400,00\n` +
-          `${formData.notes ? `📝 *Observações:* ${formData.notes}\n` : ''}` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `⚠️ *Status:* PENDENTE\n\n` +
-          `Por favor, envie:\n` +
-          `✅ Dados para pagamento (PIX/Transferência)\n` +
-          `✅ Comprovante após realizar o pagamento\n\n` +
-          `Aguardo retorno para confirmação! 😊`
-        );
-
-        // Usa o telefone do dono do estabelecimento (cliente)
-        // Se o cliente não tiver telefone, usa o número do admin/sistema
-        // Remove todos os caracteres não numéricos
-        const clientPhone = client.phone?.replace(/\D/g, '') || '';
-        const adminPhone = '5581997339707'; // WhatsApp do admin/sistema
-        const whatsappNumber = clientPhone || adminPhone;
-
-        console.log('🔍 Debug WhatsApp:', {
-          clientPhone: client.phone,
-          clientPhoneCleaned: clientPhone,
-          usingAdminPhone: !clientPhone,
-          whatsappNumber,
-          message: message.substring(0, 50) + '...'
-        });
-
-        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
-        console.log('📱 Abrindo WhatsApp:', whatsappUrl);
-
-        // Tenta abrir em uma nova aba
-        const newWindow = window.open(whatsappUrl, '_blank');
-
-        if (!newWindow) {
-          console.error('❌ Popup bloqueado! Tentando abrir na mesma aba...');
-          window.location.href = whatsappUrl;
+          // Se houver dados de pagamento, exibe o modal de pagamento PIX
+          if (response.payment && response.bookingId) {
+            setPaymentData({
+              qrCodeBase64: response.payment.qrCodeBase64,
+              qrCode: response.payment.qrCode,
+              amount: response.payment.amount,
+              bookingId: response.bookingId,
+              bookingDate: selectedDate,
+              customerName: formData.customerName,
+              customerPhone: formData.customerPhone,
+              numberOfPeople: formData.numberOfPeople,
+              notes: formData.notes,
+              clientPhone: client.phone,
+              businessName: client.businessName || client.displayName,
+            });
+            toast.warning(
+              'Agendamento criado! Complete o pagamento PIX para confirmar.',
+              6000 // 6 segundos
+            );
+          } else {
+            // Fallback: se não houver pagamento (erro ao gerar), mostra mensagem
+            toast.warning(
+              'Agendamento criado! Entre em contato para confirmar o pagamento.',
+              6000
+            );
+          }
+        } else {
+          toast.error(
+            response.error ||
+              'Erro ao criar agendamento. Por favor, tente novamente.'
+          );
         }
-
-        // Fecha o formulário e limpa a seleção
-        setShowForm(false);
-        setSelectedDate('');
-      } else {
-        toast.error(response.error || 'Erro ao criar agendamento. Por favor, tente novamente.');
+      } finally {
+        setCreatingBooking(false);
       }
     },
     [client, selectedDate, slug, toast]
@@ -209,6 +208,13 @@ export function usePublicBooking(slug: string) {
     setSelectedDate('');
   }, []);
 
+  /**
+   * Fecha o modal de pagamento
+   */
+  const handleClosePaymentModal = useCallback(() => {
+    setPaymentData(null);
+  }, []);
+
   return {
     client,
     loading,
@@ -218,11 +224,14 @@ export function usePublicBooking(slug: string) {
     currentDate,
     selectedDate,
     showForm,
+    creatingBooking,
+    paymentData,
     handleDateClick,
     handleNextMonth,
     handlePrevMonth,
     handleSubmitBooking,
     handleCancelBooking,
+    handleClosePaymentModal,
     setShowForm,
   };
 }

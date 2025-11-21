@@ -16,6 +16,17 @@ export interface Booking {
   expiresAt?: string; // Flag temporário: se status=pending e expiresAt passou, libera o dia
   expirationNotificationSent?: boolean; // Controla se já enviou notificação de expiração
   ownerId?: string; // UID do cliente que gerencia este agendamento (opcional para retrocompatibilidade)
+  payment?: PaymentInfo; // Informações de pagamento
+}
+
+export interface PaymentInfo {
+  status: 'pending' | 'paid' | 'failed' | 'refunded';
+  method?: 'pix' | 'credit_card' | 'debit_card';
+  amount?: number;
+  paymentId?: string; // ID do pagamento no Mercado Pago
+  paidAt?: Date;
+  pixQrCode?: string; // QR Code PIX (base64)
+  pixQrCodeText?: string; // Código Pix Copia e Cola
 }
 
 export type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'full-day';

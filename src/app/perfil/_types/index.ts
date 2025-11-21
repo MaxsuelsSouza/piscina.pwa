@@ -16,6 +16,11 @@ export interface ProfileFormData {
   description: string;
   instagram: string;
   facebook: string;
+  condominiumPrice: string;
+  pixKey: string;
+  pixKeyType: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random' | '';
+  accountHolder: string;
+  bankName: string;
   amenities: {
     pool: boolean;
     grill: boolean;
@@ -45,6 +50,11 @@ export const initialFormData: ProfileFormData = {
   description: '',
   instagram: '',
   facebook: '',
+  condominiumPrice: '',
+  pixKey: '',
+  pixKeyType: '',
+  accountHolder: '',
+  bankName: '',
   amenities: {
     pool: false,
     grill: false,

@@ -5,7 +5,7 @@
 import type { Booking } from '@/app/(home)/_types/booking';
 import type { AdminStats } from '../_types';
 
-const PRICE_PER_DAY = 400;
+const PRICE_PER_DAY = 0.01; // Valor de teste: R$ 0,01
 
 export function calculateMonthlyStats(bookings: Booking[], currentDate: Date): AdminStats {
   const currentMonth = currentDate.getMonth();

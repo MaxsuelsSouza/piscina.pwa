@@ -203,6 +203,109 @@ export function ProfileForm({
           </div>
         </div>
 
+        {/* Informações Financeiras */}
+        <div className="pt-6 border-t border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Informações Financeiras
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label htmlFor="condominiumPrice" className="block text-sm font-medium text-gray-700 mb-2">
+                Valor do Condomínio/Aluguel (por dia)
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
+                <input
+                  type="number"
+                  id="condominiumPrice"
+                  name="condominiumPrice"
+                  value={formData.condominiumPrice}
+                  onChange={onChange}
+                  min="0"
+                  step="0.01"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  placeholder="400.00"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Valor que será cobrado nos agendamentos</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900">Dados Bancários para Recebimento</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="pixKeyType" className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Chave PIX
+                </label>
+                <select
+                  id="pixKeyType"
+                  name="pixKeyType"
+                  value={formData.pixKeyType}
+                  onChange={onChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                >
+                  <option value="">Selecione</option>
+                  <option value="cpf">CPF</option>
+                  <option value="cnpj">CNPJ</option>
+                  <option value="email">Email</option>
+                  <option value="phone">Telefone</option>
+                  <option value="random">Chave Aleatória</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="pixKey" className="block text-sm font-medium text-gray-700 mb-2">
+                  Chave PIX
+                </label>
+                <input
+                  type="text"
+                  id="pixKey"
+                  name="pixKey"
+                  value={formData.pixKey}
+                  onChange={onChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  placeholder="Digite sua chave PIX"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="accountHolder" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome do Titular da Conta
+                </label>
+                <input
+                  type="text"
+                  id="accountHolder"
+                  name="accountHolder"
+                  value={formData.accountHolder}
+                  onChange={onChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  placeholder="Nome completo do titular"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="bankName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome do Banco
+                </label>
+                <input
+                  type="text"
+                  id="bankName"
+                  name="bankName"
+                  value={formData.bankName}
+                  onChange={onChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  placeholder="Ex: Banco do Brasil, Nubank, etc."
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Informações do Espaço */}
         <div className="pt-6 border-t border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">

@@ -20,33 +20,40 @@ export function calculateProfileCompleteness(user: AppUser | null): ProfileCompl
   }
 
   const fields = [
-    // Informações Básicas (2 campos = 15%)
-    { name: 'Nome da Pessoa', value: user.displayName, weight: 7.5 },
-    { name: 'Nome do Estabelecimento', value: user.businessName, weight: 7.5 },
+    // Informações Básicas (2 campos = 10%)
+    { name: 'Nome da Pessoa', value: user.displayName, weight: 5 },
+    { name: 'Nome do Estabelecimento', value: user.businessName, weight: 5 },
 
-    // Endereço (6 campos = 30%)
-    { name: 'CEP', value: user.location?.zipCode, weight: 5 },
-    { name: 'Rua', value: user.location?.street, weight: 5 },
-    { name: 'Número', value: user.location?.number, weight: 5 },
-    { name: 'Bairro', value: user.location?.neighborhood, weight: 5 },
-    { name: 'Cidade', value: user.location?.city, weight: 5 },
-    { name: 'Estado', value: user.location?.state, weight: 5 },
+    // Endereço (6 campos = 20%)
+    { name: 'CEP', value: user.location?.zipCode, weight: 3.33 },
+    { name: 'Rua', value: user.location?.street, weight: 3.33 },
+    { name: 'Número', value: user.location?.number, weight: 3.33 },
+    { name: 'Bairro', value: user.location?.neighborhood, weight: 3.34 },
+    { name: 'Cidade', value: user.location?.city, weight: 3.33 },
+    { name: 'Estado', value: user.location?.state, weight: 3.34 },
 
-    // Informações do Espaço (7 campos = 55%)
-    { name: 'Descrição do Espaço', value: user.venueInfo?.description, weight: 10 },
-    { name: 'Telefone/WhatsApp', value: user.venueInfo?.phone, weight: 8 },
-    { name: 'Capacidade', value: user.venueInfo?.capacity, weight: 7 },
-    { name: 'Instagram', value: user.venueInfo?.instagram, weight: 10 },
-    { name: 'Facebook', value: user.venueInfo?.facebook, weight: 5 },
+    // Informações Financeiras (5 campos = 30%)
+    { name: 'Valor do Condomínio', value: user.venueInfo?.condominiumPrice, weight: 8 },
+    { name: 'Chave PIX', value: user.venueInfo?.bankingInfo?.pixKey, weight: 6 },
+    { name: 'Tipo de Chave PIX', value: user.venueInfo?.bankingInfo?.pixKeyType, weight: 4 },
+    { name: 'Nome do Titular', value: user.venueInfo?.bankingInfo?.accountHolder, weight: 6 },
+    { name: 'Nome do Banco', value: user.venueInfo?.bankingInfo?.bankName, weight: 6 },
+
+    // Informações do Espaço (7 campos = 40%)
+    { name: 'Descrição do Espaço', value: user.venueInfo?.description, weight: 8 },
+    { name: 'Telefone/WhatsApp', value: user.venueInfo?.phone, weight: 6 },
+    { name: 'Capacidade', value: user.venueInfo?.capacity, weight: 5 },
+    { name: 'Instagram', value: user.venueInfo?.instagram, weight: 7 },
+    { name: 'Facebook', value: user.venueInfo?.facebook, weight: 4 },
     {
       name: 'Amenidades',
       value: hasAnyAmenity(user.venueInfo?.amenities),
-      weight: 10,
+      weight: 7,
     },
     {
       name: '3+ Amenidades',
       value: hasMinimumAmenities(user.venueInfo?.amenities, 3),
-      weight: 5,
+      weight: 3,
     },
   ];
 

@@ -8,6 +8,12 @@ export interface CreateBookingResponse {
   success: boolean;
   bookingId?: string;
   error?: string;
+  payment?: {
+    qrCodeBase64: string;
+    qrCode: string;
+    amount: number;
+    paymentId: number;
+  } | null;
 }
 
 /**
@@ -52,6 +58,7 @@ export async function createPublicBooking(
     return {
       success: true,
       bookingId: result.bookingId,
+      payment: result.payment || null,
     };
   } catch (error: any) {
     console.error('Erro ao criar agendamento:', error);

@@ -14,6 +14,7 @@ import {
   sanitizeNotes,
   sanitizeNumberOfPeople,
 } from '@/lib/security/input-sanitizer';
+import { generatePixQRCode } from '@/lib/pix';
 
 export async function POST(request: NextRequest) {
   try {
@@ -114,10 +115,74 @@ export async function POST(request: NextRequest) {
     const db = adminDb();
     const docRef = await db.collection('bookings').add(bookingData);
 
+    // Criar pagamento PIX usando os dados bancários do perfil do admin
+    let pixPayment = null;
+
+    try {
+      // Verifica se o admin configurou dados bancários
+      if (!client.venueInfo?.bankingInfo?.pixKey) {
+        throw new Error('Chave PIX não configurada no perfil do estabelecimento');
+      }
+
+      if (!client.venueInfo?.bankingInfo?.pixKeyType) {
+        throw new Error('Tipo de chave PIX não configurado');
+      }
+
+      if (!client.venueInfo?.bankingInfo?.accountHolder) {
+        throw new Error('Nome do titular não configurado');
+      }
+
+      // Usa o valor do condomínio cadastrado no perfil, ou valor padrão
+      const amount = client.venueInfo?.condominiumPrice || 0.01;
+
+      const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString(
+        'pt-BR'
+      );
+      const businessName =
+        client.businessName || client.displayName || 'Estabelecimento';
+
+      // Gera QR Code PIX usando os dados do perfil
+      pixPayment = await generatePixQRCode({
+        pixKey: client.venueInfo.bankingInfo.pixKey,
+        pixKeyType: client.venueInfo.bankingInfo.pixKeyType,
+        accountHolder: client.venueInfo.bankingInfo.accountHolder,
+        amount: amount,
+        description: `Agendamento ${businessName} - ${formattedDate}`,
+        city: client.location?.city || 'Recife',
+        transactionId: docRef.id, // ID do booking como identificador
+      });
+
+      // Atualiza o booking com informações de pagamento
+      await docRef.update({
+        'payment.status': 'pending',
+        'payment.method': 'pix',
+        'payment.amount': amount,
+        'payment.pixQrCode': pixPayment.qrCodeBase64,
+        'payment.pixQrCodeText': pixPayment.qrCode,
+        'payment.pixKey': client.venueInfo.bankingInfo.pixKey,
+        'payment.accountHolder': client.venueInfo.bankingInfo.accountHolder,
+      });
+
+      console.log('✅ Booking criado com sucesso:', {
+        bookingId: docRef.id,
+        amount: amount,
+        pixKey: client.venueInfo.bankingInfo.pixKey,
+        paymentStatus: 'pending',
+        bookingStatus: 'pending'
+      });
+    } catch (paymentError: any) {
+      console.error('Erro ao criar pagamento PIX:', paymentError);
+      // Não falha a criação do booking se o pagamento falhar
+      // O booking ficará sem informações de pagamento
+    }
+
     // Envia notificação push para os admins
     try {
-      const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
-      const businessName = client.businessName || client.displayName || 'Estabelecimento';
+      const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString(
+        'pt-BR'
+      );
+      const businessName =
+        client.businessName || client.displayName || 'Estabelecimento';
 
       await fetch(`${request.nextUrl.origin}/api/notifications/send`, {
         method: 'POST',
@@ -148,6 +213,13 @@ export async function POST(request: NextRequest) {
       success: true,
       bookingId: docRef.id,
       message: 'Agendamento criado com sucesso',
+      payment: pixPayment
+        ? {
+            qrCodeBase64: pixPayment.qrCodeBase64,
+            qrCode: pixPayment.qrCode,
+            amount: pixPayment.amount,
+          }
+        : null,
     });
   } catch (error: any) {
     console.error('Erro ao criar agendamento público:', error);
