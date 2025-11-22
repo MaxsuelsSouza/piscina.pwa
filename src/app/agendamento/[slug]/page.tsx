@@ -122,8 +122,8 @@ export default function PublicBookingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-left">
-              <p className="text-sm font-medium">Complete o pagamento PIX para confirmar seu agendamento.</p>
-              <p className="text-xs text-gray-500 mt-0.5">A confirmação é automática após o pagamento.</p>
+              <p className="text-sm font-medium">Complete o pagamento PIX para reservar seu agendamento.</p>
+              <p className="text-xs text-gray-500 mt-0.5">O estabelecimento irá confirmar após verificar o pagamento.</p>
             </div>
           </div>
         </div>

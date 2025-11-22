@@ -29,28 +29,38 @@ export function useAdminData(params?: UseAdminDataParams) {
 
   // Escuta mudanças nos agendamentos em tempo real
   useEffect(() => {
-    const unsubscribeBookings = onBookingsChange((newBookings) => {
-      setAllBookings(newBookings);
-    });
+    // SEGURANÇA: Só inicia listeners se for admin OU se tiver ownerId
+    if (!isAdmin && !ownerId) {
+      return;
+    }
 
-    const unsubscribeBlockedDates = onBlockedDatesChange((dates) => {
-      setAllBlockedDates(dates);
-    });
+    // SEGURANÇA: Passa ownerId e isAdmin para filtrar dados corretamente
+    const unsubscribeBookings = onBookingsChange(
+      (newBookings) => {
+        setAllBookings(newBookings);
+      },
+      ownerId,
+      isAdmin
+    );
+
+    const unsubscribeBlockedDates = onBlockedDatesChange(
+      (dates) => {
+        setAllBlockedDates(dates);
+      },
+      ownerId,
+      isAdmin
+    );
 
     return () => {
       unsubscribeBookings();
       unsubscribeBlockedDates();
     };
-  }, []);
+  }, [ownerId, isAdmin]);
 
-  // Filtra os dados baseado no tipo de usuário
-  const bookings = isAdmin
-    ? allBookings
-    : allBookings.filter(b => b.ownerId === ownerId);
-
-  const blockedDates = isAdmin
-    ? allBlockedDates
-    : allBlockedDates.filter(d => d.ownerId === ownerId);
+  // Os dados já vêm filtrados do serviço (segurança aplicada no Firestore)
+  // Não é necessário filtrar novamente aqui
+  const bookings = allBookings;
+  const blockedDates = allBlockedDates;
 
 
   const confirmBooking = async (id: string) => {

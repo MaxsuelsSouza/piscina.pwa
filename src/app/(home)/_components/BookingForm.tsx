@@ -12,7 +12,6 @@ import {
   sanitizePhone,
   sanitizeEmail,
   sanitizeNotes,
-  sanitizeNumberOfPeople,
   sanitizeBookingFormData,
 } from '@/lib/security/input-sanitizer';
 
@@ -72,7 +71,6 @@ export function BookingForm({
         customerName: sanitizedData.customerName,
         customerPhone: sanitizedData.customerPhone,
         customerEmail: sanitizedData.customerEmail,
-        numberOfPeople: sanitizedData.numberOfPeople,
         notes: sanitizedData.notes,
       });
     } else {
@@ -95,6 +93,10 @@ export function BookingForm({
   const PRICE_PER_DAY = pricePerDay ?? 0.01;
   const totalPrice = PRICE_PER_DAY * numberOfDays;
 
+  // Verifica se os campos obrigatórios estão preenchidos
+  const isFormValid = formData.customerName.trim().length > 0 &&
+                      formData.customerPhone.trim().length > 0;
+
   return (
     <>
       <h3 className="text-2xl font-light text-gray-900 mb-2">
@@ -108,7 +110,7 @@ export function BookingForm({
         {/* Nome */}
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
-            Nome completo
+            Nome completo <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -130,7 +132,7 @@ export function BookingForm({
         {/* Telefone */}
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
-            Telefone
+            Telefone <span className="text-red-500">*</span>
           </label>
           <input
             type="tel"
@@ -161,29 +163,6 @@ export function BookingForm({
             className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
             placeholder="seu@email.com"
           />
-        </div>
-
-        {/* Número de pessoas */}
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
-            Número de pessoas
-          </label>
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={formData.numberOfPeople}
-            onChange={(e) => setFormData({ ...formData, numberOfPeople: sanitizeNumberOfPeople(parseInt(e.target.value)) })}
-            className={cn(
-              'w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:bg-white transition-all',
-              errors.numberOfPeople
-                ? 'ring-2 ring-red-500'
-                : 'focus:ring-blue-500'
-            )}
-          />
-          {errors.numberOfPeople && (
-            <p className="text-xs text-red-600 mt-2">{errors.numberOfPeople}</p>
-          )}
         </div>
 
         {/* Observações */}
@@ -235,7 +214,7 @@ export function BookingForm({
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isFormValid}
             className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 disabled:shadow-lg flex items-center justify-center gap-2"
           >
             {isSubmitting ? (

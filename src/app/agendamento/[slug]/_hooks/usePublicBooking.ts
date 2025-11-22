@@ -177,7 +177,7 @@ export function usePublicBooking(slug: string) {
               businessName: client.businessName || client.displayName,
             });
             toast.warning(
-              'Agendamento criado! Complete o pagamento PIX para confirmar.',
+              'Agendamento criado! Complete o pagamento PIX para reservar.',
               6000 // 6 segundos
             );
           } else {

@@ -67,10 +67,28 @@ export async function createBooking(booking: Omit<Booking, 'id'>): Promise<strin
 
 /**
  * Busca todos os agendamentos
+ * @param ownerId - Opcional. Se fornecido, filtra apenas agendamentos deste owner (segurança)
+ * @param isAdmin - Se true, não aplica filtro de ownerId
  */
-export async function getBookings(): Promise<Booking[]> {
+export async function getBookings(ownerId?: string, isAdmin: boolean = false): Promise<Booking[]> {
   try {
-    const q = query(collection(db, BOOKINGS_COLLECTION), orderBy('createdAt', 'desc'));
+    let q;
+
+    if (isAdmin) {
+      // Admin pode ver todos os agendamentos sem filtro
+      q = query(collection(db, BOOKINGS_COLLECTION), orderBy('createdAt', 'desc'));
+    } else if (ownerId) {
+      // Usuários normais devem filtrar por ownerId (SEGURANÇA)
+      // NOTA: Removido orderBy para evitar necessidade de índice composto
+      q = query(
+        collection(db, BOOKINGS_COLLECTION),
+        where('ownerId', '==', ownerId)
+      );
+    } else {
+      // Sem ownerId e sem ser admin, retorna vazio
+      return [];
+    }
+
     const querySnapshot = await getDocs(q);
 
     const bookings: Booking[] = [];
@@ -80,6 +98,15 @@ export async function getBookings(): Promise<Booking[]> {
         ...doc.data(),
       } as Booking);
     });
+
+    // Ordena no client-side se não for admin
+    if (!isAdmin) {
+      bookings.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // desc
+      });
+    }
 
     return bookings;
   } catch (error) {
@@ -133,9 +160,31 @@ export async function deleteBooking(id: string): Promise<void> {
 
 /**
  * Escuta mudanças nos agendamentos em tempo real
+ * @param callback - Função chamada quando há mudanças
+ * @param ownerId - Opcional. Se fornecido, filtra apenas agendamentos deste owner (segurança)
+ * @param isAdmin - Se true, não aplica filtro de ownerId
  */
-export function onBookingsChange(callback: (bookings: Booking[]) => void): () => void {
-  const q = query(collection(db, BOOKINGS_COLLECTION), orderBy('createdAt', 'desc'));
+export function onBookingsChange(
+  callback: (bookings: Booking[]) => void,
+  ownerId?: string,
+  isAdmin: boolean = false
+): () => void {
+  let q;
+
+  if (isAdmin) {
+    // Admin pode ver todos os agendamentos sem filtro
+    q = query(collection(db, BOOKINGS_COLLECTION), orderBy('createdAt', 'desc'));
+  } else if (ownerId) {
+    // Usuários normais devem filtrar por ownerId (SEGURANÇA)
+    // NOTA: Removido orderBy para evitar necessidade de índice composto
+    q = query(
+      collection(db, BOOKINGS_COLLECTION),
+      where('ownerId', '==', ownerId)
+    );
+  } else {
+    // Sem ownerId e sem ser admin, retorna listener vazio
+    return () => {};
+  }
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
     const bookings: Booking[] = [];
@@ -145,6 +194,15 @@ export function onBookingsChange(callback: (bookings: Booking[]) => void): () =>
         ...doc.data(),
       } as Booking);
     });
+
+    // Ordena no client-side se não for admin
+    if (!isAdmin) {
+      bookings.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // desc
+      });
+    }
 
     callback(bookings);
   }, (error) => {
@@ -159,20 +217,45 @@ export function onBookingsChange(callback: (bookings: Booking[]) => void): () =>
 
 /**
  * Busca todas as datas bloqueadas
+ * @param ownerId - Opcional. Se fornecido, filtra bloqueios deste owner + bloqueios públicos (segurança)
+ * @param isAdmin - Se true, não aplica filtro de ownerId
  */
-export async function getBlockedDates(): Promise<BlockedDate[]> {
+export async function getBlockedDates(ownerId?: string, isAdmin: boolean = false): Promise<BlockedDate[]> {
   try {
-    const querySnapshot = await getDocs(collection(db, BLOCKED_DATES_COLLECTION));
+    if (isAdmin) {
+      // Admin pode ver todos os bloqueios
+      const querySnapshot = await getDocs(collection(db, BLOCKED_DATES_COLLECTION));
+      const blockedDates: BlockedDate[] = [];
+      querySnapshot.forEach((doc) => {
+        blockedDates.push({
+          id: doc.id,
+          ...doc.data(),
+        } as BlockedDate);
+      });
+      return blockedDates;
+    } else if (ownerId) {
+      // Usuários normais veem apenas seus bloqueios
+      // NOTA: Bloqueios públicos (sem ownerId) são visíveis através das regras do Firestore
+      // mas não podemos fazer query por "campo inexistente", então retornamos apenas os do owner
+      const ownerQuery = query(
+        collection(db, BLOCKED_DATES_COLLECTION),
+        where('ownerId', '==', ownerId)
+      );
+      const querySnapshot = await getDocs(ownerQuery);
 
-    const blockedDates: BlockedDate[] = [];
-    querySnapshot.forEach((doc) => {
-      blockedDates.push({
-        id: doc.id,
-        ...doc.data(),
-      } as BlockedDate);
-    });
+      const blockedDates: BlockedDate[] = [];
+      querySnapshot.forEach((doc) => {
+        blockedDates.push({
+          id: doc.id,
+          ...doc.data(),
+        } as BlockedDate);
+      });
 
-    return blockedDates;
+      return blockedDates;
+    } else {
+      // Sem ownerId e sem ser admin, retorna vazio
+      return [];
+    }
   } catch (error) {
     return [];
   }
@@ -217,20 +300,56 @@ export async function unblockDate(date: string): Promise<void> {
 
 /**
  * Escuta mudanças nas datas bloqueadas em tempo real
+ * @param callback - Função chamada quando há mudanças
+ * @param ownerId - Opcional. Se fornecido, filtra bloqueios deste owner + públicos (segurança)
+ * @param isAdmin - Se true, não aplica filtro de ownerId
  */
-export function onBlockedDatesChange(callback: (blockedDates: BlockedDate[]) => void): () => void {
-  const unsubscribe = onSnapshot(collection(db, BLOCKED_DATES_COLLECTION), (querySnapshot) => {
-    const blockedDates: BlockedDate[] = [];
-    querySnapshot.forEach((doc) => {
-      blockedDates.push({
-        id: doc.id,
-        ...doc.data(),
-      } as BlockedDate);
+export function onBlockedDatesChange(
+  callback: (blockedDates: BlockedDate[]) => void,
+  ownerId?: string,
+  isAdmin: boolean = false
+): () => void {
+  if (isAdmin) {
+    // Admin pode ver todos os bloqueios
+    const unsubscribe = onSnapshot(collection(db, BLOCKED_DATES_COLLECTION), (querySnapshot) => {
+      const blockedDates: BlockedDate[] = [];
+      querySnapshot.forEach((doc) => {
+        blockedDates.push({
+          id: doc.id,
+          ...doc.data(),
+        } as BlockedDate);
+      });
+
+      callback(blockedDates);
+    }, (error) => {
     });
 
-    callback(blockedDates);
-  }, (error) => {
-  });
+    return unsubscribe;
+  } else if (ownerId) {
+    // Usuários normais veem apenas seus bloqueios
+    // NOTA: Bloqueios públicos (sem ownerId) não podem ser consultados via query
+    // apenas via regras de permissão individual
+    const q = query(
+      collection(db, BLOCKED_DATES_COLLECTION),
+      where('ownerId', '==', ownerId)
+    );
 
-  return unsubscribe;
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const blockedDates: BlockedDate[] = [];
+      querySnapshot.forEach((doc) => {
+        blockedDates.push({
+          id: doc.id,
+          ...doc.data(),
+        } as BlockedDate);
+      });
+
+      callback(blockedDates);
+    }, (error) => {
+    });
+
+    return unsubscribe;
+  } else {
+    // Sem ownerId e sem ser admin, retorna listener vazio
+    return () => {};
+  }
 }

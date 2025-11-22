@@ -34,12 +34,13 @@ service cloud.firestore {
                     (!isAuthenticated() && 'ownerId' in resource.data);
 
       // Leitura de lista (queries):
-      // - Admin: pode ler tudo sem restrição
-      // - Cliente autenticado: pode fazer queries (filtro por ownerId é aplicado no client-side)
-      // - Público não autenticado: pode fazer queries limitadas
-      // NOTA: O Firestore não filtra automaticamente por ownerId, isso é feito no código
+      // - Admin: pode ler tudo
+      // - Cliente autenticado: pode ler, mas CÓDIGO deve filtrar por ownerId
+      // - Público não autenticado: pode ler com limite
+      // IMPORTANTE: A segurança é garantida pelo CÓDIGO que sempre adiciona where('ownerId', '==', uid)
+      // O Firestore Rules valida cada DOCUMENTO retornado pela query
       allow list: if isAdmin() ||
-                     (isAuthenticated()) ||
+                     (isAuthenticated() && resource.data.ownerId == request.auth.uid) ||
                      (!isAuthenticated() && request.query.limit <= 100);
 
       // Criação:
@@ -75,10 +76,12 @@ service cloud.firestore {
 
       // Leitura de lista (queries):
       // - Admin: pode ler tudo
-      // - Cliente autenticado: pode fazer queries
+      // - Cliente autenticado: pode ler bloqueios próprios OU bloqueios públicos (sem ownerId)
       // - Público não autenticado: pode fazer queries limitadas
+      // IMPORTANTE: O Firestore Rules valida cada DOCUMENTO retornado
       allow list: if isAdmin() ||
-                     (isAuthenticated()) ||
+                     (isAuthenticated() &&
+                      (resource.data.ownerId == request.auth.uid || !('ownerId' in resource.data))) ||
                      (!isAuthenticated() && request.query.limit <= 100);
 
       // Criação:
