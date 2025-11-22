@@ -87,27 +87,47 @@ export function usePublicBooking(slug: string) {
   useEffect(() => {
     if (!client) return;
 
-    const unsubscribeBookings = onBookingsChange((allBookings) => {
-      // Filtra apenas agendamentos deste cliente
-      const clientBookings = allBookings.filter((b) => b.ownerId === client.uid);
-      setBookings(clientBookings);
-    });
+    // Busca agendamentos deste cliente (passando ownerId para filtrar server-side)
+    const unsubscribeBookings = onBookingsChange(
+      (allBookings) => {
+        // Filtra apenas agendamentos ativos (não cancelados e não expirados)
+        const now = new Date();
+        const activeBookings = allBookings.filter((b) => {
+          // Remove cancelados
+          if (b.status === 'cancelled') return false;
 
-    const unsubscribeBlockedDates = onBlockedDatesChange((allDates) => {
-      // Filtra apenas bloqueios deste cliente e que não expiraram (data >= hoje)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Zera as horas para comparar apenas a data
+          // Se está pendente e tem expiresAt, verifica se não expirou
+          if (b.status === 'pending' && b.expiresAt) {
+            const expiresAt = new Date(b.expiresAt);
+            // Se expirou, não considera
+            if (now > expiresAt) return false;
+          }
 
-      const clientBlockedDates = allDates.filter((d) => {
-        if (d.ownerId !== client.uid) return false;
+          return true;
+        });
 
-        // Verifica se a data não expirou
-        const blockedDate = new Date(d.date + 'T00:00:00');
-        return blockedDate >= today;
-      });
+        setBookings(activeBookings);
+      },
+      client.uid, // ownerId
+      false // não é admin
+    );
 
-      setBlockedDates(clientBlockedDates);
-    });
+    const unsubscribeBlockedDates = onBlockedDatesChange(
+      (allDates) => {
+        // Filtra apenas bloqueios que não expiraram (data >= hoje)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const activeDates = allDates.filter((d) => {
+          const blockedDate = new Date(d.date + 'T00:00:00');
+          return blockedDate >= today;
+        });
+
+        setBlockedDates(activeDates);
+      },
+      client.uid, // ownerId
+      false // não é admin
+    );
 
     return () => {
       unsubscribeBookings();

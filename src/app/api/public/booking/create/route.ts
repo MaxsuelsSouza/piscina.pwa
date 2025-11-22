@@ -73,6 +73,9 @@ export async function POST(request: NextRequest) {
       notes: sanitizeNotes(notes || ''),
     };
 
+    // IMPORTANTE: Normaliza o telefone (apenas números) para facilitar buscas
+    const normalizedPhone = sanitizedData.customerPhone.replace(/\D/g, '');
+
     // Validações adicionais
     if (sanitizedData.customerName.length < 3) {
       return NextResponse.json(
@@ -95,7 +98,7 @@ export async function POST(request: NextRequest) {
     const bookingData = {
       date,
       customerName: sanitizedData.customerName,
-      customerPhone: sanitizedData.customerPhone,
+      customerPhone: normalizedPhone, // Salva apenas números para facilitar buscas
       customerEmail: sanitizedData.customerEmail,
       timeSlot: 'full-day',
       numberOfPeople: sanitizedData.numberOfPeople,

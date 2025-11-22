@@ -35,10 +35,9 @@ service cloud.firestore {
 
       // Leitura de lista (queries):
       // - Admin: pode ler tudo
-      // - Cliente autenticado: pode ler, mas CÓDIGO deve filtrar por ownerId
-      // - Público não autenticado: pode ler com limite
-      // IMPORTANTE: A segurança é garantida pelo CÓDIGO que sempre adiciona where('ownerId', '==', uid)
-      // O Firestore Rules valida cada DOCUMENTO retornado pela query
+      // - Cliente autenticado: pode ler apenas seus agendamentos (ownerId)
+      // - Público não autenticado: pode ler com limite (para páginas públicas de agendamento)
+      // IMPORTANTE: Clientes públicos usam API routes para buscar seus agendamentos
       allow list: if isAdmin() ||
                      (isAuthenticated() && resource.data.ownerId == request.auth.uid) ||
                      (!isAuthenticated() && request.query.limit <= 100);
@@ -115,6 +114,22 @@ service cloud.firestore {
 
       // Apenas admin pode criar e deletar usuários
       allow create, delete: if isAdmin();
+    }
+
+    // Regras para clientes públicos (autenticação customizada)
+    match /clients/{clientId} {
+      // Qualquer um pode criar uma conta de cliente (registro público)
+      allow create: if true;
+
+      // Cliente pode ler e atualizar apenas seus próprios dados
+      // Verifica se o documento tem o campo 'phone' e se bate com o clientId
+      allow read, update: if clientId == resource.data.phone;
+
+      // Admin pode ler tudo
+      allow read: if isAdmin();
+
+      // Ninguém pode deletar (apenas admin via backend)
+      allow delete: if isAdmin();
     }
   }
 }

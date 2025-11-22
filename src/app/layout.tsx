@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ClientAuthProvider } from "@/contexts/ClientAuthContext";
 import { ConfirmProvider } from "@/contexts/ConfirmContext";
 import { PWAInstallControl } from "@/components/PWAInstallControl";
 import { ToastContainer } from "@/components/Toast";
@@ -58,11 +59,13 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${inter.variable} ${poppins.variable} font-sans`}>
         <AuthProvider>
-          <ConfirmProvider>
-            <PWAInstallControl />
-            <ToastContainer />
-            {children}
-          </ConfirmProvider>
+          <ClientAuthProvider>
+            <ConfirmProvider>
+              <PWAInstallControl />
+              <ToastContainer />
+              {children}
+            </ConfirmProvider>
+          </ClientAuthProvider>
         </AuthProvider>
       </body>
     </html>

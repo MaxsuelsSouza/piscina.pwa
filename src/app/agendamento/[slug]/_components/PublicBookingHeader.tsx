@@ -2,17 +2,45 @@
  * Cabeçalho da página pública de agendamento
  */
 
+'use client';
+
 import Link from 'next/link';
+import { useClientAuth } from '@/contexts/ClientAuthContext';
 
 interface PublicBookingHeaderProps {
   clientName?: string;
 }
 
 export function PublicBookingHeader({ clientName }: PublicBookingHeaderProps) {
+  const { client } = useClientAuth();
+
   return (
     <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 pt-16 pb-28 relative overflow-hidden">
       {/* Efeito decorativo de fundo */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE0YzMuMzE0IDAgNiAyLjY4NiA2IDZzLTIuNjg2IDYtNiA2LTYtMi42ODYtNi02IDIuNjg2LTYgNi02ek0yNCAzNmMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40"></div>
+
+      {/* Ícone de Perfil no canto superior direito */}
+      <div className="absolute top-4 right-4 z-10">
+        <Link
+          href={client ? '/perfil-cliente' : '/login-cliente'}
+          className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full transition-all border border-white/30 group"
+          title={client ? 'Meu Perfil' : 'Entrar'}
+        >
+          <svg
+            className="w-5 h-5 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
+        </Link>
+      </div>
 
       <div className="max-w-4xl mx-auto px-4 relative">
         <div className="text-center">
