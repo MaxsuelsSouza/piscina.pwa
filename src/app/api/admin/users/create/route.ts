@@ -99,7 +99,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Erro ao criar usuário:', error);
 
     // Erros específicos do Firebase
     if (error.code === 'auth/email-already-exists') {

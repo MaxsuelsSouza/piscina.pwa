@@ -68,7 +68,6 @@ export async function getUserByUid(uid: string): Promise<AppUser | null> {
 
     return userDocumentToAppUser(userSnap.data() as UserDocument);
   } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
     throw error;
   }
 }
@@ -89,7 +88,6 @@ export async function getUserByEmail(email: string): Promise<AppUser | null> {
     const userDoc = querySnapshot.docs[0];
     return userDocumentToAppUser(userDoc.data() as UserDocument);
   } catch (error) {
-    console.error('Erro ao buscar usuário por email:', error);
     throw error;
   }
 }
@@ -116,7 +114,6 @@ export async function getUserBySlug(slug: string): Promise<AppUser | null> {
 
     return userDocumentToAppUser(userData);
   } catch (error: any) {
-    console.error('Erro ao buscar usuário por slug:', error);
     throw error;
   }
 }
@@ -135,14 +132,10 @@ export async function getAllUsers(): Promise<AppUser[]> {
         const userData = doc.data() as UserDocument;
         return userDocumentToAppUser(userData);
       } catch (error) {
-        console.error('Erro ao converter documento de usuário:', doc.id, error);
-        console.error('Dados do documento:', doc.data());
         throw error;
       }
     });
   } catch (error: any) {
-    console.error('Erro ao listar usuários:', error);
-    console.error('Detalhes:', error.message, error.code);
     throw error;
   }
 }
@@ -163,7 +156,6 @@ export async function getActiveUsers(): Promise<AppUser[]> {
       userDocumentToAppUser(doc.data() as UserDocument)
     );
   } catch (error) {
-    console.error('Erro ao listar usuários ativos:', error);
     throw error;
   }
 }
@@ -188,8 +180,6 @@ export async function getAllActiveClients(): Promise<AppUser[]> {
         const userData = doc.data() as UserDocument;
         return userDocumentToAppUser(userData);
       } catch (error) {
-        console.error('Erro ao converter documento de cliente:', doc.id, error);
-        console.error('Dados do documento:', doc.data());
         throw error;
       }
     });
@@ -197,8 +187,6 @@ export async function getAllActiveClients(): Promise<AppUser[]> {
     // Ordena por data de criação em memória
     return clients.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (error: any) {
-    console.error('Erro ao listar clientes ativos:', error);
-    console.error('Detalhes:', error.message, error.code);
     throw error;
   }
 }
@@ -226,7 +214,6 @@ export async function updateUser(
 
     await userRef.update(updateData);
   } catch (error) {
-    console.error('Erro ao atualizar usuário:', error);
     throw error;
   }
 }
@@ -238,7 +225,6 @@ export async function deactivateUser(uid: string): Promise<void> {
   try {
     await updateUser(uid, { isActive: false });
   } catch (error) {
-    console.error('Erro ao desativar usuário:', error);
     throw error;
   }
 }
@@ -250,7 +236,6 @@ export async function activateUser(uid: string): Promise<void> {
   try {
     await updateUser(uid, { isActive: true });
   } catch (error) {
-    console.error('Erro ao ativar usuário:', error);
     throw error;
   }
 }
@@ -265,7 +250,6 @@ export async function deleteUserDocument(uid: string): Promise<void> {
     const userRef = db.collection(USERS_COLLECTION).doc(uid);
     await userRef.delete();
   } catch (error) {
-    console.error('Erro ao deletar usuário:', error);
     throw error;
   }
 }

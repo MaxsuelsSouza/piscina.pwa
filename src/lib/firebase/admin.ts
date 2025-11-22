@@ -17,7 +17,6 @@ const getFirebaseCredentials = () => {
         privateKey: serviceAccount.private_key,
       };
     } catch (error) {
-      console.error('❌ Erro ao parsear FIREBASE_SERVICE_ACCOUNT:', error);
     }
   }
 
@@ -66,7 +65,6 @@ Opção 2 - Usar variáveis individuais:
   FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\nSua_Chave_Aqui\\n-----END PRIVATE KEY-----\\n
 
 Para obter as credenciais:
-1. Acesse o Firebase Console: https://console.firebase.google.com/
 2. Vá em Project Settings > Service Accounts
 3. Clique em "Generate New Private Key"
 4. Baixe o arquivo JSON
@@ -77,7 +75,6 @@ No Vercel:
 
 5. Reinicie/redeploy o servidor
     `;
-    console.error(errorMsg);
     return false;
   }
 
@@ -97,13 +94,8 @@ if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(credentials),
       });
-      console.log('✅ Firebase Admin inicializado com sucesso');
     } catch (error: any) {
-      console.error('❌ Erro ao inicializar Firebase Admin:', error);
-      console.error('❌ Detalhes:', {
-        message: error.message,
-        code: error.code,
-      });
+      throw error;
     }
   }
 }

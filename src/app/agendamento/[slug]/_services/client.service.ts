@@ -34,7 +34,6 @@ export async function fetchClientBySlug(slug: string): Promise<FetchClientRespon
       client: data.client,
     };
   } catch (error: any) {
-    console.error('Erro ao buscar cliente:', error);
     return {
       success: false,
       error: error.message || 'Erro ao carregar informações',

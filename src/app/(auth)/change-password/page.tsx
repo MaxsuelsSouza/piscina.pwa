@@ -78,7 +78,6 @@ export default function ChangePasswordPage() {
         router.push('/perfil');
       }, 1500);
     } catch (err: any) {
-      console.error('Erro ao trocar senha:', err);
       setError('Erro ao trocar senha. Tente novamente.');
     } finally {
       setLoading(false);

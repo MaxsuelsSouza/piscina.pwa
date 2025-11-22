@@ -57,15 +57,6 @@ export async function createPixPayment(
       throw new Error('Falha ao gerar dados do PIX');
     }
 
-    // Aviso em desenvolvimento
-    if (isLocalhost) {
-      console.log('\n⚠️  ATENÇÃO - DESENVOLVIMENTO LOCAL:');
-      console.log('📍 Webhooks não funcionam em localhost');
-      console.log('🔄 A confirmação de pagamento dependerá do polling no frontend');
-      console.log(
-        '💡 Para testar webhooks, use ngrok ou deploy em produção\n'
-      );
-    }
 
     return {
       id: payment.id!,
@@ -81,7 +72,6 @@ export async function createPixPayment(
       external_reference: payment.external_reference || undefined,
     };
   } catch (error: any) {
-    console.error('Erro ao criar pagamento PIX:', error);
     throw new Error(
       error?.message || 'Erro ao criar pagamento. Tente novamente.'
     );
@@ -100,7 +90,6 @@ export async function getPayment(paymentId: number) {
     const payment = await paymentClient.get({ id: paymentId });
     return payment;
   } catch (error: any) {
-    console.error('Erro ao buscar pagamento:', error);
     throw new Error(error?.message || 'Erro ao buscar pagamento');
   }
 }
@@ -119,7 +108,6 @@ export async function checkPaymentStatus(
     const payment = await paymentClient.get({ id: paymentId });
     return payment.status as PaymentStatus;
   } catch (error: any) {
-    console.error('Erro ao verificar status do pagamento:', error);
     throw new Error(error?.message || 'Erro ao verificar pagamento');
   }
 }

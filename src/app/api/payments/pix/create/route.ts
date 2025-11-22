@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPixPayment } from '@/lib/mercadopago';
-import { sanitizeInput } from '@/lib/security/input-sanitizer';
+import { sanitizeEmail, sanitizeName, sanitizeNotes } from '@/lib/security/input-sanitizer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,13 +17,13 @@ export async function POST(request: NextRequest) {
     // Sanitização dos inputs
     const sanitizedData = {
       amount: Number(body.amount),
-      email: sanitizeInput(body.email),
-      description: sanitizeInput(body.description),
-      firstName: body.firstName ? sanitizeInput(body.firstName) : undefined,
-      lastName: body.lastName ? sanitizeInput(body.lastName) : undefined,
-      cpf: body.cpf ? sanitizeInput(body.cpf) : undefined,
+      email: sanitizeEmail(body.email),
+      description: sanitizeNotes(body.description),
+      firstName: body.firstName ? sanitizeName(body.firstName) : undefined,
+      lastName: body.lastName ? sanitizeName(body.lastName) : undefined,
+      cpf: body.cpf ? body.cpf.replace(/\D/g, '') : undefined,
       externalReference: body.externalReference
-        ? sanitizeInput(body.externalReference)
+        ? sanitizeNotes(body.externalReference)
         : undefined,
     };
 
@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Erro ao criar pagamento PIX:', error);
     return NextResponse.json(
       { error: error.message || 'Erro ao criar pagamento' },
       { status: 500 }

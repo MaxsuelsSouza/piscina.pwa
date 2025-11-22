@@ -40,9 +40,6 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
 
     return userToResponse(userCredential.user);
   } catch (error: any) {
-    console.error('❌ Erro ao fazer login:', error);
-    console.error('❌ Código do erro:', error.code);
-    console.error('❌ Mensagem do erro:', error.message);
 
     // Mensagens de erro amigáveis
     let message = 'Erro ao fazer login';
@@ -94,7 +91,6 @@ export async function register(credentials: RegisterCredentials): Promise<LoginR
 
     return userToResponse(userCredential.user);
   } catch (error: any) {
-    console.error('Erro ao registrar:', error);
 
     let message = 'Erro ao criar conta';
 
@@ -129,7 +125,6 @@ export async function logout(): Promise<void> {
   try {
     await signOut(auth);
   } catch (error) {
-    console.error('Erro ao fazer logout:', error);
   }
 }
 

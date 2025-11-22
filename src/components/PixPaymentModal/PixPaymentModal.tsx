@@ -79,7 +79,6 @@ export function PixPaymentModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     } catch (error) {
-      console.error('Erro ao copiar código:', error);
     }
   };
 

@@ -37,9 +37,7 @@ export async function saveNotificationForUser(
     };
 
     await db.collection(NOTIFICATIONS_COLLECTION).add(notificationData);
-    console.log(`Notificação salva para usuário ${userId}`);
   } catch (error) {
-    console.error('Erro ao salvar notificação:', error);
     throw error;
   }
 }
@@ -72,9 +70,7 @@ export async function saveNotificationsForUsers(
     });
 
     await batch.commit();
-    console.log(`Notificações salvas para ${userIds.length} usuários`);
   } catch (error) {
-    console.error('Erro ao salvar notificações em batch:', error);
     throw error;
   }
 }

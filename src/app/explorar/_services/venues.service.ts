@@ -27,7 +27,6 @@ export async function fetchVenues(): Promise<VenuesResponse> {
 
     return result;
   } catch (error) {
-    console.error('Erro ao buscar espaços:', error);
     return {
       success: false,
       error: 'Erro ao buscar espaços. Tente novamente.',

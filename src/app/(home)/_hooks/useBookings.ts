@@ -17,7 +17,6 @@ export function useBookings() {
         setBookings(JSON.parse(stored));
       }
     } catch (error) {
-      console.error('Erro ao carregar agendamentos:', error);
     } finally {
       setLoading(false);
     }
@@ -29,7 +28,6 @@ export function useBookings() {
       localStorage.setItem('pool-bookings', JSON.stringify(newBookings));
       setBookings(newBookings);
     } catch (error) {
-      console.error('Erro ao salvar agendamentos:', error);
     }
   };
 

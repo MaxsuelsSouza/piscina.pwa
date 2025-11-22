@@ -19,7 +19,6 @@ export async function loginWithEmail(email: string, password: string): Promise<U
   try {
     return await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-    console.error('Erro ao fazer login:', error);
     throw error;
   }
 }
@@ -31,7 +30,6 @@ export async function logout(): Promise<void> {
   try {
     await signOut(auth);
   } catch (error) {
-    console.error('Erro ao fazer logout:', error);
     throw error;
   }
 }
@@ -74,7 +72,6 @@ export async function isAdmin(): Promise<boolean> {
     const tokenResult = await user.getIdTokenResult();
     return tokenResult.claims.admin === true;
   } catch (error) {
-    console.error('Erro ao verificar admin:', error);
     return false;
   }
 }
@@ -89,7 +86,6 @@ export async function sendPasswordReset(email: string): Promise<void> {
       handleCodeInApp: false,
     });
   } catch (error) {
-    console.error('Erro ao enviar email de redefinição:', error);
     throw error;
   }
 }

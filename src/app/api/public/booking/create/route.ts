@@ -163,15 +163,7 @@ export async function POST(request: NextRequest) {
         'payment.accountHolder': client.venueInfo.bankingInfo.accountHolder,
       });
 
-      console.log('✅ Booking criado com sucesso:', {
-        bookingId: docRef.id,
-        amount: amount,
-        pixKey: client.venueInfo.bankingInfo.pixKey,
-        paymentStatus: 'pending',
-        bookingStatus: 'pending'
-      });
     } catch (paymentError: any) {
-      console.error('Erro ao criar pagamento PIX:', paymentError);
       // Não falha a criação do booking se o pagamento falhar
       // O booking ficará sem informações de pagamento
     }
@@ -203,10 +195,8 @@ export async function POST(request: NextRequest) {
         }),
       });
 
-      console.log('Notificação enviada para admins sobre novo agendamento');
     } catch (notificationError) {
       // Não falha a criação do agendamento se a notificação falhar
-      console.error('Erro ao enviar notificação:', notificationError);
     }
 
     return NextResponse.json({
@@ -222,7 +212,6 @@ export async function POST(request: NextRequest) {
         : null,
     });
   } catch (error: any) {
-    console.error('Erro ao criar agendamento público:', error);
     return NextResponse.json(
       { error: 'Erro ao criar agendamento. Tente novamente.' },
       { status: 500 }

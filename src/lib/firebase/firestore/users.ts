@@ -61,7 +61,6 @@ export async function getUserByUid(uid: string): Promise<AppUser | null> {
 
     return userDocumentToAppUser(userSnap.data() as UserDocument);
   } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
     throw error;
   }
 }
@@ -82,7 +81,6 @@ export async function getUserByEmail(email: string): Promise<AppUser | null> {
     const userDoc = querySnapshot.docs[0];
     return userDocumentToAppUser(userDoc.data() as UserDocument);
   } catch (error) {
-    console.error('Erro ao buscar usuário por email:', error);
     throw error;
   }
 }
@@ -100,7 +98,6 @@ export async function getAllUsers(): Promise<AppUser[]> {
       userDocumentToAppUser(doc.data() as UserDocument)
     );
   } catch (error) {
-    console.error('Erro ao listar usuários:', error);
     throw error;
   }
 }
@@ -122,7 +119,6 @@ export async function getActiveUsers(): Promise<AppUser[]> {
       userDocumentToAppUser(doc.data() as UserDocument)
     );
   } catch (error) {
-    console.error('Erro ao listar usuários ativos:', error);
     throw error;
   }
 }
@@ -168,7 +164,6 @@ export async function updateUser(
 
     await updateDoc(userRef, updateData);
   } catch (error) {
-    console.error('Erro ao atualizar usuário:', error);
     throw error;
   }
 }
@@ -180,7 +175,6 @@ export async function deactivateUser(uid: string): Promise<void> {
   try {
     await updateUser(uid, { isActive: false });
   } catch (error) {
-    console.error('Erro ao desativar usuário:', error);
     throw error;
   }
 }
@@ -192,7 +186,6 @@ export async function activateUser(uid: string): Promise<void> {
   try {
     await updateUser(uid, { isActive: true });
   } catch (error) {
-    console.error('Erro ao ativar usuário:', error);
     throw error;
   }
 }
@@ -206,7 +199,6 @@ export async function deleteUserDocument(uid: string): Promise<void> {
     const userRef = doc(db, USERS_COLLECTION, uid);
     await deleteDoc(userRef);
   } catch (error) {
-    console.error('Erro ao deletar usuário:', error);
     throw error;
   }
 }

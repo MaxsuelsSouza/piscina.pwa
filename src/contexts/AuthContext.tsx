@@ -47,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (loginTime && (now - parseInt(loginTime)) > twentyFourHours) {
             // Sessão expirada após 24 horas - faz logout automático
-            console.log('Sessão expirada após 24 horas');
             signOut(auth);
             localStorage.removeItem('auth_login_time');
             setUser(null);
@@ -63,7 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Se o documento não existe no Firestore, cria um novo
             if (!userDataFromFirestore) {
-              console.log('Documento do usuário não encontrado. Criando automaticamente...');
 
               // Determina o role baseado na verificação de admin
               const isUserAdmin = checkIsAdmin(currentUser.uid);
@@ -83,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
               // Busca novamente para ter os dados completos
               userDataFromFirestore = await getUserByUid(currentUser.uid);
-              console.log('✅ Documento do usuário criado automaticamente');
             }
 
             setUserData(userDataFromFirestore);
@@ -92,7 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const adminStatus = userDataFromFirestore?.role === 'admin' || checkIsAdmin(currentUser.uid);
             setIsAdmin(adminStatus);
           } catch (error) {
-            console.error('Erro ao buscar dados do usuário:', error);
             // Fallback para verificação por UID
             setIsAdmin(checkIsAdmin(currentUser.uid));
           }
@@ -107,7 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return () => unsubscribe();
     } catch (error) {
-      console.error('Erro ao inicializar autenticação:', error);
       setLoading(false);
     }
   }, []);
@@ -124,7 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Salva o timestamp do login para controlar expiração de 24 horas
       localStorage.setItem('auth_login_time', Date.now().toString());
     } catch (error) {
-      console.error('Erro ao fazer login:', error);
       throw error;
     }
   };
@@ -135,14 +129,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Limpa o timestamp de login
       localStorage.removeItem('auth_login_time');
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
       throw error;
     }
   };
 
   const refreshUserData = async (): Promise<void> => {
     if (!user?.uid) {
-      console.warn('Não é possível recarregar dados: usuário não autenticado');
       return;
     }
 
@@ -156,7 +148,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAdmin(adminStatus);
       }
     } catch (error) {
-      console.error('Erro ao recarregar dados do usuário:', error);
       throw error;
     }
   };

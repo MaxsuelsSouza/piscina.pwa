@@ -138,7 +138,6 @@ export function useProfileForm() {
           });
         }
       } catch (error) {
-        console.error('Erro ao buscar CEP:', error);
       }
     }
   };
@@ -197,7 +196,6 @@ export function useProfileForm() {
 
       setSuccess('Perfil atualizado com sucesso!');
     } catch (err: any) {
-      console.error('Erro ao atualizar perfil:', err);
       setError('Erro ao atualizar perfil. Tente novamente.');
     } finally {
       setLoading(false);

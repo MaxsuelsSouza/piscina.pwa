@@ -36,7 +36,6 @@ export interface GeocodingResult {
 export async function getUserLocation(): Promise<UserLocation | null> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      console.error('Geolocalização não suportada pelo navegador');
       resolve(null);
       return;
     }
@@ -56,7 +55,6 @@ export async function getUserLocation(): Promise<UserLocation | null> {
         });
       },
       (error) => {
-        console.error('Erro ao obter localização:', error);
         resolve(null);
       },
       {
@@ -107,7 +105,6 @@ export async function reverseGeocode(
       address: address, // Retorna o objeto completo de endereço
     };
   } catch (error) {
-    console.error('Erro no geocoding reverso:', error);
     return null;
   }
 }
@@ -202,7 +199,6 @@ export async function searchCepByAddress(
 
     return null;
   } catch (error) {
-    console.error('Erro ao buscar CEP via ViaCEP:', error);
     return null;
   }
 }

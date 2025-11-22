@@ -23,7 +23,6 @@ export async function getAdminFCMTokens(): Promise<string[]> {
       .get();
 
     if (adminUsersSnapshot.empty) {
-      console.log('Nenhum admin ativo encontrado');
       return [];
     }
 
@@ -43,10 +42,8 @@ export async function getAdminFCMTokens(): Promise<string[]> {
       }
     });
 
-    console.log(`Encontrados ${adminTokens.length} tokens de admin`);
     return adminTokens;
   } catch (error) {
-    console.error('Erro ao buscar tokens de admin:', error);
     return [];
   }
 }
@@ -65,10 +62,8 @@ export async function getUserFCMTokens(userId: string): Promise<string[]> {
 
     const tokens = tokensSnapshot.docs.map((doc) => doc.data().token as string);
 
-    console.log(`Encontrados ${tokens.length} tokens para o usuário ${userId}`);
     return tokens;
   } catch (error) {
-    console.error('Erro ao buscar tokens do usuário:', error);
     return [];
   }
 }

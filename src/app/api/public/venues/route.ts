@@ -23,7 +23,6 @@ export async function GET() {
       })),
     });
   } catch (error: any) {
-    console.error('Erro ao buscar espaços:', error);
     return NextResponse.json(
       { error: 'Erro ao buscar espaços' },
       { status: 500 }

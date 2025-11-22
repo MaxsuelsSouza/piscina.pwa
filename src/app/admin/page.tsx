@@ -86,7 +86,6 @@ function AdminPageContent() {
         try {
           await markExpirationNotificationSent(booking.id);
         } catch (error) {
-          console.error('Erro ao marcar notificação como enviada:', error);
         }
       }
     };
@@ -133,7 +132,6 @@ function AdminPageContent() {
     const isAlreadyBlocked = blockedDates.some(d => d.date === selectedDate);
 
     if (isAlreadyBlocked) {
-      console.log('⚠️ Data já bloqueada:', selectedDate);
       toast.error('Esta data já está bloqueada!');
       setShowDateActionModal(false);
       setSelectedDate('');
@@ -141,14 +139,11 @@ function AdminPageContent() {
     }
 
     try {
-      console.log('🔒 Bloqueando data:', selectedDate);
       await blockDate(selectedDate);
       setShowDateActionModal(false);
       setSelectedDate('');
       toast.success('Data bloqueada com sucesso!');
-      console.log('✅ Data bloqueada com sucesso:', selectedDate);
     } catch (error) {
-      console.error('❌ Erro ao bloquear data:', error);
       toast.error('Erro ao bloquear data. Tente novamente.');
     }
   };
@@ -203,7 +198,6 @@ function AdminPageContent() {
           await updateUser(user.uid, { linkRevealed: true });
           // O userData será atualizado automaticamente pelo AuthContext
         } catch (error) {
-          console.error('Erro ao revelar link:', error);
         }
       }
     });

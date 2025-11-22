@@ -41,15 +41,6 @@ export async function generatePixQRCode(data: PixPaymentData): Promise<PixPaymen
     // Normaliza a chave PIX
     const normalizedKey = normalizePixKey(data.pixKey, data.pixKeyType);
 
-    console.log('Gerando PIX com dados:', {
-      pixKey: normalizedKey,
-      pixKeyType: data.pixKeyType,
-      accountHolder: data.accountHolder,
-      amount: data.amount,
-      city: data.city,
-      transactionId: data.transactionId,
-    });
-
     // Gera o código PIX usando pix-utils
     // Usa apenas campos essenciais para garantir compatibilidade
     const pixCode = createStaticPix({
@@ -59,7 +50,10 @@ export async function generatePixQRCode(data: PixPaymentData): Promise<PixPaymen
       transactionAmount: data.amount,
     });
 
-    console.log('Código PIX gerado:', pixCode.toBRCode());
+    // Verifica se houve erro na geração do código PIX
+    if ('error' in pixCode) {
+      throw new Error(`Erro ao gerar código PIX: ${pixCode.error}`);
+    }
 
     // Gera o QR Code em base64
     const qrCodeDataUrl = await QRCode.toDataURL(pixCode.toBRCode(), {
@@ -76,7 +70,6 @@ export async function generatePixQRCode(data: PixPaymentData): Promise<PixPaymen
     // Remove o prefixo "data:image/png;base64,"
     const base64Data = qrCodeDataUrl.split(',')[1];
 
-    console.log('QR Code gerado com sucesso');
 
     return {
       qrCodeBase64: base64Data,
@@ -84,7 +77,6 @@ export async function generatePixQRCode(data: PixPaymentData): Promise<PixPaymen
       amount: data.amount,
     };
   } catch (error) {
-    console.error('Erro ao gerar QR Code PIX:', error);
     throw new Error('Falha ao gerar QR Code PIX: ' + (error as Error).message);
   }
 }

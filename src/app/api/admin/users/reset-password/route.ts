@@ -83,8 +83,6 @@ export async function POST(request: NextRequest) {
     // etc.
 
     // Por enquanto, apenas logamos o link (NÃO FAZER EM PRODUÇÃO)
-    console.log('🔑 Link de redefinição gerado para:', email);
-    console.log('🔗 Link:', resetLink);
 
     // TEMPORÁRIO: Retorna o link na resposta para teste
     // REMOVER ISSO EM PRODUÇÃO por segurança!
@@ -95,7 +93,6 @@ export async function POST(request: NextRequest) {
       resetLink: resetLink,
     });
   } catch (error: any) {
-    console.error('Erro ao gerar link de redefinição:', error);
 
     // Mensagens de erro mais amigáveis
     let errorMessage = 'Erro ao gerar link de redefinição. Tente novamente.';

@@ -39,9 +39,7 @@ export async function saveFCMToken(userId: string, token: string): Promise<void>
     };
 
     await setDoc(tokenRef, tokenData, { merge: true });
-    console.log('Token FCM salvo com sucesso');
   } catch (error) {
-    console.error('Erro ao salvar token FCM:', error);
     throw error;
   }
 }
@@ -57,7 +55,6 @@ export async function getUserFCMTokens(userId: string): Promise<string[]> {
 
     return querySnapshot.docs.map((doc) => doc.data().token);
   } catch (error) {
-    console.error('Erro ao buscar tokens FCM:', error);
     return [];
   }
 }
@@ -83,7 +80,6 @@ export async function getAdminFCMTokens(): Promise<string[]> {
 
     return tokens;
   } catch (error) {
-    console.error('Erro ao buscar tokens de admin:', error);
     return [];
   }
 }

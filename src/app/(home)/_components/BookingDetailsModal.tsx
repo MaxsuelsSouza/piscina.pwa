@@ -73,7 +73,6 @@ export function BookingDetailsModal({ booking, onClose, onCancel, onConfirm, isA
         toast.success('Agendamento cancelado com sucesso!');
         onClose();
       } catch (error) {
-        console.error('Erro ao cancelar agendamento:', error);
         toast.error('Não foi possível cancelar o agendamento. Tente novamente.');
       }
     }
@@ -94,7 +93,6 @@ export function BookingDetailsModal({ booking, onClose, onCancel, onConfirm, isA
         toast.success('Agendamento confirmado com sucesso!');
         onClose();
       } catch (error) {
-        console.error('Erro ao confirmar agendamento:', error);
         toast.error('Não foi possível confirmar o agendamento. Tente novamente.');
       }
     }

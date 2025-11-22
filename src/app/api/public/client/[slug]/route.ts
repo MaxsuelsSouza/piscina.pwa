@@ -37,7 +37,7 @@ export async function GET(
       );
     }
 
-    // Retorna apenas informações públicas
+    // Retorna informações públicas incluindo venueInfo e location
     return NextResponse.json({
       success: true,
       client: {
@@ -46,10 +46,11 @@ export async function GET(
         businessName: client.businessName,
         publicSlug: client.publicSlug,
         phone: client.venueInfo?.phone,
+        venueInfo: client.venueInfo, // Informações do espaço (incluindo preço)
+        location: client.location, // Localização (para cidade no PIX)
       },
     });
   } catch (error: any) {
-    console.error('Erro ao buscar cliente por slug:', error);
     return NextResponse.json(
       { error: 'Erro ao buscar cliente' },
       { status: 500 }

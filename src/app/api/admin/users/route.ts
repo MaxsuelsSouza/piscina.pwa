@@ -60,13 +60,6 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error: any) {
-    console.error('Erro ao listar usuários:', error);
-    console.error('Detalhes do erro:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack,
-    });
-
     return NextResponse.json(
       {
         error: 'Erro ao listar usuários. Tente novamente.',

@@ -61,7 +61,6 @@ export async function createPublicBooking(
       payment: result.payment || null,
     };
   } catch (error: any) {
-    console.error('Erro ao criar agendamento:', error);
     return {
       success: false,
       error: error.message || 'Erro ao criar agendamento',

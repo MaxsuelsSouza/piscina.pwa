@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
+import { Booking } from '@/app/(home)/_types/booking';
 
 export async function GET(
   request: NextRequest,
@@ -26,13 +27,7 @@ export async function GET(
       );
     }
 
-    const booking = { id: bookingDoc.id, ...bookingDoc.data() };
-
-    console.log('📊 Status check:', {
-      bookingId: booking.id,
-      bookingStatus: booking.status,
-      paymentStatus: booking.payment?.status || 'pending',
-    });
+    const booking = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
 
     // Retorna status do pagamento e do booking
     return NextResponse.json({
@@ -48,7 +43,6 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error('Erro ao verificar status:', error);
     return NextResponse.json(
       { error: 'Erro ao verificar status do pagamento' },
       { status: 500 }

@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
       success: true,
     });
   } catch (error: any) {
-    console.error('Erro ao atualizar status do usuário:', error);
 
     return NextResponse.json(
       { error: 'Erro ao atualizar status. Tente novamente.' },

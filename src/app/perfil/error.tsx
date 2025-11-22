@@ -10,7 +10,6 @@ export default function PerfilError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Perfil Error:', error);
   }, [error]);
 
   return (

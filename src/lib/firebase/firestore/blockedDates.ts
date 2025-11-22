@@ -31,7 +31,6 @@ export async function blockDate(date: string): Promise<string> {
     const docRef = await addDoc(collection(db, BLOCKED_DATES_COLLECTION), newBlockedDate);
     return docRef.id;
   } catch (error) {
-    console.error('Erro ao bloquear data:', error);
     throw error;
   }
 }
@@ -54,7 +53,6 @@ export async function createBlockedDate(date: string, ownerId: string): Promise<
       ...newBlockedDate,
     };
   } catch (error) {
-    console.error('Erro ao criar data bloqueada:', error);
     throw error;
   }
 }
@@ -66,7 +64,6 @@ export async function deleteBlockedDate(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, BLOCKED_DATES_COLLECTION, id));
   } catch (error) {
-    console.error('Erro ao deletar data bloqueada:', error);
     throw error;
   }
 }
@@ -91,7 +88,6 @@ export async function unblockDate(date: string): Promise<void> {
 
     await Promise.all(deletePromises);
   } catch (error) {
-    console.error('Erro ao desbloquear data:', error);
     throw error;
   }
 }
@@ -107,7 +103,6 @@ export async function getAllBlockedDates(): Promise<BlockedDate[]> {
       ...doc.data(),
     })) as BlockedDate[];
   } catch (error) {
-    console.error('Erro ao buscar datas bloqueadas:', error);
     throw error;
   }
 }
@@ -125,7 +120,6 @@ export async function isDateBlocked(date: string): Promise<boolean> {
     const querySnapshot = await getDocs(q);
     return !querySnapshot.empty;
   } catch (error) {
-    console.error('Erro ao verificar data bloqueada:', error);
     throw error;
   }
 }
@@ -144,7 +138,6 @@ export function subscribeToBlockedDates(callback: (blockedDates: BlockedDate[]) 
       callback(blockedDates);
     });
   } catch (error) {
-    console.error('Erro ao escutar datas bloqueadas:', error);
     throw error;
   }
 }

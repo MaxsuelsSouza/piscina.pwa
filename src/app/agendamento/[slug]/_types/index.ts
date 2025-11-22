@@ -3,6 +3,7 @@
  */
 
 import type { Booking, BlockedDate } from '@/app/(home)/_types/booking';
+import type { VenueInfo, VenueLocation } from '@/types/user';
 
 export type { Booking, BlockedDate };
 
@@ -15,6 +16,8 @@ export interface ClientInfo {
   businessName?: string; // Nome do estabelecimento
   publicSlug?: string;
   phone?: string; // Telefone/WhatsApp do cliente
+  venueInfo?: VenueInfo; // Informações do espaço (incluindo preço)
+  location?: VenueLocation; // Localização
 }
 
 /**

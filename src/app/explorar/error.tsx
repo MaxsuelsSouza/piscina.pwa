@@ -10,7 +10,6 @@ export default function ExplorarError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Explorar Error:', error);
   }, [error]);
 
   return (

@@ -16,20 +16,12 @@ export async function GET(
       );
     }
 
-    console.log('🔍 Verificando pagamento no Mercado Pago:', paymentId);
 
     // Busca o pagamento no Mercado Pago
     const payment = await getPayment(Number(paymentId));
 
-    console.log('📊 Status do pagamento no MP:', {
-      id: payment.id,
-      status: payment.status,
-      external_reference: payment.external_reference,
-    });
-
     // Se o pagamento foi aprovado e ainda não foi atualizado no Firebase
     if (payment.status === 'approved' && payment.external_reference) {
-      console.log('💰 Pagamento aprovado! Atualizando booking...');
 
       try {
         await updateBookingPaymentStatus(payment.external_reference, {
@@ -40,7 +32,6 @@ export async function GET(
           amount: payment.transaction_amount || 0,
         });
 
-        console.log('✅ Booking atualizado com sucesso');
 
         return NextResponse.json({
           success: true,
@@ -49,7 +40,6 @@ export async function GET(
           message: 'Pagamento confirmado!',
         });
       } catch (updateError) {
-        console.error('❌ Erro ao atualizar booking:', updateError);
         throw updateError;
       }
     }
@@ -62,7 +52,6 @@ export async function GET(
       message: `Status: ${payment.status}`,
     });
   } catch (error: any) {
-    console.error('❌ Erro ao verificar pagamento:', error);
     return NextResponse.json(
       { error: error.message || 'Erro ao verificar pagamento' },
       { status: 500 }

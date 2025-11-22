@@ -193,7 +193,6 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
                         onCancelBooking(booking.id);
                         toast.success('Agendamento cancelado com sucesso!');
                       } catch (error) {
-                        console.error('Erro ao cancelar agendamento:', error);
                         toast.error('Não foi possível cancelar o agendamento. Tente novamente.');
                       }
                     }

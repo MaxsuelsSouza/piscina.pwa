@@ -144,10 +144,8 @@ export function userDocumentToAppUser(doc: UserDocument | any): AppUser {
 
     // Verifica se as datas são válidas
     if (isNaN(createdAt.getTime())) {
-      console.warn('Data de criação inválida para usuário:', doc.uid);
     }
     if (isNaN(updatedAt.getTime())) {
-      console.warn('Data de atualização inválida para usuário:', doc.uid);
     }
 
     return {
@@ -167,8 +165,6 @@ export function userDocumentToAppUser(doc: UserDocument | any): AppUser {
       venueInfo: doc.venueInfo,
     };
   } catch (error) {
-    console.error('Erro ao converter UserDocument para AppUser:', error);
-    console.error('Documento problemático:', doc);
     throw error;
   }
 }

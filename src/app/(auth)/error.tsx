@@ -10,7 +10,6 @@ export default function AuthError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Auth Error:', error);
   }, [error]);
 
   return (

@@ -24,7 +24,6 @@ async function getAuthToken(): Promise<string | null> {
   try {
     return await currentUser.getIdToken();
   } catch (error) {
-    console.error('Erro ao obter token:', error);
     return null;
   }
 }
@@ -63,7 +62,6 @@ export async function fetchUsers(): Promise<ServiceResponse<AppUser[]>> {
       data: result.users,
     };
   } catch (error) {
-    console.error('Erro ao listar usuários:', error);
     return {
       success: false,
       error: 'Erro ao listar usuários. Tente novamente.',
@@ -108,7 +106,6 @@ export async function createNewUser(
       success: true,
     };
   } catch (error) {
-    console.error('Erro ao criar usuário:', error);
     return {
       success: false,
       error: 'Erro ao criar usuário. Tente novamente.',
@@ -154,7 +151,6 @@ export async function toggleStatus(
       success: true,
     };
   } catch (error) {
-    console.error('Erro ao atualizar status do usuário:', error);
     return {
       success: false,
       error: 'Erro ao atualizar status. Tente novamente.',
@@ -185,7 +181,6 @@ export async function resetUserPassword(email: string): Promise<ServiceResponse>
       success: true,
     };
   } catch (error: any) {
-    console.error('Erro ao enviar email de redefinição:', error);
 
     let errorMessage = 'Erro ao enviar email de redefinição. Tente novamente.';
 

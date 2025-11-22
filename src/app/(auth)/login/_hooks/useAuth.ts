@@ -33,7 +33,6 @@ export function useAuth() {
 
       router.push('/admin');
     } catch (error) {
-      console.error('💥 Exceção no login:', error);
       setErrors([{ field: 'general', message: 'Erro ao conectar com o servidor' }]);
     } finally {
       setLoading(false);

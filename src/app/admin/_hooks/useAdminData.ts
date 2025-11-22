@@ -46,34 +46,12 @@ export function useAdminData(params?: UseAdminDataParams) {
   // Filtra os dados baseado no tipo de usuário
   const bookings = isAdmin
     ? allBookings
-    : allBookings.filter(b => {
-        // Debug: log para verificar filtragem
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 Filtrando agendamento:', {
-            bookingId: b.id,
-            bookingOwnerId: b.ownerId,
-            userOwnerId: ownerId,
-            match: b.ownerId === ownerId
-          });
-        }
-        return b.ownerId === ownerId;
-      });
+    : allBookings.filter(b => b.ownerId === ownerId);
 
   const blockedDates = isAdmin
     ? allBlockedDates
     : allBlockedDates.filter(d => d.ownerId === ownerId);
 
-  // Debug: log do resultado da filtragem
-  if (process.env.NODE_ENV === 'development') {
-    console.log('📊 Dados do painel:', {
-      isAdmin,
-      ownerId,
-      totalBookings: allBookings.length,
-      filteredBookings: bookings.length,
-      totalBlockedDates: allBlockedDates.length,
-      filteredBlockedDates: blockedDates.length
-    });
-  }
 
   const confirmBooking = async (id: string) => {
     try {
@@ -94,7 +72,6 @@ export function useAdminData(params?: UseAdminDataParams) {
           const owner = await getUserByUid(booking.ownerId);
           businessName = owner?.businessName || owner?.displayName || businessName;
         } catch (err) {
-          console.error('⚠️ Erro ao buscar informações do owner:', err);
         }
       }
 
@@ -135,22 +112,13 @@ export function useAdminData(params?: UseAdminDataParams) {
       // Abre WhatsApp com a mensagem para o cliente
       const whatsappUrl = `https://wa.me/${customerPhone}?text=${message}`;
 
-      console.log('📱 Enviando confirmação via WhatsApp:', {
-        bookingId: id,
-        customerName: booking.customerName,
-        customerPhoneOriginal: booking.customerPhone,
-        customerPhoneFormatted: customerPhone,
-      });
-
       // Tenta abrir em uma nova aba
       const newWindow = window.open(whatsappUrl, '_blank');
 
       if (!newWindow) {
-        console.error('❌ Popup bloqueado! Tentando abrir na mesma aba...');
         window.location.href = whatsappUrl;
       }
     } catch (error) {
-      console.error('❌ Admin: Erro ao confirmar agendamento:', error);
       throw error;
     }
   };
@@ -159,7 +127,6 @@ export function useAdminData(params?: UseAdminDataParams) {
     try {
       await cancelBookingService(id);
     } catch (error) {
-      console.error('❌ Admin: Erro ao cancelar agendamento:', error);
       throw error;
     }
   };
@@ -174,7 +141,6 @@ export function useAdminData(params?: UseAdminDataParams) {
         await createBlockedDate(date, ownerId);
       }
     } catch (error) {
-      console.error('❌ Erro ao bloquear data:', error);
       throw error;
     }
   };
@@ -192,7 +158,6 @@ export function useAdminData(params?: UseAdminDataParams) {
         }
       }
     } catch (error) {
-      console.error('❌ Erro ao desbloquear data:', error);
       throw error;
     }
   };
@@ -201,7 +166,6 @@ export function useAdminData(params?: UseAdminDataParams) {
     try {
       await markExpirationService(id);
     } catch (error) {
-      console.error('❌ Admin: Erro ao marcar notificação:', error);
       throw error;
     }
   };

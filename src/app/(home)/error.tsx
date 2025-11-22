@@ -10,7 +10,6 @@ export default function HomeError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Home Error:', error);
   }, [error]);
 
   return (

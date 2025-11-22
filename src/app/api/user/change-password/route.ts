@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
       success: true,
     });
   } catch (error: any) {
-    console.error('Erro ao trocar senha:', error);
 
     return NextResponse.json(
       { error: 'Erro ao trocar senha. Tente novamente.' },

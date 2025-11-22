@@ -77,7 +77,6 @@ function LoginForm() {
       rateLimiter.reset(rateLimitKey);
       // O redirecionamento será feito pelo useEffect acima
     } catch (err: any) {
-      console.error('❌ Erro ao fazer login:', err);
 
       // Mensagens de erro amigáveis
       let errorMessage = 'Erro ao fazer login';

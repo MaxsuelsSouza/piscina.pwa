@@ -29,7 +29,6 @@ export async function createBooking(booking: Omit<Booking, 'id'>): Promise<strin
     const docRef = await addDoc(collection(db, BOOKINGS_COLLECTION), booking);
     return docRef.id;
   } catch (error) {
-    console.error('Erro ao criar agendamento:', error);
     throw error;
   }
 }
@@ -45,7 +44,6 @@ export async function getAllBookings(): Promise<Booking[]> {
       ...doc.data(),
     })) as Booking[];
   } catch (error) {
-    console.error('Erro ao buscar agendamentos:', error);
     throw error;
   }
 }
@@ -63,7 +61,6 @@ export async function getBookingById(id: string): Promise<Booking | null> {
     }
     return null;
   } catch (error) {
-    console.error('Erro ao buscar agendamento:', error);
     throw error;
   }
 }
@@ -76,7 +73,6 @@ export async function updateBooking(id: string, data: Partial<Booking>): Promise
     const docRef = doc(db, BOOKINGS_COLLECTION, id);
     await updateDoc(docRef, data);
   } catch (error) {
-    console.error('Erro ao atualizar agendamento:', error);
     throw error;
   }
 }
@@ -91,7 +87,6 @@ export async function confirmBooking(id: string): Promise<void> {
       expiresAt: undefined,
     });
   } catch (error) {
-    console.error('Erro ao confirmar agendamento:', error);
     throw error;
   }
 }
@@ -103,7 +98,6 @@ export async function cancelBooking(id: string): Promise<void> {
   try {
     await updateBooking(id, { status: 'cancelled' });
   } catch (error) {
-    console.error('Erro ao cancelar agendamento:', error);
     throw error;
   }
 }
@@ -117,7 +111,6 @@ export async function markExpirationNotificationSent(id: string): Promise<void> 
       expirationNotificationSent: true,
     });
   } catch (error) {
-    console.error('Erro ao marcar notificação:', error);
     throw error;
   }
 }
@@ -129,7 +122,6 @@ export async function deleteBooking(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, BOOKINGS_COLLECTION, id));
   } catch (error) {
-    console.error('Erro ao deletar agendamento:', error);
     throw error;
   }
 }
@@ -159,7 +151,6 @@ export async function getBookingsByMonth(month: number, year: number): Promise<B
       ...doc.data(),
     })) as Booking[];
   } catch (error) {
-    console.error('Erro ao buscar agendamentos do mês:', error);
     throw error;
   }
 }
@@ -180,7 +171,6 @@ export function subscribeToBookings(callback: (bookings: Booking[]) => void): Un
       callback(bookings);
     });
   } catch (error) {
-    console.error('Erro ao escutar agendamentos:', error);
     throw error;
   }
 }
@@ -213,7 +203,6 @@ export async function updateBookingPaymentStatus(
       }),
     });
   } catch (error) {
-    console.error('Erro ao atualizar status de pagamento:', error);
     throw error;
   }
 }

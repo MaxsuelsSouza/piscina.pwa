@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
       success: true,
     });
   } catch (error: any) {
-    console.error('Erro ao atualizar data de vencimento:', error);
 
     return NextResponse.json(
       { error: 'Erro ao atualizar data de vencimento. Tente novamente.' },

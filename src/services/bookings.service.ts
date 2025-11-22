@@ -61,7 +61,6 @@ export async function createBooking(booking: Omit<Booking, 'id'>): Promise<strin
     const docRef = await addDoc(collection(db, BOOKINGS_COLLECTION), sanitizedBooking);
     return docRef.id;
   } catch (error) {
-    console.error('❌ Erro ao criar agendamento:', error);
     throw error;
   }
 }
@@ -84,7 +83,6 @@ export async function getBookings(): Promise<Booking[]> {
 
     return bookings;
   } catch (error) {
-    console.error('❌ Erro ao buscar agendamentos:', error);
     return [];
   }
 }
@@ -97,7 +95,6 @@ export async function updateBooking(id: string, data: Partial<Booking>): Promise
     const bookingRef = doc(db, BOOKINGS_COLLECTION, id);
     await updateDoc(bookingRef, data);
   } catch (error) {
-    console.error('❌ Erro ao atualizar agendamento:', error);
     throw error;
   }
 }
@@ -130,7 +127,6 @@ export async function deleteBooking(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, BOOKINGS_COLLECTION, id));
   } catch (error) {
-    console.error('❌ Erro ao deletar agendamento:', error);
     throw error;
   }
 }
@@ -152,7 +148,6 @@ export function onBookingsChange(callback: (bookings: Booking[]) => void): () =>
 
     callback(bookings);
   }, (error) => {
-    console.error('❌ Erro ao escutar mudanças:', error);
   });
 
   return unsubscribe;
@@ -179,7 +174,6 @@ export async function getBlockedDates(): Promise<BlockedDate[]> {
 
     return blockedDates;
   } catch (error) {
-    console.error('❌ Erro ao buscar datas bloqueadas:', error);
     return [];
   }
 }
@@ -196,7 +190,6 @@ export async function blockDate(date: string, reason?: string): Promise<string> 
     });
     return docRef.id;
   } catch (error) {
-    console.error('❌ Erro ao bloquear data:', error);
     throw error;
   }
 }
@@ -218,7 +211,6 @@ export async function unblockDate(date: string): Promise<void> {
 
     await Promise.all(deletePromises);
   } catch (error) {
-    console.error('❌ Erro ao desbloquear data:', error);
     throw error;
   }
 }
@@ -238,7 +230,6 @@ export function onBlockedDatesChange(callback: (blockedDates: BlockedDate[]) => 
 
     callback(blockedDates);
   }, (error) => {
-    console.error('❌ Erro ao escutar mudanças de datas bloqueadas:', error);
   });
 
   return unsubscribe;

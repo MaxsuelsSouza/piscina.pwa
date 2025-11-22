@@ -37,9 +37,7 @@ export async function updateBookingPaymentStatus(
 
     await bookingRef.update(updateData);
 
-    console.log(`✅ Payment status updated for booking ${bookingId}: ${paymentData.status}`);
   } catch (error) {
-    console.error('Erro ao atualizar status de pagamento:', error);
     throw error;
   }
 }

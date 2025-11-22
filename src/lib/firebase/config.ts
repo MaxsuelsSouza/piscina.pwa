@@ -30,8 +30,6 @@ const validateConfig = () => {
   const missing = required.filter((key) => !firebaseConfig[key as keyof typeof firebaseConfig]);
 
   if (missing.length > 0 && typeof window !== 'undefined') {
-    console.error('❌ Variáveis de ambiente do Firebase faltando:', missing);
-    console.error('📋 Verifique se o arquivo .env.local está configurado corretamente');
   }
 };
 
@@ -56,7 +54,6 @@ if (typeof window !== 'undefined') {
   // Configura persistência para manter sessão mesmo após fechar o navegador
   // Os tokens do Firebase são válidos e renovados automaticamente
   setPersistence(auth, browserLocalPersistence).catch((error) => {
-    console.error('❌ Erro ao configurar persistência de autenticação:', error);
   });
 } else {
   // No servidor, cria objetos vazios para evitar erros
