@@ -16,6 +16,7 @@ export interface Booking {
   expiresAt?: string; // Flag temporário: se status=pending e expiresAt passou, libera o dia
   expirationNotificationSent?: boolean; // Controla se já enviou notificação de expiração
   ownerId?: string; // UID do cliente que gerencia este agendamento (opcional para retrocompatibilidade)
+  clientSlug?: string; // Slug do cliente para construir URL pública de agendamento
   payment?: PaymentInfo; // Informações de pagamento
 }
 

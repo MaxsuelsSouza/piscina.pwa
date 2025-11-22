@@ -118,7 +118,7 @@ export default function PerfilClientePage() {
         );
 
         // Filtra nulls e atualiza state
-        const validVenues = venuesData.filter((v): v is VenueInfo => v !== null);
+        const validVenues = venuesData.filter((v): v is NonNullable<typeof v> => v !== null);
         setVenues(validVenues);
       } catch (error) {
         console.error('Erro ao buscar espaços:', error);
