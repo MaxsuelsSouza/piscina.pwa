@@ -12,6 +12,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { BookingCalendar } from '../(home)/_components/BookingCalendar';
 import { BookingDetailsModal } from '../(home)/_components/BookingDetailsModal';
 import { ProfileIncompleteModal } from './_components/ProfileIncompleteModal';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAdminData } from './_hooks/useAdminData';
 import { calculateMonthlyStats } from './_utils/calculations';
 import { calculateProfileCompleteness } from '@/utils/profileCompleteness';
@@ -19,14 +20,24 @@ import {
   AdminStats,
   PendingBookings,
   CancelledExpiredBookings,
-  DateActionModal
+  DateActionModal,
+  BarbershopDailyView,
+  BarberDashboard
 } from './_components';
 import type { Booking } from '../(home)/_types/booking';
+import type { ServiceBooking } from '@/types/barbershop';
 import { useToast } from '@/hooks/useToast';
+import { useBarbershopBookings } from './_hooks/useBarbershopBookings';
+import { BarbershopBookingModal } from './_components/BarbershopBookingModal';
 
 function AdminPageContent() {
   const router = useRouter();
-  const { user, userData, isAdmin, logout } = useAuth();
+  const { user, userData, isAdmin, isBarber, logout } = useAuth();
+
+  // Se for barbeiro, renderiza dashboard específico
+  if (isBarber) {
+    return <BarberDashboard />;
+  }
   const { confirm } = useConfirm();
   const toast = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -37,6 +48,22 @@ function AdminPageContent() {
   const [showInactiveModal, setShowInactiveModal] = useState(false);
   const [showProfileIncompleteModal, setShowProfileIncompleteModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBarbershopBooking, setSelectedBarbershopBooking] = useState<ServiceBooking | null>(null);
+  const [barbershopSelectedDate, setBarbershopSelectedDate] = useState(new Date());
+
+  // Detecta se é barbearia (tem barbershopInfo no venueInfo)
+  const isBarbershop = useMemo(() => {
+    return !!(userData?.venueInfo?.barbershopInfo);
+  }, [userData]);
+
+  // Hook para agendamentos de barbearia
+  const {
+    bookings: barbershopBookings,
+    loading: barbershopLoading,
+    confirmBooking: confirmBarbershopBooking,
+    cancelBooking: cancelBarbershopBooking,
+    completeBooking: completeBarbershopBooking,
+  } = useBarbershopBookings(isBarbershop ? user?.uid : undefined);
 
   // Calcula completude do perfil
   const profileCompleteness = useMemo(() => {
@@ -213,6 +240,53 @@ function AdminPageContent() {
     });
   };
 
+  // Handlers para agendamentos de barbearia
+  const handleBarbershopBookingClick = (booking: ServiceBooking) => {
+    handleActionWithCheck(() => {
+      setSelectedBarbershopBooking(booking);
+    });
+  };
+
+  const handleConfirmBarbershopBooking = async (bookingId: string) => {
+    try {
+      await confirmBarbershopBooking(bookingId);
+      setSelectedBarbershopBooking(null);
+      toast.success('Agendamento confirmado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao confirmar agendamento. Tente novamente.');
+    }
+  };
+
+  const handleCancelBarbershopBooking = async (bookingId: string) => {
+    const confirmed = await confirm({
+      title: 'Cancelar Agendamento',
+      message: 'Deseja cancelar este agendamento?',
+      confirmText: 'Sim, cancelar',
+      cancelText: 'Não',
+      variant: 'danger',
+    });
+
+    if (confirmed) {
+      try {
+        await cancelBarbershopBooking(bookingId);
+        setSelectedBarbershopBooking(null);
+        toast.success('Agendamento cancelado com sucesso!');
+      } catch (error) {
+        toast.error('Erro ao cancelar agendamento. Tente novamente.');
+      }
+    }
+  };
+
+  const handleCompleteBarbershopBooking = async (bookingId: string) => {
+    try {
+      await completeBarbershopBooking(bookingId);
+      setSelectedBarbershopBooking(null);
+      toast.success('Agendamento marcado como concluído!');
+    } catch (error) {
+      toast.error('Erro ao concluir agendamento. Tente novamente.');
+    }
+  };
+
   // Filtra agendamentos do mês atual para lista de pendentes
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
@@ -281,7 +355,7 @@ function AdminPageContent() {
   }, [filteredBookings]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Alerta de Assinatura Inativa */}
       {userData?.isActive === false && (
         <div className="bg-red-500 text-white px-6 py-3">
@@ -392,6 +466,7 @@ function AdminPageContent() {
 
             {/* Botões - Mobile: apenas ícones / Desktop: ícone + texto */}
             <div className="flex gap-1.5 md:gap-3 flex-shrink-0">
+              <ThemeToggle />
               <button
                 onClick={() => router.push('/perfil')}
                 className="flex items-center justify-center md:gap-2 p-2 md:px-5 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-light"
@@ -449,7 +524,7 @@ function AdminPageContent() {
               placeholder="Pesquisar por nome, telefone, data ou ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 pr-12 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+              className="w-full px-4 py-3 pr-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm dark:text-white dark:placeholder-gray-300 outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all shadow-sm"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -464,48 +539,70 @@ function AdminPageContent() {
           )}
         </div>
 
-        {/* Layout em duas colunas: Calendário + Pendentes */}
+        {/* Layout em duas colunas: Calendário/Agenda Diária + Pendentes */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8">
-          {/* Calendário - 2 colunas */}
+          {/* Calendário ou Agenda Diária - 2 colunas */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-              {/* Navegação integrada */}
-              <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-                <button
-                  onClick={handlePrevMonth}
-                  className="p-2 hover:bg-gray-50 rounded-xl transition-all duration-200 text-gray-600 hover:text-gray-900"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <h3 className="text-lg font-light text-gray-900 capitalize">
-                  {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                </h3>
-                <button
-                  onClick={handleNextMonth}
-                  className="p-2 hover:bg-gray-50 rounded-xl transition-all duration-200 text-gray-600 hover:text-gray-900"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+            {isBarbershop ? (
+              // Visualização de Agenda Diária para Barbearias
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+                {barbershopLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-2 border-gray-200 dark:border-gray-700 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Carregando agendamentos...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <BarbershopDailyView
+                    selectedDate={barbershopSelectedDate}
+                    bookings={barbershopBookings}
+                    onBookingClick={handleBarbershopBookingClick}
+                    onDateChange={setBarbershopSelectedDate}
+                  />
+                )}
               </div>
+            ) : (
+              // Visualização de Calendário Mensal para Piscinas
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+                {/* Navegação integrada */}
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <h3 className="text-lg font-light text-gray-900 dark:text-gray-100 capitalize">
+                    {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </h3>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
 
-              {/* Calendário com escala reduzida */}
-              <div className="scale-[0.85] origin-top -my-4">
-                <BookingCalendar
-                  currentDate={currentDate}
-                  bookings={bookingsForCalendar}
-                  selectedDates={[]}
-                  onSelectDate={handleDateClick}
-                  onViewBooking={handleDateClick}
-                  multiSelectMode={false}
-                  blockedDates={blockedDates}
-                  adminMode={true}
-                />
+                {/* Calendário com escala reduzida */}
+                <div className="scale-[0.85] origin-top -my-4">
+                  <BookingCalendar
+                    currentDate={currentDate}
+                    bookings={bookingsForCalendar}
+                    selectedDates={[]}
+                    onSelectDate={handleDateClick}
+                    onViewBooking={handleDateClick}
+                    multiSelectMode={false}
+                    blockedDates={blockedDates}
+                    adminMode={true}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Agendamentos Pendentes - 1 coluna */}
@@ -551,20 +648,20 @@ function AdminPageContent() {
       {/* Modal de Assinatura Inativa */}
       {showInactiveModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="text-center">
               {/* Ícone de alerta */}
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
 
               {/* Mensagem */}
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Assinatura Inativa
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-200 mb-6">
                 Sua assinatura está com pagamento atrasado. Por favor, regularize sua situação para continuar usando o sistema.
               </p>
 
@@ -586,6 +683,17 @@ function AdminPageContent() {
           percentage={profileCompleteness.percentage}
           missingFields={profileCompleteness.missingFields}
           onClose={() => setShowProfileIncompleteModal(false)}
+        />
+      )}
+
+      {/* Modal de Detalhes de Agendamento de Barbearia */}
+      {selectedBarbershopBooking && (
+        <BarbershopBookingModal
+          booking={selectedBarbershopBooking}
+          onClose={() => setSelectedBarbershopBooking(null)}
+          onConfirm={handleConfirmBarbershopBooking}
+          onCancel={handleCancelBarbershopBooking}
+          onComplete={handleCompleteBarbershopBooking}
         />
       )}
     </div>

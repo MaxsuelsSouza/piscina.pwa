@@ -2,7 +2,12 @@
  * Tipos para usuários do sistema
  */
 
-export type UserRole = 'admin' | 'client';
+export type UserRole = 'admin' | 'client' | 'barber';
+
+/**
+ * Tipos de estabelecimento
+ */
+export type VenueType = 'event_space' | 'barbershop';
 
 /**
  * Informações de localização do estabelecimento
@@ -59,6 +64,9 @@ export interface VenueInfo {
   amenities?: VenueAmenities; // Amenidades disponíveis
   condominiumPrice?: number; // Valor do condomínio/aluguel por dia
   bankingInfo?: BankingInfo; // Dados bancários para recebimento
+
+  // Dados específicos para barbearias
+  barbershopInfo?: import('./barbershop').BarbershopInfo;
 }
 
 export interface AppUser {
@@ -75,6 +83,14 @@ export interface AppUser {
   linkRevealed?: boolean; // Flag que indica se o link público já foi revelado ao usuário (>= 80%)
   subscriptionDueDate?: Date; // Data de vencimento da assinatura
   mustChangePassword?: boolean; // Força troca de senha no primeiro login
+  venueType?: VenueType; // Tipo de estabelecimento (padrão: event_space)
+
+  // Campos específicos para barbeiros
+  ownerId?: string; // UID do dono/estabelecimento (para barbeiros)
+  phone?: string; // Telefone do barbeiro
+  specialties?: string[]; // Especialidades do barbeiro (ex: ['corte', 'barba', 'pigmentação'])
+  photoURL?: string; // URL da foto do barbeiro
+  bio?: string; // Biografia/descrição do barbeiro
 
   // FASE 1 - Dados de localização e informações do espaço
   location?: VenueLocation; // Endereço completo
@@ -87,6 +103,14 @@ export interface CreateUserData {
   displayName?: string;
   businessName?: string; // Nome do estabelecimento
   role?: UserRole;
+  venueType?: VenueType; // Tipo de estabelecimento
+
+  // Campos para barbeiros
+  ownerId?: string; // UID do dono (obrigatório para barbeiros)
+  phone?: string;
+  specialties?: string[];
+  photoURL?: string;
+  bio?: string;
 
   // FASE 1 - Dados de localização e informações
   location?: VenueLocation;
@@ -107,6 +131,14 @@ export interface UserDocument {
   linkRevealed?: boolean; // Flag que indica se o link público já foi revelado ao usuário (>= 80%)
   subscriptionDueDate?: string; // Data de vencimento da assinatura (ISO string)
   mustChangePassword?: boolean; // Força troca de senha no primeiro login
+  venueType?: VenueType; // Tipo de estabelecimento
+
+  // Campos específicos para barbeiros
+  ownerId?: string; // UID do dono (para barbeiros)
+  phone?: string;
+  specialties?: string[];
+  photoURL?: string;
+  bio?: string;
 
   // FASE 1 - Dados de localização e informações do espaço
   location?: VenueLocation;
@@ -161,6 +193,12 @@ export function userDocumentToAppUser(doc: UserDocument | any): AppUser {
       publicSlug: doc.publicSlug,
       subscriptionDueDate,
       mustChangePassword: doc.mustChangePassword,
+      venueType: doc.venueType || 'event_space',
+      ownerId: doc.ownerId,
+      phone: doc.phone,
+      specialties: doc.specialties,
+      photoURL: doc.photoURL,
+      bio: doc.bio,
       location: doc.location,
       venueInfo: doc.venueInfo,
     };
@@ -178,6 +216,12 @@ export function appUserToUserDocument(user: AppUser): UserDocument {
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
     subscriptionDueDate: user.subscriptionDueDate?.toISOString(),
+    venueType: user.venueType || 'event_space',
+    ownerId: user.ownerId,
+    phone: user.phone,
+    specialties: user.specialties,
+    photoURL: user.photoURL,
+    bio: user.bio,
     location: user.location,
     venueInfo: user.venueInfo,
   };

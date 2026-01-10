@@ -21,7 +21,8 @@ export async function createUserDocument(
   publicSlug?: string,
   businessName?: string,
   location?: VenueLocation,
-  venueInfo?: VenueInfo
+  venueInfo?: VenueInfo,
+  venueType?: 'event_space' | 'barbershop'
 ): Promise<void> {
   const db = adminDb();
   const userRef = db.collection(USERS_COLLECTION).doc(uid);
@@ -49,6 +50,7 @@ export async function createUserDocument(
   if (subscriptionDueDate) userData.subscriptionDueDate = subscriptionDueDate;
   if (location) userData.location = location;
   if (venueInfo) userData.venueInfo = venueInfo;
+  if (venueType) userData.venueType = venueType;
 
   await userRef.set(userData);
 }
@@ -248,6 +250,117 @@ export async function deleteUserDocument(uid: string): Promise<void> {
   try {
     const db = adminDb();
     const userRef = db.collection(USERS_COLLECTION).doc(uid);
+    await userRef.delete();
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Cria um documento de barbeiro no Firestore (Admin ou Owner)
+ */
+export async function createBarberDocument(
+  uid: string,
+  email: string,
+  displayName: string,
+  ownerId: string,
+  phone?: string,
+  specialties?: string[],
+  photoURL?: string,
+  bio?: string
+): Promise<void> {
+  const db = adminDb();
+  const userRef = db.collection(USERS_COLLECTION).doc(uid);
+
+  const userData: any = {
+    uid,
+    email,
+    displayName,
+    role: 'barber',
+    ownerId, // Vincula o barbeiro ao dono
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isActive: true,
+    mustChangePassword: true, // Força troca de senha no primeiro login
+    createdBy: ownerId, // UID do dono que criou o barbeiro
+  };
+
+  // Adiciona campos opcionais apenas se tiverem valor
+  if (phone) userData.phone = phone;
+  if (specialties && specialties.length > 0) userData.specialties = specialties;
+  if (photoURL) userData.photoURL = photoURL;
+  if (bio) userData.bio = bio;
+
+  await userRef.set(userData);
+}
+
+/**
+ * Lista todos os barbeiros de um dono (Admin ou Owner)
+ */
+export async function getBarbersByOwnerId(ownerId: string): Promise<AppUser[]> {
+  try {
+    const db = adminDb();
+    const usersRef = db.collection(USERS_COLLECTION);
+    const querySnapshot = await usersRef
+      .where('role', '==', 'barber')
+      .where('ownerId', '==', ownerId)
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    return querySnapshot.docs.map((doc) => {
+      try {
+        const userData = doc.data() as UserDocument;
+        return userDocumentToAppUser(userData);
+      } catch (error) {
+        throw error;
+      }
+    });
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+/**
+ * Atualiza um barbeiro (Admin ou Owner pode atualizar isActive, barbeiro pode atualizar próprio perfil)
+ */
+export async function updateBarber(
+  uid: string,
+  data: Partial<Omit<AppUser, 'uid' | 'createdAt' | 'role' | 'ownerId'>>
+): Promise<void> {
+  try {
+    const db = adminDb();
+    const userRef = db.collection(USERS_COLLECTION).doc(uid);
+
+    const updateData: any = {
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await userRef.update(updateData);
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Deleta permanentemente um barbeiro do Firestore (Admin ou Owner)
+ */
+export async function deleteBarber(uid: string): Promise<void> {
+  try {
+    const db = adminDb();
+    const userRef = db.collection(USERS_COLLECTION).doc(uid);
+
+    // Verifica se é um barbeiro antes de deletar
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      throw new Error('Barbeiro não encontrado');
+    }
+
+    const userData = userSnap.data() as UserDocument;
+    if (userData.role !== 'barber') {
+      throw new Error('Usuário não é um barbeiro');
+    }
+
     await userRef.delete();
   } catch (error) {
     throw error;

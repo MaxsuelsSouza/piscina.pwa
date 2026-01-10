@@ -51,7 +51,7 @@ export default function AuthLayout({
   }, []);
 
   return (
-    <div className="h-screen flex bg-gradient-to-br from-blue-50 to-cyan-50 lg:bg-gradient-to-r lg:from-black lg:via-black lg:via-50% lg:to-white overflow-hidden">
+    <div className="h-screen flex bg-gradient-to-br from-blue-50 to-cyan-50 lg:bg-gradient-to-r lg:from-black lg:via-black lg:via-50% lg:to-white overflow-hidden relative">
       {/* Lado esquerdo - Informações sobre agendamentos (apenas desktop) */}
       <div className="hidden lg:flex w-[55%] items-center justify-center p-12">
         <div className="w-full max-w-2xl">

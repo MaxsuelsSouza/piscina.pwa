@@ -99,25 +99,25 @@ export function BookingForm({
 
   return (
     <>
-      <h3 className="text-2xl font-light text-gray-900 mb-2">
+      <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-2">
         Complete seus dados
       </h3>
-      <p className="text-sm text-gray-500 mb-8 font-light capitalize">
+      <p className="text-sm text-gray-500 dark:text-gray-300 mb-8 font-light capitalize">
         {formatDate(selectedDate)}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Nome */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
-            Nome completo <span className="text-red-500">*</span>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-300 mb-2 uppercase tracking-wider">
+            Nome completo <span className="text-red-500 dark:text-red-300">*</span>
           </label>
           <input
             type="text"
             value={formData.customerName}
             onChange={(e) => setFormData({ ...formData, customerName: sanitizeName(e.target.value) })}
             className={cn(
-              'w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:bg-white transition-all',
+              'w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 dark:text-gray-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-gray-800 transition-all placeholder-gray-400 dark:placeholder-gray-400',
               errors.customerName
                 ? 'ring-2 ring-red-500'
                 : 'focus:ring-blue-500'
@@ -125,21 +125,21 @@ export function BookingForm({
             placeholder="Seu nome"
           />
           {errors.customerName && (
-            <p className="text-xs text-red-600 mt-2">{errors.customerName}</p>
+            <p className="text-xs text-red-600 dark:text-red-300 mt-2">{errors.customerName}</p>
           )}
         </div>
 
         {/* Telefone */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
-            Telefone <span className="text-red-500">*</span>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-300 mb-2 uppercase tracking-wider">
+            Telefone <span className="text-red-500 dark:text-red-300">*</span>
           </label>
           <input
             type="tel"
             value={formData.customerPhone}
             onChange={(e) => setFormData({ ...formData, customerPhone: sanitizePhone(e.target.value) })}
             className={cn(
-              'w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:bg-white transition-all',
+              'w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 dark:text-gray-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-gray-800 transition-all placeholder-gray-400 dark:placeholder-gray-400',
               errors.customerPhone
                 ? 'ring-2 ring-red-500'
                 : 'focus:ring-blue-500'
@@ -147,56 +147,56 @@ export function BookingForm({
             placeholder="(00) 00000-0000"
           />
           {errors.customerPhone && (
-            <p className="text-xs text-red-600 mt-2">{errors.customerPhone}</p>
+            <p className="text-xs text-red-600 dark:text-red-300 mt-2">{errors.customerPhone}</p>
           )}
         </div>
 
         {/* Email */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
-            Email <span className="text-gray-400">(opcional)</span>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-300 mb-2 uppercase tracking-wider">
+            Email <span className="text-gray-400 dark:text-gray-300">(opcional)</span>
           </label>
           <input
             type="email"
             value={formData.customerEmail}
             onChange={(e) => setFormData({ ...formData, customerEmail: sanitizeEmail(e.target.value) })}
-            className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 dark:text-gray-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-all placeholder-gray-400 dark:placeholder-gray-400"
             placeholder="seu@email.com"
           />
         </div>
 
         {/* Observações */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
-            Observações <span className="text-gray-400">(opcional)</span>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-300 mb-2 uppercase tracking-wider">
+            Observações <span className="text-gray-400 dark:text-gray-300">(opcional)</span>
           </label>
           <textarea
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: sanitizeNotes(e.target.value) })}
             rows={3}
             maxLength={500}
-            className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 dark:text-gray-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-all resize-none placeholder-gray-400 dark:placeholder-gray-400"
             placeholder="Alguma informação adicional..."
           />
         </div>
 
         {/* Total */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 mt-8">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/40 dark:to-blue-900/40 rounded-2xl p-6 mt-8">
           {numberOfDays > 1 && (
-            <div className="mb-4 pb-4 border-b border-blue-200">
+            <div className="mb-4 pb-4 border-b border-blue-200 dark:border-blue-600">
               <div className="flex justify-between items-center text-sm mb-2">
-                <span className="text-gray-600 font-light">Valor por dia</span>
-                <span className="font-medium text-gray-900">R$ {PRICE_PER_DAY.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                <span className="text-gray-600 dark:text-gray-200 font-light">Valor por dia</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">R$ {PRICE_PER_DAY.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 font-light">Quantidade de dias</span>
-                <span className="font-medium text-gray-900">× {numberOfDays}</span>
+                <span className="text-gray-600 dark:text-gray-200 font-light">Quantidade de dias</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">× {numberOfDays}</span>
               </div>
             </div>
           )}
           <div className="flex justify-between items-center gap-4">
-            <span className="text-sm font-medium text-gray-700">Total</span>
-            <span className="text-2xl sm:text-3xl font-light text-blue-700 whitespace-nowrap ml-auto">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Total</span>
+            <span className="text-2xl sm:text-3xl font-light text-blue-700 dark:text-blue-300 whitespace-nowrap ml-auto">
               R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -208,7 +208,7 @@ export function BookingForm({
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 px-6 py-4 rounded-xl text-gray-600 hover:bg-gray-50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-4 rounded-xl text-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Voltar
           </button>

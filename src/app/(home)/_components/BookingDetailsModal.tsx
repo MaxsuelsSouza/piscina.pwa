@@ -53,9 +53,9 @@ export function BookingDetailsModal({ booking, onClose, onCancel, onConfirm, isA
   };
 
   const STATUS_COLORS = {
-    pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    confirmed: 'bg-green-100 text-green-800 border-green-200',
-    cancelled: 'bg-gray-100 text-gray-800 border-gray-200',
+    pending: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-600',
+    confirmed: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-200 dark:border-green-600',
+    cancelled: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600',
   };
 
   const handleCancel = async () => {
@@ -115,21 +115,21 @@ export function BookingDetailsModal({ booking, onClose, onCancel, onConfirm, isA
 
       {/* Modal */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-lg">
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 rounded-t-lg">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Detalhes do Agendamento
                 </h2>
-                <p className="text-sm text-gray-600 mt-1 capitalize">
+                <p className="text-sm text-gray-600 dark:text-gray-200 mt-1 capitalize">
                   {formatDate(booking.date)}
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-100 transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -165,53 +165,53 @@ export function BookingDetailsModal({ booking, onClose, onCancel, onConfirm, isA
 
             {/* Informações do Cliente */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-gray-900">Informações do Cliente</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Informações do Cliente</h3>
 
               <div>
-                <label className="text-sm text-gray-600">Nome:</label>
-                <p className="text-gray-900 font-medium">{booking.customerName}</p>
+                <label className="text-sm text-gray-600 dark:text-gray-200">Nome:</label>
+                <p className="text-gray-900 dark:text-gray-100 font-medium">{booking.customerName}</p>
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Telefone:</label>
-                <p className="text-gray-900 font-medium">{booking.customerPhone}</p>
+                <label className="text-sm text-gray-600 dark:text-gray-200">Telefone:</label>
+                <p className="text-gray-900 dark:text-gray-100 font-medium">{booking.customerPhone}</p>
               </div>
 
               {booking.customerEmail && (
                 <div>
-                  <label className="text-sm text-gray-600">Email:</label>
-                  <p className="text-gray-900 font-medium break-all">{booking.customerEmail}</p>
+                  <label className="text-sm text-gray-600 dark:text-gray-200">Email:</label>
+                  <p className="text-gray-900 dark:text-gray-100 font-medium break-all">{booking.customerEmail}</p>
                 </div>
               )}
             </div>
 
             {/* Detalhes do Agendamento */}
-            <div className="space-y-3 pt-4 border-t border-gray-200">
-              <h3 className="font-semibold text-gray-900">Detalhes do Agendamento</h3>
+            <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Detalhes do Agendamento</h3>
 
               <div>
-                <label className="text-sm text-gray-600">Período:</label>
-                <p className="text-gray-900 font-medium">Dia Inteiro (08:00 - 22:00)</p>
+                <label className="text-sm text-gray-600 dark:text-gray-200">Período:</label>
+                <p className="text-gray-900 dark:text-gray-100 font-medium">Dia Inteiro (08:00 - 22:00)</p>
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Número de pessoas:</label>
-                <p className="text-gray-900 font-medium">
+                <label className="text-sm text-gray-600 dark:text-gray-200">Número de pessoas:</label>
+                <p className="text-gray-900 dark:text-gray-100 font-medium">
                   {booking.numberOfPeople} {booking.numberOfPeople === 1 ? 'pessoa' : 'pessoas'}
                 </p>
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Valor:</label>
-                <p className="text-gray-900 font-medium text-lg">
+                <label className="text-sm text-gray-600 dark:text-gray-200">Valor:</label>
+                <p className="text-gray-900 dark:text-gray-100 font-medium text-lg">
                   R$ {PRICE_PER_DAY.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
 
               {booking.notes && (
                 <div>
-                  <label className="text-sm text-gray-600">Observações:</label>
-                  <p className="text-gray-900 mt-1 bg-gray-50 p-3 rounded border border-gray-200">
+                  <label className="text-sm text-gray-600 dark:text-gray-200">Observações:</label>
+                  <p className="text-gray-900 dark:text-gray-100 mt-1 bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
                     {booking.notes}
                   </p>
                 </div>
@@ -219,8 +219,8 @@ export function BookingDetailsModal({ booking, onClose, onCancel, onConfirm, isA
             </div>
 
             {/* Informações adicionais */}
-            <div className="pt-4 border-t border-gray-200">
-              <div className="text-xs text-gray-500">
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div className="text-xs text-gray-500 dark:text-gray-300">
                 <p>Agendamento criado em: {formatDateTime(booking.createdAt)}</p>
                 <p className="mt-1">ID: {booking.id}</p>
               </div>
@@ -228,11 +228,11 @@ export function BookingDetailsModal({ booking, onClose, onCancel, onConfirm, isA
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-gray-50 px-4 py-3 rounded-b-lg border-t border-gray-200">
+          <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-700 px-4 py-3 rounded-b-lg border-t border-gray-200 dark:border-gray-600">
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={onClose}
-                className="flex-1 min-w-[80px] px-2 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-white transition-colors text-sm font-medium"
+                className="flex-1 min-w-[80px] px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-700 transition-colors text-sm font-medium"
               >
                 Fechar
               </button>

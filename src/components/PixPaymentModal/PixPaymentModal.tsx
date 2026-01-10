@@ -88,16 +88,16 @@ export function PixPaymentModal({
         {comprovanteSent ? (
           /* Mensagem de Confirmação */
           <div className="text-center py-6">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3 animate-pulse">
-              <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3 animate-pulse">
+              <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-green-600 mb-2">Comprovante Enviado!</h3>
-            <p className="text-gray-600 text-sm mb-3">
+            <h3 className="text-xl font-bold text-green-600 dark:text-green-400 mb-2">Comprovante Enviado!</h3>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">
               Seu comprovante foi enviado via WhatsApp.
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Aguarde a confirmação do estabelecimento.
             </p>
           </div>
@@ -105,14 +105,14 @@ export function PixPaymentModal({
           <>
             {/* Valor */}
             <div className="text-center">
-              <p className="text-xs text-gray-600">Valor a pagar</p>
-              <p className="text-xl sm:text-2xl font-bold text-green-600">
+              <p className="text-xs text-gray-600 dark:text-gray-300">Valor a pagar</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
                 R$ {amount.toFixed(2)}
               </p>
             </div>
 
             {/* QR Code */}
-            <div className="flex justify-center p-2 bg-white rounded-lg border-2 border-gray-200">
+            <div className="flex justify-center p-2 bg-white dark:bg-gray-900 rounded-lg border-2 border-gray-200 dark:border-gray-600">
               <img
                 src={`data:image/png;base64,${qrCodeBase64}`}
                 alt="QR Code PIX"
@@ -121,7 +121,7 @@ export function PixPaymentModal({
             </div>
 
             {/* Instruções */}
-            <div className="space-y-1 text-xs text-gray-700">
+            <div className="space-y-1 text-xs text-gray-700 dark:text-gray-200">
               <p className="font-semibold">Como pagar:</p>
               <ol className="list-decimal list-inside space-y-0.5 ml-2">
                 <li>Abra o app do seu banco</li>
@@ -133,11 +133,11 @@ export function PixPaymentModal({
 
             {/* Código Pix Copia e Cola */}
             <div className="space-y-1.5">
-              <p className="text-xs font-semibold text-gray-700">
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">
                 Ou use o código Pix Copia e Cola:
               </p>
               <div className="relative">
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-lg break-all text-[10px] sm:text-xs font-mono text-gray-600 max-h-16 sm:max-h-20 overflow-y-auto">
+                <div className="p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg break-all text-[10px] sm:text-xs font-mono text-gray-600 dark:text-gray-300 max-h-16 sm:max-h-20 overflow-y-auto">
                   {qrCodeText}
                 </div>
                 <Button
@@ -151,8 +151,8 @@ export function PixPaymentModal({
             </div>
 
             {/* Aviso */}
-            <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-[10px] sm:text-xs text-blue-800">
+            <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-[10px] sm:text-xs text-blue-800 dark:text-blue-300">
                 <strong>Importante:</strong> Após fazer o pagamento, clique no botão abaixo para enviar o comprovante via WhatsApp.
               </p>
             </div>
@@ -161,7 +161,7 @@ export function PixPaymentModal({
             <div className="pt-1 flex flex-col gap-2">
               <Button
                 onClick={openWhatsApp}
-                className="w-full text-sm py-2 bg-green-600 hover:bg-green-700"
+                className="w-full text-sm py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
               >
                 Enviar Comprovante via WhatsApp
               </Button>

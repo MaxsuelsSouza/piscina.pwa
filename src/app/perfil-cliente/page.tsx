@@ -138,11 +138,11 @@ export default function PerfilClientePage() {
     const bookingDate = new Date(booking.date + 'T00:00:00');
 
     if (booking.status === 'confirmed') {
-      return <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Confirmado</span>;
+      return <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">Confirmado</span>;
     }
 
     if (booking.status === 'cancelled') {
-      return <span className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">Cancelado</span>;
+      return <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">Cancelado</span>;
     }
 
     if (booking.status === 'pending') {
@@ -150,14 +150,14 @@ export default function PerfilClientePage() {
       if (booking.expiresAt) {
         const expiresAt = new Date(booking.expiresAt);
         if (now > expiresAt) {
-          return <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">Expirado</span>;
+          return <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-full">Expirado</span>;
         }
       }
 
-      return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">Pendente</span>;
+      return <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium rounded-full">Pendente</span>;
     }
 
-    return <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">{booking.status}</span>;
+    return <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-full">{booking.status}</span>;
   };
 
   const formatDate = (dateStr: string) => {
@@ -171,10 +171,10 @@ export default function PerfilClientePage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-gray-600">Carregando...</p>
+          <div className="w-8 h-8 border-2 border-gray-200 dark:border-gray-700 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Carregando...</p>
         </div>
       </div>
     );
@@ -185,18 +185,18 @@ export default function PerfilClientePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Meu Perfil</h1>
-              <p className="text-gray-600 mt-1">Olá, {client.fullName}!</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Meu Perfil</h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-1">Olá, {client.fullName}!</p>
             </div>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               Sair
             </button>
@@ -207,16 +207,16 @@ export default function PerfilClientePage() {
       {/* Conteúdo */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Card de Informações do Cliente */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Suas Informações</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Suas Informações</h2>
           <div className="space-y-3">
             <div>
-              <span className="text-sm text-gray-500">Telefone:</span>
-              <p className="text-gray-900 font-medium">{client.phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</p>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Telefone:</span>
+              <p className="text-gray-900 dark:text-gray-100 font-medium">{client.phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</p>
             </div>
             <div>
-              <span className="text-sm text-gray-500">Data de Nascimento:</span>
-              <p className="text-gray-900 font-medium">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Data de Nascimento:</span>
+              <p className="text-gray-900 dark:text-gray-100 font-medium">
                 {new Date(client.birthDate + 'T00:00:00').toLocaleDateString('pt-BR')}
               </p>
             </div>
@@ -224,14 +224,14 @@ export default function PerfilClientePage() {
         </div>
 
         {/* Agendamentos */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Meus Agendamentos</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Meus Agendamentos</h2>
 
           {bookings.length === 0 ? (
             <div className="text-center py-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
                 <svg
-                  className="w-8 h-8 text-gray-400"
+                  className="w-8 h-8 text-gray-400 dark:text-gray-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -244,7 +244,7 @@ export default function PerfilClientePage() {
                   />
                 </svg>
               </div>
-              <p className="text-gray-500">Você ainda não tem agendamentos</p>
+              <p className="text-gray-500 dark:text-gray-300">Você ainda não tem agendamentos</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -252,29 +252,29 @@ export default function PerfilClientePage() {
                 <div
                   key={booking.id}
                   onClick={() => setSelectedBooking(booking)}
-                  className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer"
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-300 dark:hover:border-blue-500 transition-colors cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="font-semibold text-gray-900">{formatDate(booking.date)}</p>
-                      <p className="text-sm text-gray-600 mt-1">Dia Inteiro (08:00 - 22:00)</p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">{formatDate(booking.date)}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Dia Inteiro (08:00 - 22:00)</p>
                     </div>
                     {getStatusBadge(booking)}
                   </div>
 
                   {booking.notes && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className="text-sm text-gray-500">Observações:</p>
-                      <p className="text-sm text-gray-700 mt-1">{booking.notes}</p>
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Observações:</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{booking.notes}</p>
                     </div>
                   )}
 
-                  <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+                  <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                     <span>
                       Criado em {new Date(booking.createdAt).toLocaleDateString('pt-BR')}
                     </span>
                     {booking.payment?.status === 'paid' && (
-                      <span className="text-green-600 font-medium">● Pago</span>
+                      <span className="text-green-600 dark:text-green-400 font-medium">● Pago</span>
                     )}
                   </div>
                 </div>
@@ -285,22 +285,22 @@ export default function PerfilClientePage() {
 
         {/* Espaços onde fez agendamentos */}
         {venues.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Espaços Onde Você Agendou</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Espaços Onde Você Agendou</h2>
             <div className="space-y-3">
               {venues.map((venue) => (
                 <div
                   key={venue.slug}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-all"
+                  className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-500 transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <a
                       href={`/agendamento/${venue.slug}`}
                       className="flex items-center gap-3 flex-1 group"
                     >
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40 transition-colors">
                         <svg
-                          className="w-6 h-6 text-blue-600"
+                          className="w-6 h-6 text-blue-600 dark:text-blue-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -320,14 +320,14 @@ export default function PerfilClientePage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {venue.businessName || venue.displayName}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           {bookings.filter((b) => b.clientSlug === venue.slug).length} agendamento(s)
                         </p>
                         {venue.location?.street && (
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                             {venue.location.street}{venue.location.number ? `, ${venue.location.number}` : ''} - {venue.location.neighborhood || venue.location.city}
                           </p>
                         )}
@@ -359,14 +359,14 @@ export default function PerfilClientePage() {
 
       {/* Modal de Detalhes do Agendamento */}
       {selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             {/* Header do Modal */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-              <h3 className="text-xl font-bold text-gray-900">Detalhes do Agendamento</h3>
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Detalhes do Agendamento</h3>
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                className="text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -382,43 +382,43 @@ export default function PerfilClientePage() {
               </div>
 
               {/* Data */}
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">Data do Agendamento</p>
-                <p className="text-lg font-semibold text-gray-900">{formatDate(selectedBooking.date)}</p>
-                <p className="text-sm text-gray-600 mt-1">Dia Inteiro (08:00 - 22:00)</p>
+              <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Data do Agendamento</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatDate(selectedBooking.date)}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Dia Inteiro (08:00 - 22:00)</p>
               </div>
 
               {/* Informações */}
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600">Nome</p>
-                  <p className="text-gray-900 font-medium">{selectedBooking.customerName}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Nome</p>
+                  <p className="text-gray-900 dark:text-gray-100 font-medium">{selectedBooking.customerName}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-600">Telefone</p>
-                  <p className="text-gray-900 font-medium">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Telefone</p>
+                  <p className="text-gray-900 dark:text-gray-100 font-medium">
                     {selectedBooking.customerPhone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
                   </p>
                 </div>
 
                 {selectedBooking.customerEmail && (
                   <div>
-                    <p className="text-sm text-gray-600">Email</p>
-                    <p className="text-gray-900 font-medium">{selectedBooking.customerEmail}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                    <p className="text-gray-900 dark:text-gray-100 font-medium">{selectedBooking.customerEmail}</p>
                   </div>
                 )}
 
                 {selectedBooking.notes && (
                   <div>
-                    <p className="text-sm text-gray-600">Observações</p>
-                    <p className="text-gray-900">{selectedBooking.notes}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Observações</p>
+                    <p className="text-gray-900 dark:text-gray-100">{selectedBooking.notes}</p>
                   </div>
                 )}
 
-                <div className="border-t border-gray-200 pt-3">
-                  <p className="text-sm text-gray-600">Criado em</p>
-                  <p className="text-gray-900">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Criado em</p>
+                  <p className="text-gray-900 dark:text-gray-100">
                     {new Date(selectedBooking.createdAt).toLocaleString('pt-BR', {
                       day: '2-digit',
                       month: '2-digit',
@@ -431,30 +431,30 @@ export default function PerfilClientePage() {
 
                 {/* Status de Pagamento */}
                 {selectedBooking.payment && (
-                  <div className="border-t border-gray-200 pt-3">
-                    <p className="text-sm text-gray-600 mb-2">Pagamento</p>
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Pagamento</p>
                     <div className="flex items-center gap-2">
                       {selectedBooking.payment.status === 'paid' ? (
                         <>
                           <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          <span className="text-green-700 font-medium">Pago</span>
+                          <span className="text-green-700 dark:text-green-400 font-medium">Pago</span>
                         </>
                       ) : selectedBooking.payment.status === 'pending' ? (
                         <>
                           <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                          <span className="text-yellow-700 font-medium">Pendente</span>
+                          <span className="text-yellow-700 dark:text-yellow-400 font-medium">Pendente</span>
                         </>
                       ) : (
                         <>
                           <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                          <span className="text-gray-700 font-medium">
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">
                             {selectedBooking.payment.status || 'N/A'}
                           </span>
                         </>
                       )}
                     </div>
                     {selectedBooking.payment.amount && (
-                      <p className="text-lg font-bold text-gray-900 mt-2">
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-2">
                         R$ {selectedBooking.payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </p>
                     )}
@@ -463,8 +463,8 @@ export default function PerfilClientePage() {
 
                 {/* Informação de Expiração */}
                 {selectedBooking.status === 'pending' && selectedBooking.expiresAt && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-800">
+                  <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
                       {new Date() > new Date(selectedBooking.expiresAt) ? (
                         <>
                           <span className="font-medium">⚠️ Agendamento expirado</span>
@@ -489,7 +489,7 @@ export default function PerfilClientePage() {
             </div>
 
             {/* Footer do Modal */}
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-2xl">
+            <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 px-6 py-4 rounded-b-2xl">
               <div className="flex gap-3">
                 {/* Botão WhatsApp */}
                 <a
@@ -509,7 +509,7 @@ export default function PerfilClientePage() {
                 {/* Botão Fechar */}
                 <button
                   onClick={() => setSelectedBooking(null)}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                  className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors font-medium"
                 >
                   Fechar
                 </button>

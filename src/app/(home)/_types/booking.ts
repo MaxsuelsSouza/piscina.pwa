@@ -18,6 +18,10 @@ export interface Booking {
   ownerId?: string; // UID do cliente que gerencia este agendamento (opcional para retrocompatibilidade)
   clientSlug?: string; // Slug do cliente para construir URL pública de agendamento
   payment?: PaymentInfo; // Informações de pagamento
+
+  // Campos para sistema de barbeiros
+  barberId?: string; // UID do barbeiro escolhido
+  barberName?: string; // Nome do barbeiro (denormalizado para performance)
 }
 
 export interface PaymentInfo {
@@ -46,4 +50,9 @@ export interface BlockedDate {
   date: string; // formato: YYYY-MM-DD
   createdAt: string;
   ownerId?: string; // UID do cliente que gerencia este bloqueio (opcional para retrocompatibilidade)
+
+  // Campos para bloqueio de barbeiros
+  barberId?: string; // UID do barbeiro que bloqueou (se for bloqueio específico de barbeiro)
+  timeSlot?: TimeSlot; // Horário bloqueado (se não especificado, bloqueia o dia todo)
+  reason?: string; // Motivo do bloqueio (opcional)
 }

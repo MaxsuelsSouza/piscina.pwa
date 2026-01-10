@@ -23,23 +23,55 @@ service cloud.firestore {
       return isAdmin() || isOwner(ownerId);
     }
 
+    // Função helper para verificar se o usuário é barbeiro
+    function isBarber(barberId) {
+      return request.auth != null && request.auth.uid == barberId;
+    }
+
+    // Função helper para verificar se o dono está criando um barbeiro
+    function isOwnerCreatingBarber() {
+      return isAuthenticated() &&
+             request.resource.data.role == 'barber' &&
+             request.resource.data.ownerId == request.auth.uid;
+    }
+
+    // Função helper para verificar se barbeiro está atualizando seu próprio agendamento
+    function isBarberUpdatingOwnBooking() {
+      return isAuthenticated() &&
+             'barberId' in resource.data &&
+             resource.data.barberId == request.auth.uid &&
+             // Barbeiro só pode atualizar status, não pode mudar dados do cliente
+             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['customerName', 'customerPhone', 'customerEmail', 'numberOfPeople', 'barberId', 'ownerId']);
+    }
+
+    // Função helper para verificar se barbeiro está bloqueando própria agenda
+    function isBarberBlockingOwnSchedule() {
+      return isAuthenticated() &&
+             request.resource.data.barberId == request.auth.uid &&
+             request.resource.data.ownerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ownerId;
+    }
+
     // Regras para agendamentos (bookings)
     match /bookings/{bookingId} {
       // Leitura individual (get):
       // - Admin: pode ler tudo
       // - Cliente autenticado: apenas agendamentos com seu ownerId
+      // - Barbeiro: apenas agendamentos com seu barberId
       // - Público não autenticado: pode ler agendamentos com ownerId (para páginas públicas)
       allow get: if isAdmin() ||
                     (isAuthenticated() && 'ownerId' in resource.data && isOwner(resource.data.ownerId)) ||
+                    (isAuthenticated() && 'barberId' in resource.data && isBarber(resource.data.barberId)) ||
                     (!isAuthenticated() && 'ownerId' in resource.data);
 
       // Leitura de lista (queries):
       // - Admin: pode ler tudo
       // - Cliente autenticado: pode ler apenas seus agendamentos (ownerId)
+      // - Barbeiro: apenas agendamentos com seu barberId
       // - Público não autenticado: pode ler com limite (para páginas públicas de agendamento)
       // IMPORTANTE: Clientes públicos usam API routes para buscar seus agendamentos
       allow list: if isAdmin() ||
                      (isAuthenticated() && resource.data.ownerId == request.auth.uid) ||
+                     (isAuthenticated() && 'barberId' in resource.data && resource.data.barberId == request.auth.uid) ||
                      (!isAuthenticated() && request.query.limit <= 100);
 
       // Criação:
@@ -53,8 +85,10 @@ service cloud.firestore {
       // Atualização:
       // - Admin: pode atualizar tudo
       // - Cliente: apenas seus próprios agendamentos
+      // - Barbeiro: apenas seus agendamentos (status apenas, não dados do cliente)
       allow update: if isAdmin() ||
-                       ('ownerId' in resource.data && isOwner(resource.data.ownerId));
+                       ('ownerId' in resource.data && isOwner(resource.data.ownerId)) ||
+                       isBarberUpdatingOwnBooking();
 
       // Deleção:
       // - Admin: pode deletar tudo
@@ -68,34 +102,42 @@ service cloud.firestore {
       // Leitura individual (get):
       // - Admin: pode ler tudo
       // - Cliente autenticado: apenas bloqueios com seu ownerId
+      // - Barbeiro: apenas bloqueios com seu barberId
       // - Público não autenticado: pode ler bloqueios com ownerId
       allow get: if isAdmin() ||
                     (isAuthenticated() && 'ownerId' in resource.data && isOwner(resource.data.ownerId)) ||
+                    (isAuthenticated() && 'barberId' in resource.data && isBarber(resource.data.barberId)) ||
                     (!isAuthenticated() && 'ownerId' in resource.data);
 
       // Leitura de lista (queries):
       // - Admin: pode ler tudo
       // - Cliente autenticado: pode ler bloqueios próprios OU bloqueios públicos (sem ownerId)
+      // - Barbeiro: apenas bloqueios com seu barberId
       // - Público não autenticado: pode fazer queries limitadas
       // IMPORTANTE: O Firestore Rules valida cada DOCUMENTO retornado
       allow list: if isAdmin() ||
                      (isAuthenticated() &&
                       (resource.data.ownerId == request.auth.uid || !('ownerId' in resource.data))) ||
+                     (isAuthenticated() && 'barberId' in resource.data && resource.data.barberId == request.auth.uid) ||
                      (!isAuthenticated() && request.query.limit <= 100);
 
       // Criação:
       // - Admin: pode criar com qualquer ownerId ou sem ownerId
       // - Cliente autenticado: pode criar com seu próprio ownerId
+      // - Barbeiro: pode criar bloqueios para si mesmo
       allow create: if isAdmin() ||
                        (isAuthenticated() &&
                         'ownerId' in request.resource.data &&
-                        request.resource.data.ownerId == request.auth.uid);
+                        request.resource.data.ownerId == request.auth.uid) ||
+                       isBarberBlockingOwnSchedule();
 
       // Deleção:
       // - Admin: pode deletar tudo
       // - Cliente: apenas seus próprios bloqueios
+      // - Barbeiro: apenas seus próprios bloqueios
       allow delete: if isAdmin() ||
-                       ('ownerId' in resource.data && isOwner(resource.data.ownerId));
+                       ('ownerId' in resource.data && isOwner(resource.data.ownerId)) ||
+                       ('barberId' in resource.data && isBarber(resource.data.barberId));
     }
 
     // Regras para configurações do sistema (opcional - caso adicione no futuro)
@@ -104,16 +146,88 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // Regras para usuários (opcional - caso queira guardar dados adicionais)
+    // Regras para usuários
+    // Suporta campos adicionais: venueType, venueInfo.barbershopInfo (professionals, services, schedule)
+    // Suporta barbeiros: role='barber', ownerId
     match /users/{userId} {
-      // Usuário pode ler seus próprios dados ou admin pode ler tudo
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Leitura:
+      // - Admin: pode ler tudo
+      // - Usuário: pode ler seus próprios dados
+      // - Dono (client): pode ler barbeiros com ownerId igual ao seu uid
+      allow read: if isAdmin() ||
+                     (isAuthenticated() && request.auth.uid == userId) ||
+                     (isAuthenticated() && resource.data.ownerId == request.auth.uid);
 
-      // Usuário pode atualizar seus próprios dados ou admin pode atualizar tudo
-      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Atualização:
+      // - Admin: pode atualizar tudo
+      // - Usuário: pode atualizar seus próprios dados
+      // - Dono: pode atualizar isActive de seus barbeiros
+      allow update: if isAdmin() ||
+                       (isAuthenticated() && request.auth.uid == userId) ||
+                       (isAuthenticated() &&
+                        resource.data.role == 'barber' &&
+                        resource.data.ownerId == request.auth.uid &&
+                        // Dono só pode atualizar isActive
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isActive', 'updatedAt']));
 
-      // Apenas admin pode criar e deletar usuários
-      allow create, delete: if isAdmin();
+      // Criação:
+      // - Admin: pode criar qualquer usuário
+      // - Dono (client): pode criar barbeiros com ownerId igual ao seu uid
+      allow create: if isAdmin() || isOwnerCreatingBarber();
+
+      // Deleção:
+      // - Admin: pode deletar qualquer usuário
+      // - Dono: pode deletar seus barbeiros
+      allow delete: if isAdmin() ||
+                       (isAuthenticated() &&
+                        resource.data.role == 'barber' &&
+                        resource.data.ownerId == request.auth.uid);
+    }
+
+    // Regras para agendamentos de serviços (serviceBookings - barbearias)
+    // Regras similares aos bookings normais
+    match /serviceBookings/{bookingId} {
+      // Leitura individual (get):
+      // - Admin: pode ler tudo
+      // - Cliente autenticado: apenas agendamentos com seu ownerId
+      // - Barbeiro: apenas agendamentos com seu barberId
+      // - Público não autenticado: pode ler agendamentos com ownerId (para páginas públicas)
+      allow get: if isAdmin() ||
+                    (isAuthenticated() && 'ownerId' in resource.data && isOwner(resource.data.ownerId)) ||
+                    (isAuthenticated() && 'barberId' in resource.data && isBarber(resource.data.barberId)) ||
+                    (!isAuthenticated() && 'ownerId' in resource.data);
+
+      // Leitura de lista (queries):
+      // - Admin: pode ler tudo
+      // - Cliente autenticado: pode ler apenas seus agendamentos (ownerId)
+      // - Barbeiro: apenas agendamentos com seu barberId
+      // - Público não autenticado: pode ler com limite (para páginas públicas)
+      allow list: if isAdmin() ||
+                     (isAuthenticated() && 'ownerId' in resource.data && resource.data.ownerId == request.auth.uid) ||
+                     (isAuthenticated() && 'barberId' in resource.data && resource.data.barberId == request.auth.uid) ||
+                     (!isAuthenticated() && request.query.limit <= 100);
+
+      // Criação:
+      // - Admin: pode criar com qualquer ownerId
+      // - Cliente autenticado: pode criar com seu próprio ownerId
+      // - Público: pode criar agendamentos para um cliente específico (via API pública)
+      allow create: if isAdmin() ||
+                       (isAuthenticated() && 'ownerId' in request.resource.data && request.resource.data.ownerId == request.auth.uid) ||
+                       (!isAuthenticated() && 'ownerId' in request.resource.data);
+
+      // Atualização:
+      // - Admin: pode atualizar tudo
+      // - Cliente: apenas seus próprios agendamentos
+      // - Barbeiro: apenas seus agendamentos (status apenas, não dados do cliente)
+      allow update: if isAdmin() ||
+                       ('ownerId' in resource.data && isOwner(resource.data.ownerId)) ||
+                       isBarberUpdatingOwnBooking();
+
+      // Deleção:
+      // - Admin: pode deletar tudo
+      // - Cliente: apenas seus próprios agendamentos
+      allow delete: if isAdmin() ||
+                       ('ownerId' in resource.data && isOwner(resource.data.ownerId));
     }
 
     // Regras para clientes públicos (autenticação customizada)
@@ -133,3 +247,4 @@ service cloud.firestore {
     }
   }
 }
+

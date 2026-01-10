@@ -203,6 +203,56 @@ export async function deleteUserDocument(uid: string): Promise<void> {
   }
 }
 
+/**
+ * Atualiza perfil do usuário usando notação de ponto do Firestore
+ * Isso permite atualizar campos aninhados sem sobrescrever objetos pai
+ */
+export async function updateUserProfileWithDotNotation(
+  uid: string,
+  data: Record<string, any>
+): Promise<void> {
+  try {
+    const userRef = doc(db, USERS_COLLECTION, uid);
+
+    // Busca o usuário atual para verificar se o businessName mudou
+    const currentUserSnap = await getDoc(userRef);
+    const currentUser = currentUserSnap.exists() ? currentUserSnap.data() as UserDocument : null;
+
+    // Remove campos undefined (Firestore ignora undefined, mas é melhor filtrar)
+    const cleanData: Record<string, any> = {};
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+
+    const updateData: Record<string, any> = {
+      ...cleanData,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Regenera o publicSlug se o businessName mudou e o usuário for cliente
+    if (
+      currentUser &&
+      currentUser.role === 'client' &&
+      data.businessName &&
+      data.businessName !== currentUser.businessName
+    ) {
+      const newSlug = generateSlug(
+        data.displayName || currentUser.displayName,
+        currentUser.email,
+        data.businessName
+      );
+      updateData.publicSlug = newSlug;
+    }
+
+    await updateDoc(userRef, updateData);
+  } catch (error) {
+    console.error('Erro ao atualizar perfil com notação de ponto:', error);
+    throw error;
+  }
+}
+
 // Aliases for compatibility
 export const getUserById = getUserByUid;
 export const updateUserProfile = updateUser;

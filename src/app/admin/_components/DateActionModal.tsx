@@ -55,8 +55,8 @@ export function DateActionModal({
 
       {/* Modal */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-          <h2 className="text-xl font-light text-gray-900 mb-2 capitalize">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6">
+          <h2 className="text-xl font-light text-gray-900 dark:text-gray-100 mb-2 capitalize">
             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR', {
               weekday: 'long',
               day: 'numeric',
@@ -64,7 +64,7 @@ export function DateActionModal({
               year: 'numeric'
             })}
           </h2>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-gray-500 dark:text-gray-300 mb-6">
             {isBlocked ? 'Este dia está bloqueado' : 'Deseja bloquear este dia?'}
           </p>
 
@@ -72,7 +72,7 @@ export function DateActionModal({
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancelar
             </button>

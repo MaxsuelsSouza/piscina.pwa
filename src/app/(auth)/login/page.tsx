@@ -98,7 +98,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 p-6 sm:p-8">
+    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 dark:border-gray-700/40 p-6 sm:p-8">
       {/* Header */}
       <div className="text-center mb-6 sm:mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-3 sm:mb-4 shadow-lg">
@@ -117,14 +117,14 @@ function LoginForm() {
             <path d="M 3 21 Q 5 19.5 7 21 T 11 21 T 15 21 T 19 21 T 21 21" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         </div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Piscina</h1>
-        <p className="text-xs sm:text-sm text-gray-500">Bem-vindo de volta</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Piscina</h1>
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Bem-vindo de volta</p>
       </div>
 
       {/* Login Form */}
       <form onSubmit={handleLogin} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Email
           </label>
           <input
@@ -132,10 +132,10 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
             className={cn(
-              'w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm outline-none transition-all',
+              'w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border rounded-xl text-sm dark:text-gray-100 outline-none transition-all',
               error
-                ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-50'
-                : 'border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50'
+                ? 'border-red-300 dark:border-red-600 focus:border-red-500 dark:focus:border-red-500 focus:ring-4 focus:ring-red-50 dark:focus:ring-red-900/30'
+                : 'border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30'
             )}
             placeholder="seu@email.com"
             disabled={loading}
@@ -144,7 +144,7 @@ function LoginForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Senha
           </label>
           <div className="relative">
@@ -153,10 +153,10 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={cn(
-                'w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm outline-none transition-all pr-10',
+                'w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border rounded-xl text-sm dark:text-gray-100 outline-none transition-all pr-10',
                 error
-                  ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-50'
-                  : 'border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50'
+                  ? 'border-red-300 dark:border-red-600 focus:border-red-500 dark:focus:border-red-500 focus:ring-4 focus:ring-red-50 dark:focus:ring-red-900/30'
+                  : 'border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30'
               )}
               placeholder="Digite sua senha"
               disabled={loading}
@@ -165,7 +165,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               disabled={loading}
             >
               {showPassword ? (
@@ -183,15 +183,15 @@ function LoginForm() {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-100 rounded-xl">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl">
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg shadow-blue-500/30 dark:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
@@ -203,9 +203,9 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 p-6 sm:p-8">
+      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/40 dark:border-gray-700/40 p-6 sm:p-8">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
         </div>
       </div>
     }>

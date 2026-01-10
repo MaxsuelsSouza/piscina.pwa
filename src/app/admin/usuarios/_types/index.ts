@@ -2,7 +2,7 @@
  * Tipos para a página de gerenciamento de usuários
  */
 
-import type { AppUser, VenueLocation, VenueInfo } from '@/types/user';
+import type { AppUser, VenueLocation, VenueInfo, VenueType } from '@/types/user';
 
 export type { AppUser };
 
@@ -15,6 +15,7 @@ export interface CreateUserFormData {
   displayName?: string;
   businessName?: string; // Nome do estabelecimento/espaço
   role: 'client' | 'admin';
+  venueType?: VenueType; // Tipo de estabelecimento
 
   // FASE 1 - Dados de localização e informações
   location?: VenueLocation;

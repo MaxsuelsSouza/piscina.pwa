@@ -96,7 +96,7 @@ export function BookingCalendar({
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-xs font-medium text-gray-400 py-3 uppercase tracking-wider"
+            className="text-center text-xs font-medium text-gray-400 dark:text-gray-300 py-3 uppercase tracking-wider"
           >
             {day}
           </div>
@@ -154,41 +154,41 @@ export function BookingCalendar({
               className={cn(
                 'aspect-square rounded-xl transition-all relative group',
                 'flex flex-col items-center justify-center',
-                isSelected && !isBooked && !isBlockedDate && 'bg-blue-600 shadow-lg scale-105',
-                !isSelected && !isDisabled && !isBooked && 'hover:bg-gray-50 hover:scale-105',
+                isSelected && !isBooked && !isBlockedDate && 'bg-blue-600 dark:bg-blue-500 shadow-lg scale-105',
+                !isSelected && !isDisabled && !isBooked && 'hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-105',
                 isPastDate && !isBooked && !isBlockedDate && 'cursor-not-allowed opacity-30',
-                isTodayDate && !isSelected && !isBooked && !isBlockedDate && 'ring-2 ring-blue-500 ring-inset',
+                isTodayDate && !isSelected && !isBooked && !isBlockedDate && 'ring-2 ring-blue-500 dark:ring-blue-400 ring-inset',
                 // Dias com agendamento confirmado (verde)
-                isConfirmed && !isPastDate && !isBlockedDate && adminMode && 'bg-green-50 hover:bg-green-100 cursor-pointer hover:scale-105',
-                isConfirmed && !isPastDate && !isBlockedDate && !adminMode && 'bg-green-50 cursor-not-allowed',
-                isConfirmed && isPastDate && !isBlockedDate && adminMode && 'bg-green-50 opacity-60 hover:opacity-100 cursor-pointer hover:scale-105',
-                isConfirmed && isPastDate && !isBlockedDate && !adminMode && 'bg-green-50 opacity-30 cursor-not-allowed',
+                isConfirmed && !isPastDate && !isBlockedDate && adminMode && 'bg-green-50 dark:bg-green-900/40 hover:bg-green-100 dark:hover:bg-green-900/60 cursor-pointer hover:scale-105',
+                isConfirmed && !isPastDate && !isBlockedDate && !adminMode && 'bg-green-50 dark:bg-green-900/40 cursor-not-allowed',
+                isConfirmed && isPastDate && !isBlockedDate && adminMode && 'bg-green-50 dark:bg-green-900/30 opacity-60 hover:opacity-100 cursor-pointer hover:scale-105',
+                isConfirmed && isPastDate && !isBlockedDate && !adminMode && 'bg-green-50 dark:bg-green-900/20 opacity-30 cursor-not-allowed',
                 // Dias com agendamento pendente (vermelho/amarelo)
-                isPending && !isConfirmed && !isPastDate && !isBlockedDate && adminMode && 'bg-yellow-50 hover:bg-yellow-100 cursor-pointer hover:scale-105',
-                isPending && !isConfirmed && !isPastDate && !isBlockedDate && !adminMode && 'bg-yellow-50 cursor-not-allowed',
-                isPending && !isConfirmed && isPastDate && !isBlockedDate && adminMode && 'bg-yellow-50 opacity-60 hover:opacity-100 cursor-pointer hover:scale-105',
-                isPending && !isConfirmed && isPastDate && !isBlockedDate && !adminMode && 'bg-yellow-50 opacity-30 cursor-not-allowed',
+                isPending && !isConfirmed && !isPastDate && !isBlockedDate && adminMode && 'bg-yellow-50 dark:bg-yellow-900/40 hover:bg-yellow-100 dark:hover:bg-yellow-900/60 cursor-pointer hover:scale-105',
+                isPending && !isConfirmed && !isPastDate && !isBlockedDate && !adminMode && 'bg-yellow-50 dark:bg-yellow-900/40 cursor-not-allowed',
+                isPending && !isConfirmed && isPastDate && !isBlockedDate && adminMode && 'bg-yellow-50 dark:bg-yellow-900/30 opacity-60 hover:opacity-100 cursor-pointer hover:scale-105',
+                isPending && !isConfirmed && isPastDate && !isBlockedDate && !adminMode && 'bg-yellow-50 dark:bg-yellow-900/20 opacity-30 cursor-not-allowed',
                 // Dias bloqueados
-                isBlockedDate && !adminMode && 'bg-gray-200 cursor-not-allowed',
-                isBlockedDate && adminMode && !isPastDate && 'bg-gray-200 hover:bg-gray-300 cursor-pointer hover:scale-105'
+                isBlockedDate && !adminMode && 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed',
+                isBlockedDate && adminMode && !isPastDate && 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer hover:scale-105'
               )}
             >
               <span
                 className={cn(
                   'text-sm font-medium transition-colors',
                   isSelected && !isBooked && !isBlockedDate && 'text-white',
-                  !isSelected && !isDisabled && 'text-gray-700',
-                  isPastDate && !isBooked && !isBlockedDate && 'text-gray-400',
+                  !isSelected && !isDisabled && 'text-gray-700 dark:text-gray-200',
+                  isPastDate && !isBooked && !isBlockedDate && 'text-gray-400 dark:text-gray-500',
                   // Agendamentos confirmados (verde)
-                  isConfirmed && !isPastDate && !isBlockedDate && 'text-green-600 font-semibold',
-                  isConfirmed && isPastDate && !isBlockedDate && adminMode && 'text-green-500 font-semibold',
-                  isConfirmed && isPastDate && !isBlockedDate && !adminMode && 'text-gray-400',
+                  isConfirmed && !isPastDate && !isBlockedDate && 'text-green-600 dark:text-green-300 font-semibold',
+                  isConfirmed && isPastDate && !isBlockedDate && adminMode && 'text-green-500 dark:text-green-400 font-semibold',
+                  isConfirmed && isPastDate && !isBlockedDate && !adminMode && 'text-gray-400 dark:text-gray-500',
                   // Agendamentos pendentes (amarelo)
-                  isPending && !isConfirmed && !isPastDate && !isBlockedDate && 'text-yellow-700 font-semibold',
-                  isPending && !isConfirmed && isPastDate && !isBlockedDate && adminMode && 'text-yellow-600 font-semibold',
-                  isPending && !isConfirmed && isPastDate && !isBlockedDate && !adminMode && 'text-gray-400',
+                  isPending && !isConfirmed && !isPastDate && !isBlockedDate && 'text-yellow-700 dark:text-yellow-300 font-semibold',
+                  isPending && !isConfirmed && isPastDate && !isBlockedDate && adminMode && 'text-yellow-600 dark:text-yellow-400 font-semibold',
+                  isPending && !isConfirmed && isPastDate && !isBlockedDate && !adminMode && 'text-gray-400 dark:text-gray-500',
                   // Bloqueados
-                  isBlockedDate && 'text-gray-500'
+                  isBlockedDate && 'text-gray-500 dark:text-gray-400'
                 )}
               >
                 {day}
@@ -197,7 +197,7 @@ export function BookingCalendar({
               {/* Ícone de bloqueado */}
               {isBlockedDate && (
                 <div className="absolute top-1 right-1">
-                  <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-3 h-3 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                   </svg>
                 </div>
@@ -225,22 +225,22 @@ export function BookingCalendar({
       </div>
 
       {/* Legenda minimalista */}
-      <div className="mt-8 flex items-center justify-center gap-6 text-xs text-gray-500 flex-wrap">
+      <div className="mt-8 flex items-center justify-center gap-6 text-xs text-gray-500 dark:text-gray-300 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
+          <div className="w-2 h-2 rounded-full bg-green-500 dark:bg-green-400" />
           <span className="font-light">Confirmado</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-yellow-500" />
+          <div className="w-2 h-2 rounded-full bg-yellow-500 dark:bg-yellow-400" />
           <span className="font-light">Pendente</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-gray-400" />
+          <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500" />
           <span className="font-light">Bloqueado</span>
         </div>
         {!adminMode && (
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-600" />
+            <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400" />
             <span className="font-light">Selecionado</span>
           </div>
         )}

@@ -40,12 +40,12 @@ export function Navbar({ navItems, onLogoClick, currentYear }: NavbarProps) {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-3 sticky top-0 z-50">
+    <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-3 sticky top-0 z-50 transition-colors">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         {/* Logo */}
         <button
           onClick={handleLogoClick}
-          className="text-gray-900 font-semibold text-base hover:text-gray-700 transition-colors"
+          className="text-gray-900 dark:text-gray-100 font-semibold text-base hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
         >
           Piscina Agendamentos
         </button>
@@ -66,8 +66,8 @@ export function Navbar({ navItems, onLogoClick, currentYear }: NavbarProps) {
                   className={cn(
                     'text-sm transition-colors flex items-center gap-1',
                     pathname === item.path
-                      ? 'text-gray-900 font-medium'
-                      : 'text-gray-500 hover:text-gray-900'
+                      ? 'text-gray-900 dark:text-gray-100 font-medium'
+                      : 'text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
                   )}
                 >
                   {item.label}
@@ -90,7 +90,7 @@ export function Navbar({ navItems, onLogoClick, currentYear }: NavbarProps) {
                 {/* Dropdown Menu */}
                 {hasSubmenu && openDropdown === item.path && (
                   <div
-                    className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg py-1"
+                    className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1"
                     onMouseEnter={() => setOpenDropdown(item.path)}
                     onMouseLeave={() => setOpenDropdown(null)}
                   >
@@ -101,8 +101,8 @@ export function Navbar({ navItems, onLogoClick, currentYear }: NavbarProps) {
                         className={cn(
                           'w-full text-left px-4 py-2 text-sm transition-colors',
                           pathname === subItem.path
-                            ? 'bg-gray-100 text-gray-900 font-medium'
-                            : 'text-gray-700 hover:bg-gray-50'
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
                         )}
                       >
                         {subItem.label}

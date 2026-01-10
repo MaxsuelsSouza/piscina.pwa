@@ -46,6 +46,7 @@ export async function GET(
         businessName: client.businessName,
         publicSlug: client.publicSlug,
         phone: client.venueInfo?.phone,
+        venueType: client.venueType || 'event_space', // Tipo de estabelecimento
         venueInfo: client.venueInfo, // Informações do espaço (incluindo preço)
         location: client.location, // Localização (para cidade no PIX)
       },

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Lê os dados do request
-    const { email, password, displayName, businessName, role = 'user', location, venueInfo } = await request.json();
+    const { email, password, displayName, businessName, role = 'user', venueType, location, venueInfo } = await request.json();
 
     // Validações
     if (!email || !password) {
@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
       publicSlug,
       businessName,
       location,
-      venueInfo
+      venueInfo,
+      venueType
     );
 
     return NextResponse.json({

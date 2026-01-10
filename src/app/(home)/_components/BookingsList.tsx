@@ -29,9 +29,9 @@ const STATUS_LABELS = {
 };
 
 const STATUS_COLORS = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  confirmed: 'bg-green-100 text-green-800 border-green-200',
-  cancelled: 'bg-gray-100 text-gray-800 border-gray-200',
+  pending: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-600',
+  confirmed: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-200 dark:border-green-600',
+  cancelled: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600',
 };
 
 export function BookingsList({ date, bookings, onCancelBooking }: BookingsListProps) {
@@ -50,18 +50,18 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
 
   if (bookings.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
           Agendamentos
         </h3>
-        <p className="text-sm text-gray-600 mb-6 capitalize">
+        <p className="text-sm text-gray-600 dark:text-gray-200 mb-6 capitalize">
           {formatDate(date)}
         </p>
         <div className="text-center py-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-3">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 text-gray-400"
+              className="h-8 w-8 text-gray-400 dark:text-gray-300"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -74,19 +74,19 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
               />
             </svg>
           </div>
-          <p className="text-gray-600">Nenhum agendamento para esta data</p>
-          <p className="text-sm text-gray-500 mt-1">Clique em &quot;Novo Agendamento&quot; para criar</p>
+          <p className="text-gray-600 dark:text-gray-200">Nenhum agendamento para esta data</p>
+          <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">Clique em &quot;Novo Agendamento&quot; para criar</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
         Agendamentos ({bookings.length})
       </h3>
-      <p className="text-sm text-gray-600 mb-6 capitalize">
+      <p className="text-sm text-gray-600 dark:text-gray-200 mb-6 capitalize">
         {formatDate(date)}
       </p>
 
@@ -94,12 +94,12 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
         {bookings.map((booking) => (
           <div
             key={booking.id}
-            className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+            className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <h4 className="font-semibold text-gray-900">{booking.customerName}</h4>
-                <p className="text-sm text-gray-600">{TIME_SLOT_LABELS[booking.timeSlot]}</p>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100">{booking.customerName}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-200">{TIME_SLOT_LABELS[booking.timeSlot]}</p>
               </div>
               <span
                 className={cn(
@@ -112,7 +112,7 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
             </div>
 
             <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-600">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4"
@@ -131,7 +131,7 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
               </div>
 
               {booking.customerEmail && (
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-200">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-4 w-4"
@@ -150,7 +150,7 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
                 </div>
               )}
 
-              <div className="flex items-center gap-2 text-gray-600">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4"
@@ -169,15 +169,15 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
               </div>
 
               {booking.notes && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 mb-1">Observações:</p>
-                  <p className="text-gray-700">{booking.notes}</p>
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <p className="text-xs text-gray-500 dark:text-gray-300 mb-1">Observações:</p>
+                  <p className="text-gray-700 dark:text-gray-200">{booking.notes}</p>
                 </div>
               )}
             </div>
 
             {booking.status !== 'cancelled' && onCancelBooking && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                 <button
                   onClick={async () => {
                     const confirmed = await confirm({
@@ -197,7 +197,7 @@ export function BookingsList({ date, bookings, onCancelBooking }: BookingsListPr
                       }
                     }
                   }}
-                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  className="text-sm text-red-600 dark:text-red-300 hover:text-red-700 dark:hover:text-red-400 font-medium"
                 >
                   Cancelar agendamento
                 </button>

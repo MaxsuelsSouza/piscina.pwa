@@ -16,6 +16,7 @@ export interface ClientInfo {
   businessName?: string; // Nome do estabelecimento
   publicSlug?: string;
   phone?: string; // Telefone/WhatsApp do cliente
+  venueType?: 'event_space' | 'barbershop'; // Tipo de estabelecimento
   venueInfo?: VenueInfo; // Informações do espaço (incluindo preço)
   location?: VenueLocation; // Localização
 }

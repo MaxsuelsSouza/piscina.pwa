@@ -10,6 +10,7 @@ interface ProfileFormProps {
   formData: ProfileFormData;
   loading: boolean;
   hasChanges: boolean;
+  isBarbershop?: boolean; // Indica se é perfil de barbearia (oculta campos de espaço de festa)
   onSubmit: (e: React.FormEvent) => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   onCepChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -21,6 +22,7 @@ export function ProfileForm({
   formData,
   loading,
   hasChanges,
+  isBarbershop = false,
   onSubmit,
   onChange,
   onCepChange,
@@ -28,16 +30,16 @@ export function ProfileForm({
   onCancel,
 }: ProfileFormProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Informações Básicas */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Informações Básicas
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Nome da Pessoa
               </label>
               <input
@@ -46,13 +48,13 @@ export function ProfileForm({
                 name="displayName"
                 value={formData.displayName}
                 onChange={onChange}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                 placeholder="João Silva"
               />
             </div>
 
             <div>
-              <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Nome do Estabelecimento *
               </label>
               <input
@@ -62,7 +64,7 @@ export function ProfileForm({
                 value={formData.businessName}
                 onChange={onChange}
                 required
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                 placeholder="Muca Fest, Max Fest, etc."
               />
             </div>
@@ -70,15 +72,15 @@ export function ProfileForm({
         </div>
 
         {/* Endereço */}
-        <div className="pt-6 border-t border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Endereço
           </h2>
           <div className="grid grid-cols-1 gap-4">
             {/* CEP */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   CEP
                 </label>
                 <input
@@ -88,16 +90,16 @@ export function ProfileForm({
                   value={formData.zipCode}
                   onChange={onCepChange}
                   maxLength={9}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                   placeholder="00000-000"
                 />
-                <p className="text-xs text-gray-400 mt-1">Digite o CEP para preencher automaticamente</p>
+                <p className="text-xs text-gray-400 dark:text-gray-400 mt-1">Digite o CEP para preencher automaticamente</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-3">
-                <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="street" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Rua
                 </label>
                 <input
@@ -106,13 +108,13 @@ export function ProfileForm({
                   name="street"
                   value={formData.street}
                   onChange={onChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                   placeholder="Rua Principal"
                 />
               </div>
 
               <div>
-                <label htmlFor="number" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="number" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Número
                 </label>
                 <input
@@ -121,14 +123,14 @@ export function ProfileForm({
                   name="number"
                   value={formData.number}
                   onChange={onChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                   placeholder="123"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="neighborhood" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="neighborhood" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Bairro
               </label>
               <input
@@ -137,14 +139,14 @@ export function ProfileForm({
                 name="neighborhood"
                 value={formData.neighborhood}
                 onChange={onChange}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                 placeholder="Centro"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Cidade
                 </label>
                 <input
@@ -153,13 +155,13 @@ export function ProfileForm({
                   name="city"
                   value={formData.city}
                   onChange={onChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                   placeholder="Olinda"
                 />
               </div>
 
               <div>
-                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="state" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Estado
                 </label>
                 <select
@@ -167,7 +169,7 @@ export function ProfileForm({
                   name="state"
                   value={formData.state}
                   onChange={onChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                 >
                   <option value="">Selecione</option>
                   <option value="AC">AC</option>
@@ -204,40 +206,44 @@ export function ProfileForm({
         </div>
 
         {/* Informações Financeiras */}
-        <div className="pt-6 border-t border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Informações Financeiras
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label htmlFor="condominiumPrice" className="block text-sm font-medium text-gray-700 mb-2">
-                Valor do Condomínio/Aluguel (por dia)
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
-                <input
-                  type="number"
-                  id="condominiumPrice"
-                  name="condominiumPrice"
-                  value={formData.condominiumPrice}
-                  onChange={onChange}
-                  min="0"
-                  step="0.01"
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
-                  placeholder="400.00"
-                />
+          {/* Valor do Condomínio - Apenas para Espaço de Festa */}
+          {!isBarbershop && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label htmlFor="condominiumPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  Valor do Condomínio/Aluguel (por dia)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-300 text-sm">R$</span>
+                  <input
+                    type="number"
+                    id="condominiumPrice"
+                    name="condominiumPrice"
+                    value={formData.condominiumPrice}
+                    onChange={onChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
+                    placeholder="400.00"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 dark:text-gray-400 mt-1">Valor que será cobrado nos agendamentos</p>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Valor que será cobrado nos agendamentos</p>
             </div>
-          </div>
+          )}
 
+          {/* Dados Bancários para Recebimento - Para todos */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900">Dados Bancários para Recebimento</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Dados Bancários para Recebimento</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="pixKeyType" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="pixKeyType" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Tipo de Chave PIX
                 </label>
                 <select
@@ -245,7 +251,7 @@ export function ProfileForm({
                   name="pixKeyType"
                   value={formData.pixKeyType}
                   onChange={onChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                 >
                   <option value="">Selecione</option>
                   <option value="cpf">CPF</option>
@@ -257,7 +263,7 @@ export function ProfileForm({
               </div>
 
               <div>
-                <label htmlFor="pixKey" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="pixKey" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Chave PIX
                 </label>
                 <input
@@ -266,7 +272,7 @@ export function ProfileForm({
                   name="pixKey"
                   value={formData.pixKey}
                   onChange={onChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                   placeholder="Digite sua chave PIX"
                 />
               </div>
@@ -274,7 +280,7 @@ export function ProfileForm({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="accountHolder" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="accountHolder" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Nome do Titular da Conta
                 </label>
                 <input
@@ -283,13 +289,13 @@ export function ProfileForm({
                   name="accountHolder"
                   value={formData.accountHolder}
                   onChange={onChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                   placeholder="Nome completo do titular"
                 />
               </div>
 
               <div>
-                <label htmlFor="bankName" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="bankName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Nome do Banco
                 </label>
                 <input
@@ -298,7 +304,7 @@ export function ProfileForm({
                   name="bankName"
                   value={formData.bankName}
                   onChange={onChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                   placeholder="Ex: Banco do Brasil, Nubank, etc."
                 />
               </div>
@@ -306,15 +312,15 @@ export function ProfileForm({
           </div>
         </div>
 
-        {/* Informações do Espaço */}
-        <div className="pt-6 border-t border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Informações do Espaço
+        {/* Informações do Espaço / Contato */}
+        <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            {isBarbershop ? 'Contato e Informações' : 'Informações do Espaço'}
           </h2>
 
           {/* Descrição */}
           <div className="mb-4">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Descrição do Espaço
             </label>
             <textarea
@@ -323,14 +329,14 @@ export function ProfileForm({
               value={formData.description}
               onChange={onChange}
               rows={4}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all resize-none"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all resize-none"
               placeholder="Descreva seu espaço: ambiente, diferenciais, o que torna especial..."
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Telefone/WhatsApp
               </label>
               <input
@@ -339,32 +345,35 @@ export function ProfileForm({
                 name="phone"
                 value={formData.phone}
                 onChange={onChange}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                 placeholder="(81) 99999-9999"
               />
             </div>
 
-            <div>
-              <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 mb-2">
-                Capacidade (pessoas)
-              </label>
-              <input
-                type="number"
-                id="capacity"
-                name="capacity"
-                value={formData.capacity}
-                onChange={onChange}
-                min="1"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
-                placeholder="100"
-              />
-            </div>
+            {/* Capacidade - Apenas para Espaço de Festa */}
+            {!isBarbershop && (
+              <div>
+                <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  Capacidade (pessoas)
+                </label>
+                <input
+                  type="number"
+                  id="capacity"
+                  name="capacity"
+                  value={formData.capacity}
+                  onChange={onChange}
+                  min="1"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
+                  placeholder="100"
+                />
+              </div>
+            )}
           </div>
 
           {/* Redes Sociais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Instagram
               </label>
               <input
@@ -373,13 +382,13 @@ export function ProfileForm({
                 name="instagram"
                 value={formData.instagram}
                 onChange={onChange}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                 placeholder="@seu_espaco ou instagram.com/seu_espaco"
               />
             </div>
 
             <div>
-              <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Facebook
               </label>
               <input
@@ -388,129 +397,131 @@ export function ProfileForm({
                 name="facebook"
                 value={formData.facebook}
                 onChange={onChange}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-gray-100 outline-none focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 transition-all"
                 placeholder="facebook.com/seu_espaco"
               />
             </div>
           </div>
 
-          {/* Amenidades */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Amenidades Disponíveis
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.pool}
-                  onChange={() => onAmenityChange('pool')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Piscina</span>
+          {/* Amenidades - Apenas para Espaço de Festa */}
+          {!isBarbershop && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                Amenidades Disponíveis
               </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.pool}
+                    onChange={() => onAmenityChange('pool')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Piscina</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.grill}
-                  onChange={() => onAmenityChange('grill')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Churrasqueira</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.grill}
+                    onChange={() => onAmenityChange('grill')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Churrasqueira</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.sound}
-                  onChange={() => onAmenityChange('sound')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Som/Música</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.sound}
+                    onChange={() => onAmenityChange('sound')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Som/Música</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.wifi}
-                  onChange={() => onAmenityChange('wifi')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Wi-Fi</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.wifi}
+                    onChange={() => onAmenityChange('wifi')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Wi-Fi</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.airConditioning}
-                  onChange={() => onAmenityChange('airConditioning')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Ar Condicionado</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.airConditioning}
+                    onChange={() => onAmenityChange('airConditioning')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Ar Condicionado</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.kitchen}
-                  onChange={() => onAmenityChange('kitchen')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Cozinha</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.kitchen}
+                    onChange={() => onAmenityChange('kitchen')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Cozinha</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.parking}
-                  onChange={() => onAmenityChange('parking')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Estacionamento</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.parking}
+                    onChange={() => onAmenityChange('parking')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Estacionamento</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.coveredArea}
-                  onChange={() => onAmenityChange('coveredArea')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Área Coberta</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.coveredArea}
+                    onChange={() => onAmenityChange('coveredArea')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Área Coberta</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.outdoorArea}
-                  onChange={() => onAmenityChange('outdoorArea')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Área Ao Ar Livre</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.outdoorArea}
+                    onChange={() => onAmenityChange('outdoorArea')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Área Ao Ar Livre</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.bathroom}
-                  onChange={() => onAmenityChange('bathroom')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Banheiro</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.bathroom}
+                    onChange={() => onAmenityChange('bathroom')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Banheiro</span>
+                </label>
 
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities.furniture}
-                  onChange={() => onAmenityChange('furniture')}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Mesas e Cadeiras</span>
-              </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.furniture}
+                    onChange={() => onAmenityChange('furniture')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Mesas e Cadeiras</span>
+                </label>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Botões */}

@@ -36,6 +36,7 @@ export default function UsuariosPage() {
     displayName: '',
     businessName: '',
     role: 'client',
+    venueType: 'event_space',
   });
 
   // Redireciona se não for admin
@@ -64,6 +65,7 @@ export default function UsuariosPage() {
         displayName: '',
         businessName: '',
         role: 'client',
+        venueType: 'event_space',
       });
     }
   };
@@ -167,10 +169,27 @@ export default function UsuariosPage() {
                     onChange={(e) => setFormData({ ...formData, role: e.target.value as 'client' | 'admin' })}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
                   >
-                    <option value="client">Cliente (Espaço de Festa)</option>
+                    <option value="client">Cliente</option>
                     <option value="admin">Administrador</option>
                   </select>
                 </div>
+
+                {formData.role === 'client' && (
+                  <div>
+                    <label htmlFor="venueType" className="block text-sm font-medium text-gray-700 mb-2">
+                      Tipo de Estabelecimento *
+                    </label>
+                    <select
+                      id="venueType"
+                      value={formData.venueType || 'event_space'}
+                      onChange={(e) => setFormData({ ...formData, venueType: e.target.value as 'event_space' | 'barbershop' })}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                    >
+                      <option value="event_space">Espaço de Festa</option>
+                      <option value="barbershop">Barbearia</option>
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">

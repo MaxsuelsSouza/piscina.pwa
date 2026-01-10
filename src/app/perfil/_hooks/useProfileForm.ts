@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateUserProfile } from '@/lib/firebase/firestore/users';
+import { updateUserProfileWithDotNotation } from '@/lib/firebase/firestore/users';
 import { ProfileFormData, initialFormData } from '../_types';
 
 export function useProfileForm() {
@@ -96,6 +96,23 @@ export function useProfileForm() {
     return false;
   }, [formData, initialData]);
 
+  // Aviso quando o usuário tentar sair da página com alterações não salvas
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = 'Você tem alterações não salvas. Tem certeza que deseja sair?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasChanges]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -160,33 +177,35 @@ export function useProfileForm() {
     setLoading(true);
 
     try {
-      await updateUserProfile(user.uid, {
+      // Usa notação de ponto do Firestore para atualizar campos aninhados
+      // sem sobrescrever venueInfo completo (preserva barbershopInfo)
+      const updateData = {
         displayName: formData.displayName.trim(),
         businessName: formData.businessName.trim(),
-        location: {
-          street: formData.street.trim(),
-          number: formData.number.trim(),
-          neighborhood: formData.neighborhood.trim(),
-          city: formData.city.trim(),
-          state: formData.state.trim(),
-          zipCode: formData.zipCode.trim(),
-        },
-        venueInfo: {
-          phone: formData.phone.trim(),
-          capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
-          description: formData.description.trim(),
-          instagram: formData.instagram.trim(),
-          facebook: formData.facebook.trim(),
-          condominiumPrice: formData.condominiumPrice ? parseFloat(formData.condominiumPrice) : undefined,
-          amenities: formData.amenities,
-          bankingInfo: {
-            pixKey: formData.pixKey.trim(),
-            pixKeyType: formData.pixKeyType || undefined,
-            accountHolder: formData.accountHolder.trim(),
-            bankName: formData.bankName.trim(),
-          },
-        },
-      });
+        'location.street': formData.street.trim(),
+        'location.number': formData.number.trim(),
+        'location.neighborhood': formData.neighborhood.trim(),
+        'location.city': formData.city.trim(),
+        'location.state': formData.state.trim(),
+        'location.zipCode': formData.zipCode.trim(),
+        'venueInfo.phone': formData.phone.trim(),
+        'venueInfo.capacity': formData.capacity ? parseInt(formData.capacity) : undefined,
+        'venueInfo.description': formData.description.trim(),
+        'venueInfo.instagram': formData.instagram.trim(),
+        'venueInfo.facebook': formData.facebook.trim(),
+        'venueInfo.condominiumPrice': formData.condominiumPrice ? parseFloat(formData.condominiumPrice) : undefined,
+        'venueInfo.amenities': formData.amenities,
+        'venueInfo.bankingInfo.pixKey': formData.pixKey.trim(),
+        'venueInfo.bankingInfo.pixKeyType': formData.pixKeyType || undefined,
+        'venueInfo.bankingInfo.accountHolder': formData.accountHolder.trim(),
+        'venueInfo.bankingInfo.bankName': formData.bankName.trim(),
+      };
+
+      console.log('Dados a serem salvos:', updateData);
+
+      await updateUserProfileWithDotNotation(user.uid, updateData);
+
+      console.log('Perfil atualizado com sucesso!');
 
       // Recarrega os dados do usuário do Firestore
       await refreshUserData();
@@ -196,6 +215,7 @@ export function useProfileForm() {
 
       setSuccess('Perfil atualizado com sucesso!');
     } catch (err: any) {
+      console.error('Erro ao atualizar perfil:', err);
       setError('Erro ao atualizar perfil. Tente novamente.');
     } finally {
       setLoading(false);
@@ -203,6 +223,14 @@ export function useProfileForm() {
   };
 
   const handleCancel = () => {
+    if (hasChanges) {
+      const confirmLeave = window.confirm(
+        'Você tem alterações não salvas no formulário.\n\nTem certeza que deseja sair sem salvar? Todas as alterações serão perdidas.'
+      );
+      if (!confirmLeave) {
+        return;
+      }
+    }
     router.push('/admin');
   };
 

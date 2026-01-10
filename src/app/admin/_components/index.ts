@@ -7,3 +7,5 @@ export { PendingBookings } from './PendingBookings';
 export { CancelledExpiredBookings } from './CancelledExpiredBookings';
 export { DateActionModal } from './DateActionModal';
 export { ProfileIncompleteModal } from './ProfileIncompleteModal';
+export { BarbershopDailyView } from './BarbershopDailyView';
+export { BarberDashboard } from './BarberDashboard';

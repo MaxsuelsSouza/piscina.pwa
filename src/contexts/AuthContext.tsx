@@ -15,6 +15,8 @@ interface AuthContextType {
   user: User | null | undefined;
   userData: AppUser | null;
   isAdmin: boolean;
+  isBarber: boolean;
+  isOwner: boolean; // Cliente/dono de estabelecimento
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -27,6 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [userData, setUserData] = useState<AppUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isBarber, setIsBarber] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Monitora mudanças no estado de autenticação
@@ -87,14 +91,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Usa o role do Firestore se disponível, caso contrário usa a verificação por UID
             const adminStatus = userDataFromFirestore?.role === 'admin' || checkIsAdmin(currentUser.uid);
+            const barberStatus = userDataFromFirestore?.role === 'barber';
+            const ownerStatus = userDataFromFirestore?.role === 'client';
+
             setIsAdmin(adminStatus);
+            setIsBarber(barberStatus);
+            setIsOwner(ownerStatus);
           } catch (error) {
             // Fallback para verificação por UID
             setIsAdmin(checkIsAdmin(currentUser.uid));
+            setIsBarber(false);
+            setIsOwner(false);
           }
         } else {
           setUserData(null);
           setIsAdmin(false);
+          setIsBarber(false);
+          setIsOwner(false);
         }
 
         setUser(currentUser);
@@ -143,9 +156,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userDataFromFirestore) {
         setUserData(userDataFromFirestore);
 
-        // Atualiza status de admin se necessário
+        // Atualiza status de admin, barber e owner
         const adminStatus = userDataFromFirestore.role === 'admin' || checkIsAdmin(user.uid);
+        const barberStatus = userDataFromFirestore.role === 'barber';
+        const ownerStatus = userDataFromFirestore.role === 'client';
+
         setIsAdmin(adminStatus);
+        setIsBarber(barberStatus);
+        setIsOwner(ownerStatus);
       }
     } catch (error) {
       throw error;
@@ -153,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userData, isAdmin, loading, login, logout, refreshUserData }}>
+    <AuthContext.Provider value={{ user, userData, isAdmin, isBarber, isOwner, loading, login, logout, refreshUserData }}>
       {children}
     </AuthContext.Provider>
   );

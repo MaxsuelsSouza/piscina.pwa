@@ -7,8 +7,11 @@ import {
   onBookingsChange,
   onBlockedDatesChange,
 } from '@/services/bookings.service';
+import { onServiceBookingsChange } from '@/services/serviceBookings.service';
 import { fetchClientBySlug, createPublicBooking } from '../_services';
+import { createBarbershopBooking, type BarbershopBookingData } from '../_services/barbershopBooking.service';
 import type { ClientInfo, Booking, BlockedDate, PublicBookingFormData } from '../_types';
+import type { ServiceBooking } from '@/types/barbershop';
 import { useToast } from '@/hooks/useToast';
 
 export function usePublicBooking(slug: string) {
@@ -18,6 +21,7 @@ export function usePublicBooking(slug: string) {
   const [error, setError] = useState<string | null>(null);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [serviceBookings, setServiceBookings] = useState<ServiceBooking[]>([]);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState('');
@@ -87,30 +91,42 @@ export function usePublicBooking(slug: string) {
   useEffect(() => {
     if (!client) return;
 
-    // Busca agendamentos deste cliente (passando ownerId para filtrar server-side)
-    const unsubscribeBookings = onBookingsChange(
-      (allBookings) => {
-        // Filtra apenas agendamentos ativos (não cancelados e não expirados)
-        const now = new Date();
-        const activeBookings = allBookings.filter((b) => {
-          // Remove cancelados
-          if (b.status === 'cancelled') return false;
+    const isBarbershop = client.venueType === 'barbershop';
 
-          // Se está pendente e tem expiresAt, verifica se não expirou
-          if (b.status === 'pending' && b.expiresAt) {
-            const expiresAt = new Date(b.expiresAt);
-            // Se expirou, não considera
-            if (now > expiresAt) return false;
-          }
+    // Se for barbearia, escuta serviceBookings em vez de bookings normais
+    const unsubscribeBookings = isBarbershop
+      ? onServiceBookingsChange(
+          (allBookings) => {
+            // Filtra apenas agendamentos ativos
+            const activeBookings = allBookings.filter((b) => b.status !== 'cancelled');
+            setServiceBookings(activeBookings);
+          },
+          client.uid,
+          false
+        )
+      : onBookingsChange(
+          (allBookings) => {
+            // Filtra apenas agendamentos ativos (não cancelados e não expirados)
+            const now = new Date();
+            const activeBookings = allBookings.filter((b) => {
+              // Remove cancelados
+              if (b.status === 'cancelled') return false;
 
-          return true;
-        });
+              // Se está pendente e tem expiresAt, verifica se não expirou
+              if (b.status === 'pending' && b.expiresAt) {
+                const expiresAt = new Date(b.expiresAt);
+                // Se expirou, não considera
+                if (now > expiresAt) return false;
+              }
 
-        setBookings(activeBookings);
-      },
-      client.uid, // ownerId
-      false // não é admin
-    );
+              return true;
+            });
+
+            setBookings(activeBookings);
+          },
+          client.uid, // ownerId
+          false // não é admin
+        );
 
     const unsubscribeBlockedDates = onBlockedDatesChange(
       (allDates) => {
@@ -165,53 +181,108 @@ export function usePublicBooking(slug: string) {
    * Submete um novo agendamento
    */
   const handleSubmitBooking = useCallback(
-    async (formData: PublicBookingFormData) => {
+    async (formData: PublicBookingFormData | BarbershopBookingData) => {
       if (!client || !selectedDate || !slug) return;
 
       setCreatingBooking(true);
 
       try {
-        // Passa o slug ao invés do client
-        // O slug será usado server-side para buscar o cliente correto
-        // Isso previne manipulação do ownerId no client-side
-        const response = await createPublicBooking(slug, selectedDate, formData);
+        const isBarbershop = client.venueType === 'barbershop';
 
-        if (response.success) {
-          // Fecha o formulário
-          setShowForm(false);
-          setSelectedDate('');
+        if (isBarbershop) {
+          // Agendamento de barbearia
+          const barbershopData = formData as BarbershopBookingData;
+          const response = await createBarbershopBooking(slug, selectedDate, barbershopData);
 
-          // Se houver dados de pagamento, exibe o modal de pagamento PIX
-          if (response.payment && response.bookingId) {
-            setPaymentData({
-              qrCodeBase64: response.payment.qrCodeBase64,
-              qrCode: response.payment.qrCode,
-              amount: response.payment.amount,
-              bookingId: response.bookingId,
-              bookingDate: selectedDate,
-              customerName: formData.customerName,
-              customerPhone: formData.customerPhone,
-              numberOfPeople: formData.numberOfPeople,
-              notes: formData.notes,
-              clientPhone: client.phone,
-              businessName: client.businessName || client.displayName,
-            });
-            toast.warning(
-              'Agendamento criado! Complete o pagamento PIX para reservar.',
-              6000 // 6 segundos
-            );
+          if (response.success) {
+            setShowForm(false);
+            setSelectedDate('');
+
+            // Verifica se requer pagamento PIX
+            if (response.requiresPayment && response.payment) {
+              // Mostra modal de pagamento PIX
+              setPaymentData({
+                qrCodeBase64: response.payment.qrCodeBase64,
+                qrCode: response.payment.qrCode,
+                amount: response.payment.amount,
+                bookingId: response.bookingId || '',
+                bookingDate: selectedDate,
+                customerName: barbershopData.customerName,
+                customerPhone: barbershopData.customerPhone,
+                numberOfPeople: 1, // Barbearia não usa numberOfPeople
+                notes: barbershopData.notes,
+                clientPhone: response.ownerPhone || '',
+                businessName: response.businessName || '',
+              });
+              toast.warning(
+                response.message || 'Agendamento criado! Complete o pagamento PIX para confirmar.',
+                6000
+              );
+            } else {
+              // Confirmado automaticamente - abre WhatsApp do dono
+              toast.success(
+                response.message || 'Agendamento confirmado com sucesso!',
+                6000
+              );
+
+              // Envia notificação via WhatsApp para o dono
+              if (response.ownerPhone) {
+                const message = `Olá! Novo agendamento confirmado:\n\n` +
+                  `📅 Data: ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR')}\n` +
+                  `👤 Cliente: ${barbershopData.customerName}\n` +
+                  `📞 Telefone: ${barbershopData.customerPhone}\n\n` +
+                  `Acesse seu painel para mais detalhes.`;
+
+                const phoneNumber = response.ownerPhone.replace(/\D/g, '');
+                const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
+
+                // Abre WhatsApp em nova aba
+                window.open(whatsappUrl, '_blank');
+              }
+            }
           } else {
-            // Fallback: se não houver pagamento (erro ao gerar), mostra mensagem
-            toast.warning(
-              'Agendamento criado! Entre em contato para confirmar o pagamento.',
-              6000
+            toast.error(
+              response.error || 'Erro ao criar agendamento. Tente novamente.'
             );
           }
         } else {
-          toast.error(
-            response.error ||
-              'Erro ao criar agendamento. Por favor, tente novamente.'
-          );
+          // Agendamento de espaço de festa (existente)
+          const eventSpaceData = formData as PublicBookingFormData;
+          const response = await createPublicBooking(slug, selectedDate, eventSpaceData);
+
+          if (response.success) {
+            setShowForm(false);
+            setSelectedDate('');
+
+            if (response.payment && response.bookingId) {
+              setPaymentData({
+                qrCodeBase64: response.payment.qrCodeBase64,
+                qrCode: response.payment.qrCode,
+                amount: response.payment.amount,
+                bookingId: response.bookingId,
+                bookingDate: selectedDate,
+                customerName: eventSpaceData.customerName,
+                customerPhone: eventSpaceData.customerPhone,
+                numberOfPeople: eventSpaceData.numberOfPeople,
+                notes: eventSpaceData.notes,
+                clientPhone: client.phone,
+                businessName: client.businessName || client.displayName,
+              });
+              toast.warning(
+                'Agendamento criado! Complete o pagamento PIX para reservar.',
+                6000
+              );
+            } else {
+              toast.warning(
+                'Agendamento criado! Entre em contato para confirmar o pagamento.',
+                6000
+              );
+            }
+          } else {
+            toast.error(
+              response.error || 'Erro ao criar agendamento. Por favor, tente novamente.'
+            );
+          }
         }
       } finally {
         setCreatingBooking(false);
@@ -240,6 +311,7 @@ export function usePublicBooking(slug: string) {
     loading,
     error,
     bookings,
+    serviceBookings,
     blockedDates,
     currentDate,
     selectedDate,
@@ -253,5 +325,6 @@ export function usePublicBooking(slug: string) {
     handleCancelBooking,
     handleClosePaymentModal,
     setShowForm,
+    setSelectedDate,
   };
 }
