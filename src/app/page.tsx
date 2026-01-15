@@ -1,5 +1,5 @@
 /**
- * Lista de Casamento - Página Principal
+ * Lista de Casa Nova - Página Principal
  */
 
 'use client';

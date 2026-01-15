@@ -1,5 +1,5 @@
 /**
- * Dados iniciais dos presentes para a Lista de Casamento
+ * Dados iniciais dos presentes para a Lista de Casa Nova
  */
 
 import type { GiftCategory } from '@/types/gift';

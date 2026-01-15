@@ -64,7 +64,7 @@ export default function HomePage() {
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-serif text-stone-800">
-              Lista de Casamento
+              Lista de Casa Nova
             </h1>
             <p className="text-sm text-stone-400 mt-0.5">
               Olá, {client?.fullName?.split(' ')[0]}
@@ -84,14 +84,37 @@ export default function HomePage() {
         <div className="space-y-4">
           {/* Admin Panel - Only for admin */}
           {isAdmin && (
-            <Link
-              href="/lista-casamento/presentes/admin"
-              className="block bg-purple-50 rounded-2xl border border-purple-200 p-6 hover:border-purple-300 hover:shadow-sm transition"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-200 rounded-xl flex items-center justify-center">
+            <>
+              <Link
+                href="/lista-casamento/presentes/admin"
+                className="block bg-purple-50 rounded-2xl border border-purple-200 p-6 hover:border-purple-300 hover:shadow-sm transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-200 rounded-xl flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-purple-700"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-medium text-purple-800">
+                      Painel Admin
+                    </h2>
+                    <p className="text-sm text-purple-600">
+                      Gerenciar convidados e presentes
+                    </p>
+                  </div>
                   <svg
-                    className="w-6 h-6 text-purple-700"
+                    className="w-5 h-5 text-purple-300"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -100,33 +123,102 @@ export default function HomePage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                      d="M9 5l7 7-7 7"
                     />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-medium text-purple-800">
-                    Painel Admin
-                  </h2>
-                  <p className="text-sm text-purple-600">
-                    Gerenciar convidados e presentes
-                  </p>
+              </Link>
+
+              {/* Painel de Presentes - Only for admin */}
+              <Link
+                href="/lista-casamento/presentes/gerenciar"
+                className="block bg-amber-50 rounded-2xl border border-amber-200 p-6 hover:border-amber-300 hover:shadow-sm transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-amber-200 rounded-xl flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-amber-700"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-medium text-amber-800">
+                      Painel de Presentes
+                    </h2>
+                    <p className="text-sm text-amber-600">
+                      Cadastrar e gerenciar presentes
+                    </p>
+                  </div>
+                  <svg
+                    className="w-5 h-5 text-amber-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
                 </div>
-                <svg
-                  className="w-5 h-5 text-purple-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-            </Link>
+              </Link>
+
+              {/* Painel de Convidados - Only for admin */}
+              <Link
+                href="/lista-casamento/presentes/convidados"
+                className="block bg-teal-50 rounded-2xl border border-teal-200 p-6 hover:border-teal-300 hover:shadow-sm transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-teal-200 rounded-xl flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-teal-700"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-medium text-teal-800">
+                      Painel de Convidados
+                    </h2>
+                    <p className="text-sm text-teal-600">
+                      Cadastrar e gerenciar convidados
+                    </p>
+                  </div>
+                  <svg
+                    className="w-5 h-5 text-teal-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </div>
+              </Link>
+            </>
           )}
 
           {/* Guest options - hidden for admin */}
