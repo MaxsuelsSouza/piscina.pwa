@@ -1,0 +1,30 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "giftSelections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clientPhone", "order": "ASCENDING" },
+        { "fieldPath": "selectedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "gifts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "gifts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isSelected", "order": "ASCENDING" },
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -4,8 +4,9 @@
 
 export interface Client {
   phone: string; // Usado como ID único (apenas números)
-  fullName: string;
-  birthDate: string; // Formato: YYYY-MM-DD
+  fullName?: string;
+  birthDate?: string; // Formato: YYYY-MM-DD (opcional agora)
+  passwordHash?: string; // Hash da senha para autenticação
   createdAt: string;
   updatedAt: string;
 }
@@ -16,11 +17,10 @@ export interface ClientDocument extends Client {
 
 export interface ClientLoginData {
   phone: string;
-  birthDate: string;
+  password: string;
 }
 
 export interface ClientRegisterData {
-  fullName: string;
   phone: string;
-  birthDate: string;
+  password: string;
 }

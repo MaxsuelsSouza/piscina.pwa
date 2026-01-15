@@ -1,6 +1,6 @@
 /**
  * Contexto de autenticação para clientes públicos
- * Usa autenticação customizada com telefone + data de nascimento
+ * Usa autenticação customizada com telefone + senha
  * Sessão válida por 24 horas
  */
 
@@ -9,16 +9,17 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Client } from '@/types/client';
 import {
-  authenticateClient,
-  createClient,
+  authenticateClientWithPassword,
+  createClientWithPassword,
   getClientByPhone,
 } from '@/lib/firebase/firestore/clients';
 
 interface ClientAuthContextType {
   client: Client | null;
   loading: boolean;
-  login: (phone: string, birthDate: string) => Promise<boolean>;
-  register: (fullName: string, phone: string, birthDate: string) => Promise<boolean>;
+  login: (phone: string, password: string) => Promise<boolean>;
+  register: (phone: string, password: string, fullName: string) => Promise<boolean>;
+  checkPhoneExists: (phone: string) => Promise<boolean>;
   logout: () => void;
   refreshClientData: () => Promise<void>;
 }
@@ -82,9 +83,18 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     checkSession();
   }, []);
 
-  const login = async (phone: string, birthDate: string): Promise<boolean> => {
+  const checkPhoneExists = async (phone: string): Promise<boolean> => {
     try {
-      const clientData = await authenticateClient(phone, birthDate);
+      const client = await getClientByPhone(phone);
+      return client !== null;
+    } catch {
+      return false;
+    }
+  };
+
+  const login = async (phone: string, password: string): Promise<boolean> => {
+    try {
+      const clientData = await authenticateClientWithPassword(phone, password);
 
       if (!clientData) {
         return false;
@@ -99,18 +109,18 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 
       setClient(clientData);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   };
 
   const register = async (
-    fullName: string,
     phone: string,
-    birthDate: string
+    password: string,
+    fullName: string
   ): Promise<boolean> => {
     try {
-      const clientData = await createClient({ fullName, phone, birthDate });
+      const clientData = await createClientWithPassword({ phone, password, fullName });
 
       // Após criar, já faz login automaticamente
       const session: ClientSession = {
@@ -121,7 +131,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 
       setClient(clientData);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   };
@@ -151,6 +161,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         loading,
         login,
         register,
+        checkPhoneExists,
         logout,
         refreshClientData,
       }}

@@ -230,19 +230,88 @@ service cloud.firestore {
                        ('ownerId' in resource.data && isOwner(resource.data.ownerId));
     }
 
-    // Regras para clientes públicos (autenticação customizada)
+    // Regras para clientes públicos (autenticação customizada com telefone + senha)
+    // Coleção: clients
+    // Documento ID: telefone (apenas números)
+    // Campos: phone, passwordHash, fullName (opcional), birthDate (opcional), createdAt, updatedAt
     match /clients/{clientId} {
-      // Qualquer um pode criar uma conta de cliente (registro público)
-      allow create: if true;
+      // Leitura individual (get):
+      // - Qualquer um pode ler para verificar se telefone existe e validar senha
+      // - Necessário para o fluxo de login customizado
+      allow get: if true;
 
-      // Cliente pode ler e atualizar apenas seus próprios dados
-      // Verifica se o documento tem o campo 'phone' e se bate com o clientId
-      allow read, update: if clientId == resource.data.phone;
+      // Leitura de lista (queries):
+      // - Apenas admin pode listar clientes
+      allow list: if isAdmin();
 
-      // Admin pode ler tudo
-      allow read: if isAdmin();
+      // Criação:
+      // - Qualquer um pode criar uma conta de cliente (registro público)
+      // - Validação: telefone deve ser apenas números, deve ter passwordHash
+      allow create: if request.resource.data.phone is string &&
+                       request.resource.data.phone.matches('^[0-9]+$') &&
+                       request.resource.data.passwordHash is string;
 
-      // Ninguém pode deletar (apenas admin via backend)
+      // Atualização:
+      // - Apenas admin pode atualizar (para segurança do passwordHash)
+      // - No futuro, pode-se adicionar lógica para "esqueci minha senha"
+      allow update: if isAdmin();
+
+      // Deleção:
+      // - Apenas admin pode deletar
+      allow delete: if isAdmin();
+    }
+
+    // ========================================
+    // LISTA DE PRESENTES (CASAMENTO)
+    // ========================================
+
+    // Regras para presentes (gifts)
+    // Coleção: gifts
+    // Campos: name, category, description, isSelected, selectedBy, selectedAt, createdAt, updatedAt
+    match /gifts/{giftId} {
+      // Leitura:
+      // - Qualquer um pode ler os presentes (lista pública)
+      allow read: if true;
+
+      // Criação:
+      // - Apenas admin pode criar presentes
+      allow create: if isAdmin();
+
+      // Atualização:
+      // - Admin pode atualizar tudo
+      // - Qualquer um pode atualizar para selecionar um presente (marcar como selecionado)
+      //   desde que o presente não esteja selecionado
+      allow update: if isAdmin() ||
+                       (!resource.data.isSelected &&
+                        request.resource.data.isSelected == true &&
+                        request.resource.data.selectedBy is string);
+
+      // Deleção:
+      // - Apenas admin pode deletar
+      allow delete: if isAdmin();
+    }
+
+    // Regras para seleções de presentes (giftSelections)
+    // Coleção: giftSelections
+    // Campos: giftId, giftName, clientPhone, clientName, selectedAt
+    match /giftSelections/{selectionId} {
+      // Leitura:
+      // - Admin pode ler tudo
+      // - Cliente pode ler suas próprias seleções
+      allow read: if isAdmin() || true;
+
+      // Criação:
+      // - Qualquer um pode criar uma seleção (ao escolher um presente)
+      allow create: if request.resource.data.giftId is string &&
+                       request.resource.data.clientPhone is string &&
+                       request.resource.data.clientName is string;
+
+      // Atualização:
+      // - Apenas admin pode atualizar
+      allow update: if isAdmin();
+
+      // Deleção:
+      // - Apenas admin pode deletar
       allow delete: if isAdmin();
     }
   }

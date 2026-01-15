@@ -3,14 +3,10 @@
  */
 
 import {
-  collection,
   doc,
   getDoc,
   setDoc,
   updateDoc,
-  query,
-  where,
-  getDocs,
 } from 'firebase/firestore';
 import { db } from '../config';
 import type { Client, ClientDocument } from '@/types/client';
@@ -25,37 +21,85 @@ function normalizePhone(phone: string): string {
 }
 
 /**
- * Cria uma nova conta de cliente
+ * Gera hash simples da senha usando Web Crypto API
+ */
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Verifica se a senha corresponde ao hash
+ */
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  const passwordHash = await hashPassword(password);
+  return passwordHash === hash;
+}
+
+/**
+ * Cria uma nova conta de cliente com senha
+ */
+export async function createClientWithPassword(data: {
+  phone: string;
+  password: string;
+  fullName: string;
+}): Promise<Client> {
+  const normalizedPhone = normalizePhone(data.phone);
+
+  // Verifica se já existe um cliente com esse telefone
+  const existingClient = await getClientByPhone(normalizedPhone);
+  if (existingClient) {
+    throw new Error('Já existe uma conta com este telefone');
+  }
+
+  const passwordHash = await hashPassword(data.password);
+
+  const clientData: ClientDocument = {
+    phone: normalizedPhone,
+    fullName: data.fullName.trim(),
+    passwordHash,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  // Usa o telefone como ID do documento
+  await setDoc(doc(db, CLIENTS_COLLECTION, normalizedPhone), clientData);
+
+  return clientData;
+}
+
+/**
+ * Cria uma nova conta de cliente (legado - telefone + nome + data nascimento)
+ * @deprecated Use createClientWithPassword
  */
 export async function createClient(data: {
   fullName: string;
   phone: string;
   birthDate: string;
 }): Promise<Client> {
-  try {
-    const normalizedPhone = normalizePhone(data.phone);
+  const normalizedPhone = normalizePhone(data.phone);
 
-    // Verifica se já existe um cliente com esse telefone
-    const existingClient = await getClientByPhone(normalizedPhone);
-    if (existingClient) {
-      throw new Error('Já existe uma conta com este telefone');
-    }
-
-    const clientData: ClientDocument = {
-      phone: normalizedPhone,
-      fullName: data.fullName.trim(),
-      birthDate: data.birthDate, // YYYY-MM-DD
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // Usa o telefone como ID do documento
-    await setDoc(doc(db, CLIENTS_COLLECTION, normalizedPhone), clientData);
-
-    return clientData;
-  } catch (error) {
-    throw error;
+  // Verifica se já existe um cliente com esse telefone
+  const existingClient = await getClientByPhone(normalizedPhone);
+  if (existingClient) {
+    throw new Error('Já existe uma conta com este telefone');
   }
+
+  const clientData: ClientDocument = {
+    phone: normalizedPhone,
+    fullName: data.fullName.trim(),
+    birthDate: data.birthDate, // YYYY-MM-DD
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  // Usa o telefone como ID do documento
+  await setDoc(doc(db, CLIENTS_COLLECTION, normalizedPhone), clientData);
+
+  return clientData;
 }
 
 /**
@@ -78,7 +122,33 @@ export async function getClientByPhone(phone: string): Promise<Client | null> {
 }
 
 /**
+ * Autentica cliente com senha
+ */
+export async function authenticateClientWithPassword(
+  phone: string,
+  password: string
+): Promise<Client | null> {
+  try {
+    const client = await getClientByPhone(phone);
+
+    if (!client || !client.passwordHash) {
+      return null;
+    }
+
+    const isValid = await verifyPassword(password, client.passwordHash);
+    if (!isValid) {
+      return null;
+    }
+
+    return client;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Autentica cliente (verifica telefone + data de nascimento)
+ * @deprecated Use authenticateClientWithPassword
  */
 export async function authenticateClient(
   phone: string,
@@ -97,7 +167,7 @@ export async function authenticateClient(
     }
 
     return client;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

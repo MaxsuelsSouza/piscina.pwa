@@ -1,6 +1,53 @@
 /**
+ * ============================================
+ * Comentado em 2026-01-10 - Migração para Lista de Presentes
+ * ============================================
  * Página pública de agendamento de serviços (barbearia)
+ * URL: /servicos/[slug]
+ *
+ * Este sistema de agendamento foi desativado.
+ * Código preservado para referência histórica.
  */
+
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export default function ServicosPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push('/lista-casamento');
+  }, [router]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 max-w-md mx-4 text-center">
+        <div className="mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full mx-auto flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Página não disponível
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Em migração para Lista de Presentes
+          </p>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Redirecionando...
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================
+ * CÓDIGO ORIGINAL PRESERVADO ABAIXO
+ * ============================================
 
 import { Suspense } from 'react';
 import { getClientBySlug } from './_services/client.service';
@@ -54,7 +101,6 @@ export default async function ServicosPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <h1 className="text-2xl font-bold text-gray-900">
@@ -73,7 +119,6 @@ export default async function ServicosPage({ params }: PageProps) {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Verifica se a barbearia está configurada */}
         {!barbershopInfo ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
             <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
@@ -92,7 +137,6 @@ export default async function ServicosPage({ params }: PageProps) {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Serviços */}
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Serviços</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -118,7 +162,6 @@ export default async function ServicosPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Profissionais */}
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Profissionais</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -138,7 +181,6 @@ export default async function ServicosPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Em desenvolvimento */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
               <p className="text-sm text-blue-800">
                 Funcionalidade de agendamento online em desenvolvimento.
@@ -152,3 +194,5 @@ export default async function ServicosPage({ params }: PageProps) {
     </div>
   );
 }
+
+ * ============================================ */

@@ -4,8 +4,8 @@
  */
 
 export const siteConfig = {
-  name: "Agendamentos Muca",
-  description: "Sistema de agendamento de piscina",
+  name: "Lista de Casa Nova",
+  description: "Lista de presentes para a casa nova",
   url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   ogImage: "/og-image.png",
   links: {

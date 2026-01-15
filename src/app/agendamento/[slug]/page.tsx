@@ -1,9 +1,55 @@
-'use client';
-
 /**
+ * ============================================
+ * Comentado em 2026-01-10 - Migração para Lista de Presentes
+ * ============================================
  * Página pública de agendamento para um cliente específico
  * URL: /agendamento/[slug]
+ *
+ * Este sistema de agendamento foi desativado.
+ * Código preservado para referência histórica.
  */
+
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export default function PublicBookingPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push('/lista-casamento');
+  }, [router]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 max-w-md mx-4 text-center">
+        <div className="mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full mx-auto flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Página não disponível
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Em migração para Lista de Presentes
+          </p>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Redirecionando...
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================
+ * CÓDIGO ORIGINAL PRESERVADO ABAIXO
+ * ============================================
+
+'use client';
 
 import { useParams } from 'next/navigation';
 import { useRef, useEffect } from 'react';
@@ -72,11 +118,9 @@ export default function PublicBookingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Header */}
       <PublicBookingHeader clientName={client.businessName || client.displayName} />
 
       <div className="max-w-4xl mx-auto px-4 -mt-20 pb-12">
-        {/* Calendário - Expandido ou Minimizado */}
         {!showForm ? (
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 mb-8 backdrop-blur-sm">
             <CalendarNavigation
@@ -114,7 +158,6 @@ export default function PublicBookingPage() {
               </div>
               <button
                 onClick={() => {
-                  // Limpa dados salvos quando trocar de data
                   if (selectedDate) {
                     localStorage.removeItem(`barbershop-booking-${selectedDate}`);
                   }
@@ -132,7 +175,6 @@ export default function PublicBookingPage() {
           </div>
         )}
 
-        {/* Formulário de agendamento */}
         {showForm && selectedDate && (
           <div ref={formRef} className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 sm:p-8 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
 
@@ -170,7 +212,6 @@ export default function PublicBookingPage() {
         )}
       </div>
 
-      {/* Modal de Pagamento PIX */}
       {paymentData && (
         <PixPaymentModal
           isOpen={!!paymentData}
@@ -189,18 +230,15 @@ export default function PublicBookingPage() {
         />
       )}
 
-      {/* Loading Overlay */}
       {creatingBooking && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] animate-in fade-in duration-200">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm mx-4 animate-in zoom-in-95 duration-200">
             <div className="flex flex-col items-center gap-4">
-              {/* Spinner */}
               <div className="relative w-16 h-16">
                 <div className="absolute inset-0 border-4 border-blue-200 dark:border-blue-900/30 rounded-full"></div>
                 <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
               </div>
 
-              {/* Mensagens */}
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                   Criando agendamento...
@@ -210,7 +248,6 @@ export default function PublicBookingPage() {
                 </p>
               </div>
 
-              {/* Dica */}
               <div className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-xs">
                 Aguarde enquanto preparamos seu QR Code de pagamento
               </div>
@@ -221,3 +258,5 @@ export default function PublicBookingPage() {
     </div>
   );
 }
+
+ * ============================================ */
