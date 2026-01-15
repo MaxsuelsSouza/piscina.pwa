@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 
+// Força renderização dinâmica
+export const dynamic = 'force-dynamic';
+
 const ADMIN_PHONE = '81994625990';
 
 interface GuestData {

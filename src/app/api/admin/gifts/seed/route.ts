@@ -7,6 +7,9 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { GIFTS_SEED_DATA } from '@/data/gifts-seed';
 
+// Força renderização dinâmica
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
   try {
     const db = adminDb();

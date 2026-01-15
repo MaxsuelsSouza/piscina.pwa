@@ -9,6 +9,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 
+// Força renderização dinâmica
+export const dynamic = 'force-dynamic';
+
 interface SelectGiftRequest {
   giftId: string;
   clientPhone: string;
