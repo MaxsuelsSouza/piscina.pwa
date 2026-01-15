@@ -44,10 +44,8 @@ export const GIFTS_SEED_DATA: GiftSeedData[] = [
   // 2. ÁREA DE SERVIÇO - Maquinário
   // ========================================
   { name: 'Máquina de Lavar Roupa (ou Lava e Seca)', category: 'area-servico-maquinario' },
-  { name: 'Secadora', category: 'area-servico-maquinario' },
   { name: 'Aspirador de Pó', category: 'area-servico-maquinario' },
-  { name: 'Ferro de Passar', category: 'area-servico-maquinario' },
-  { name: 'Tábua de Passar', category: 'area-servico-maquinario' },
+  { name: 'Ferro e Tábua de Passar', category: 'area-servico-maquinario' },
   { name: 'Mop (Esfregão)', category: 'area-servico-maquinario' },
 
   // ========================================

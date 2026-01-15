@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { useGifts } from '../../../_hooks/useGifts';
-import { GIFT_CATEGORY_LABELS, type GiftCategory } from '@/types/gift';
+import { GIFT_CATEGORY_LABELS, getMaxSelectionsForCategory, type GiftCategory } from '@/types/gift';
 
 export default function CategoryDetailPage() {
   const router = useRouter();
@@ -26,8 +26,12 @@ export default function CategoryDetailPage() {
     [gifts, category]
   );
 
-  // Stats
-  const availableCount = categoryGifts.filter((g) => !g.isSelected).length;
+  // Stats - considera o máximo de seleções por categoria
+  const availableCount = categoryGifts.filter((g) => {
+    const maxSelections = getMaxSelectionsForCategory(g.category);
+    const currentSelections = g.selectedBy?.length || 0;
+    return currentSelections < maxSelections;
+  }).length;
   const myCount = categoryGifts.filter((g) => mySelections.has(g.id)).length;
 
   useEffect(() => {
@@ -209,7 +213,10 @@ export default function CategoryDetailPage() {
           <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
             {categoryGifts.map((gift, index) => {
               const isMine = mySelections.has(gift.id);
-              const isUnavailable = gift.isSelected && !isMine;
+              const maxSelections = getMaxSelectionsForCategory(gift.category);
+              const currentSelections = gift.selectedBy?.length || 0;
+              // Indisponível se atingiu o máximo de seleções E não é meu
+              const isUnavailable = currentSelections >= maxSelections && !isMine;
               const isSelecting = selectingId === gift.id;
               const isSelected = selectedItems.has(gift.id);
 
@@ -275,7 +282,7 @@ export default function CategoryDetailPage() {
                     <>
                       {isUnavailable ? (
                         <span className="text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full shrink-0">
-                          ***{gift.selectedBy?.slice(-4)}
+                          Indisponível
                         </span>
                       ) : (
                         <button

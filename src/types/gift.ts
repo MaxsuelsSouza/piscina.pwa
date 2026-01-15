@@ -21,8 +21,8 @@ export const GIFT_CATEGORY_LABELS: Record<GiftCategory, string> = {
  * Retorna o número máximo de seleções permitidas para uma categoria
  */
 export function getMaxSelectionsForCategory(category: GiftCategory): number {
-  // Categoria quarto-enxoval permite 2 pessoas escolherem o mesmo presente
-  if (category === 'quarto-enxoval') {
+  // Categorias que permitem 2 pessoas escolherem o mesmo presente
+  if (category === 'quarto-enxoval' || category === 'cozinha-servir') {
     return 2;
   }
   return 1;

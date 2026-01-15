@@ -41,12 +41,12 @@ export default function HomePage() {
 
   // Handle click on Lista de Presentes
   const handleGiftListClick = (e: React.MouseEvent) => {
-    // If declined or not confirmed, show modal
-    if (presenceStatus === 'declined' || presenceStatus === null || presenceStatus === 'pending') {
+    // Only block if explicitly declined
+    if (presenceStatus === 'declined') {
       e.preventDefault();
       setShowConfirmModal(true);
     }
-    // If confirmed, allow navigation
+    // Allow navigation for everyone else (confirmed, pending, or no response)
   };
 
   if (loading) {
@@ -374,15 +374,11 @@ export default function HomePage() {
             </div>
 
             <h3 className="text-lg font-medium text-stone-800 mb-2">
-              {presenceStatus === 'declined'
-                ? 'Você informou que não virá'
-                : 'Confirme sua presença'}
+              Você informou que não virá
             </h3>
 
             <p className="text-sm text-stone-500 mb-6">
-              {presenceStatus === 'declined'
-                ? 'Para escolher presentes, você precisa confirmar que irá comparecer ao casamento.'
-                : 'Antes de escolher presentes, por favor confirme sua presença no casamento.'}
+              Para escolher presentes, você precisa confirmar que irá comparecer ao casamento.
             </p>
 
             <div className="flex gap-3">

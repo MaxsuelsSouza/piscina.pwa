@@ -29,8 +29,8 @@ function normalizePhone(phone: string): string {
  * Retorna o número máximo de seleções permitidas para uma categoria
  */
 function getMaxSelections(category: string): number {
-  // Categoria quarto-enxoval permite 2 pessoas escolherem o mesmo presente
-  if (category === 'quarto-enxoval') {
+  // Categorias que permitem 2 pessoas escolherem o mesmo presente
+  if (category === 'quarto-enxoval' || category === 'cozinha-servir') {
     return 2;
   }
   return 1;
@@ -65,8 +65,11 @@ export async function POST(request: NextRequest) {
     const category = gift?.category || '';
     const maxSelections = getMaxSelections(category);
 
-    // selectedBy agora é um array de telefones
-    const currentSelectedBy: string[] = gift?.selectedBy || [];
+    // selectedBy pode ser string (formato antigo) ou array (formato novo)
+    const rawSelectedBy = gift?.selectedBy;
+    const currentSelectedBy: string[] = Array.isArray(rawSelectedBy)
+      ? rawSelectedBy
+      : (rawSelectedBy ? [rawSelectedBy] : []);
     const isSelectedByUser = currentSelectedBy.includes(clientPhone);
     const currentSelectionCount = currentSelectedBy.length;
 

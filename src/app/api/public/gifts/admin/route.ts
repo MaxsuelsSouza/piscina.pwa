@@ -65,7 +65,13 @@ export async function GET(request: NextRequest) {
     const guests: GuestData[] = clients.map((client: any) => {
       const presence = presenceMap.get(client.phone);
       const clientGifts = gifts
-        .filter((g: any) => g.selectedBy === client.phone)
+        .filter((g: any) => {
+          // selectedBy pode ser string (formato antigo) ou array (formato novo)
+          const selectedBy = Array.isArray(g.selectedBy)
+            ? g.selectedBy
+            : (g.selectedBy ? [g.selectedBy] : []);
+          return selectedBy.includes(client.phone);
+        })
         .map((g: any) => ({
           id: g.id,
           name: g.name,
@@ -152,14 +158,20 @@ export async function POST(request: NextRequest) {
 
       for (const giftDoc of giftsSnapshot.docs) {
         const gift = giftDoc.data();
-        const selectedBy = gift.selectedBy ? normalizePhone(gift.selectedBy) : null;
+        // selectedBy pode ser string (formato antigo) ou array (formato novo)
+        const rawSelectedBy = gift.selectedBy;
+        const currentSelectedBy: string[] = Array.isArray(rawSelectedBy)
+          ? rawSelectedBy.map((p: string) => normalizePhone(p))
+          : (rawSelectedBy ? [normalizePhone(rawSelectedBy)] : []);
 
-        // If selectedBy is not a valid client, clear the selection
-        if (selectedBy && !validPhones.has(selectedBy)) {
+        // Filter out phones that are not valid clients
+        const validSelectedBy = currentSelectedBy.filter((phone: string) => validPhones.has(phone));
+
+        // If any phones were removed, update the gift
+        if (validSelectedBy.length !== currentSelectedBy.length) {
           batch.update(giftDoc.ref, {
-            isSelected: false,
-            selectedBy: null,
-            selectedAt: null,
+            isSelected: validSelectedBy.length > 0,
+            selectedBy: validSelectedBy,
             updatedAt: new Date().toISOString(),
           });
           cleaned++;
@@ -196,9 +208,23 @@ export async function POST(request: NextRequest) {
 
       for (const giftDoc of giftsSnapshot.docs) {
         const gift = giftDoc.data();
-        if (gift.selectedBy) {
-          const normalizedSelectedBy = normalizePhone(gift.selectedBy);
-          if (normalizedSelectedBy !== gift.selectedBy) {
+        // selectedBy pode ser string (formato antigo) ou array (formato novo)
+        const rawSelectedBy = gift.selectedBy;
+
+        if (rawSelectedBy) {
+          let needsUpdate = false;
+          let normalizedSelectedBy: string[];
+
+          if (Array.isArray(rawSelectedBy)) {
+            normalizedSelectedBy = rawSelectedBy.map((p: string) => normalizePhone(p));
+            needsUpdate = normalizedSelectedBy.some((p: string, i: number) => p !== rawSelectedBy[i]);
+          } else {
+            // Convert string to array and normalize
+            normalizedSelectedBy = [normalizePhone(rawSelectedBy)];
+            needsUpdate = true; // Always update to convert to array format
+          }
+
+          if (needsUpdate) {
             batch.update(giftDoc.ref, {
               selectedBy: normalizedSelectedBy,
               updatedAt: new Date().toISOString(),
@@ -242,8 +268,7 @@ export async function POST(request: NextRequest) {
       for (const giftDoc of giftsSnapshot.docs) {
         batch.update(giftDoc.ref, {
           isSelected: false,
-          selectedBy: null,
-          selectedAt: null,
+          selectedBy: [], // Array vazio em vez de null
           updatedAt: new Date().toISOString(),
         });
         cleared++;
