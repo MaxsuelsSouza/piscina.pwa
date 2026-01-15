@@ -74,3 +74,104 @@ export async function GET() {
     );
   }
 }
+
+/**
+ * DELETE - Remover um presente pelo nome
+ */
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { name } = body;
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'name é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    const db = adminDb();
+    const giftsRef = db.collection('gifts');
+
+    // Busca o presente pelo nome
+    const snapshot = await giftsRef.where('name', '==', name).get();
+
+    if (snapshot.empty) {
+      return NextResponse.json(
+        { error: `Presente "${name}" não encontrado`, code: 'NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    // Remove todos os documentos encontrados (deveria ser só 1)
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    return NextResponse.json({
+      success: true,
+      message: `Presente "${name}" removido com sucesso`,
+      count: snapshot.size,
+    });
+  } catch (error) {
+    console.error('Erro ao remover presente:', error);
+    return NextResponse.json(
+      { error: 'Erro ao remover presente', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT - Adicionar um presente específico (sem apagar os existentes)
+ */
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { name, category } = body;
+
+    if (!name || !category) {
+      return NextResponse.json(
+        { error: 'name e category são obrigatórios' },
+        { status: 400 }
+      );
+    }
+
+    const db = adminDb();
+    const giftsRef = db.collection('gifts');
+
+    // Verifica se já existe um presente com esse nome
+    const existing = await giftsRef.where('name', '==', name).limit(1).get();
+    if (!existing.empty) {
+      return NextResponse.json(
+        { error: 'Já existe um presente com esse nome', code: 'ALREADY_EXISTS' },
+        { status: 400 }
+      );
+    }
+
+    const now = new Date().toISOString();
+    const docRef = giftsRef.doc();
+
+    await docRef.set({
+      name,
+      category,
+      isSelected: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Presente "${name}" criado com sucesso`,
+      id: docRef.id,
+    });
+  } catch (error) {
+    console.error('Erro ao adicionar presente:', error);
+    return NextResponse.json(
+      { error: 'Erro ao adicionar presente', details: String(error) },
+      { status: 500 }
+    );
+  }
+}

@@ -7,17 +7,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import type { GiftSelection } from '@/types/gift';
 
+/**
+ * Normaliza telefone (remove caracteres não numéricos)
+ */
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const phone = searchParams.get('phone');
+    const rawPhone = searchParams.get('phone');
 
-    if (!phone) {
+    if (!rawPhone) {
       return NextResponse.json(
         { error: 'Parâmetro phone é obrigatório' },
         { status: 400 }
       );
     }
+
+    // Normaliza o telefone para garantir consistência
+    const phone = normalizePhone(rawPhone);
 
     const db = adminDb();
     const selectionsRef = db.collection('giftSelections');

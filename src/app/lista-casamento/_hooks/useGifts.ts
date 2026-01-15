@@ -32,10 +32,13 @@ export function useGifts(clientPhone: string, clientName: string): UseGiftsRetur
 
       setGifts(data.gifts);
 
-      // Set my selections based on selectedBy field
+      // Set my selections based on selectedBy field (now an array)
       const myGiftIds = new Set<string>(
         data.gifts
-          .filter((g: Gift) => g.selectedBy === clientPhone)
+          .filter((g: Gift) => {
+            const selectedByArray = Array.isArray(g.selectedBy) ? g.selectedBy : (g.selectedBy ? [g.selectedBy] : []);
+            return selectedByArray.includes(clientPhone);
+          })
           .map((g: Gift) => g.id)
       );
       setMySelections(myGiftIds);
@@ -71,11 +74,13 @@ export function useGifts(clientPhone: string, clientName: string): UseGiftsRetur
         if (data.action === 'selected') {
           setMySelections((prev) => new Set([...prev, giftId]));
           setGifts((prev) =>
-            prev.map((g) =>
-              g.id === giftId
-                ? { ...g, isSelected: true, selectedBy: clientPhone }
-                : g
-            )
+            prev.map((g) => {
+              if (g.id === giftId) {
+                const currentSelectedBy = Array.isArray(g.selectedBy) ? g.selectedBy : (g.selectedBy ? [g.selectedBy] : []);
+                return { ...g, isSelected: true, selectedBy: [...currentSelectedBy, clientPhone] };
+              }
+              return g;
+            })
           );
         } else {
           setMySelections((prev) => {
@@ -84,11 +89,14 @@ export function useGifts(clientPhone: string, clientName: string): UseGiftsRetur
             return next;
           });
           setGifts((prev) =>
-            prev.map((g) =>
-              g.id === giftId
-                ? { ...g, isSelected: false, selectedBy: undefined }
-                : g
-            )
+            prev.map((g) => {
+              if (g.id === giftId) {
+                const currentSelectedBy = Array.isArray(g.selectedBy) ? g.selectedBy : (g.selectedBy ? [g.selectedBy] : []);
+                const newSelectedBy = currentSelectedBy.filter((phone) => phone !== clientPhone);
+                return { ...g, isSelected: newSelectedBy.length > 0, selectedBy: newSelectedBy.length > 0 ? newSelectedBy : undefined };
+              }
+              return g;
+            })
           );
         }
 

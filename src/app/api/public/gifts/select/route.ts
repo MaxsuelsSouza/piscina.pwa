@@ -1,6 +1,9 @@
 /**
  * API Route para selecionar/desselecionar presente
  * POST /api/public/gifts/select
+ *
+ * Regra especial: presentes da categoria "quarto-enxoval" podem ser
+ * selecionados por até 2 pessoas diferentes.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,10 +15,30 @@ interface SelectGiftRequest {
   clientName: string;
 }
 
+/**
+ * Normaliza telefone (remove caracteres não numéricos)
+ */
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
+
+/**
+ * Retorna o número máximo de seleções permitidas para uma categoria
+ */
+function getMaxSelections(category: string): number {
+  // Categoria quarto-enxoval permite 2 pessoas escolherem o mesmo presente
+  if (category === 'quarto-enxoval') {
+    return 2;
+  }
+  return 1;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: SelectGiftRequest = await request.json();
-    const { giftId, clientPhone, clientName } = body;
+    const { giftId, clientName } = body;
+    // Normaliza o telefone para garantir consistência
+    const clientPhone = normalizePhone(body.clientPhone || '');
 
     if (!giftId || !clientPhone || !clientName) {
       return NextResponse.json(
@@ -36,24 +59,23 @@ export async function POST(request: NextRequest) {
     }
 
     const gift = giftDoc.data();
+    const category = gift?.category || '';
+    const maxSelections = getMaxSelections(category);
 
-    // Se já está selecionado por outra pessoa, não permite
-    if (gift?.isSelected && gift?.selectedBy !== clientPhone) {
-      return NextResponse.json(
-        { error: 'Este presente já foi escolhido por outra pessoa' },
-        { status: 409 }
-      );
-    }
+    // selectedBy agora é um array de telefones
+    const currentSelectedBy: string[] = gift?.selectedBy || [];
+    const isSelectedByUser = currentSelectedBy.includes(clientPhone);
+    const currentSelectionCount = currentSelectedBy.length;
 
     const now = new Date().toISOString();
 
-    // Toggle selection
-    if (gift?.isSelected && gift?.selectedBy === clientPhone) {
-      // Desselecionar
+    // Se o usuário já selecionou, desselecionar
+    if (isSelectedByUser) {
+      const newSelectedBy = currentSelectedBy.filter((phone: string) => phone !== clientPhone);
+
       await giftRef.update({
-        isSelected: false,
-        selectedBy: null,
-        selectedAt: null,
+        isSelected: newSelectedBy.length > 0,
+        selectedBy: newSelectedBy,
         updatedAt: now,
       });
 
@@ -75,30 +97,43 @@ export async function POST(request: NextRequest) {
         action: 'unselected',
         message: 'Presente removido da sua lista',
       });
-    } else {
-      // Selecionar
-      await giftRef.update({
-        isSelected: true,
-        selectedBy: clientPhone,
-        selectedAt: now,
-        updatedAt: now,
-      });
-
-      // Add to giftSelections
-      await db.collection('giftSelections').add({
-        giftId,
-        giftName: gift?.name || '',
-        clientPhone,
-        clientName,
-        selectedAt: now,
-      });
-
-      return NextResponse.json({
-        success: true,
-        action: 'selected',
-        message: 'Presente adicionado à sua lista',
-      });
     }
+
+    // Verificar se ainda há vagas para selecionar
+    if (currentSelectionCount >= maxSelections) {
+      const message = maxSelections === 1
+        ? 'Este presente já foi escolhido por outra pessoa'
+        : `Este presente já foi escolhido por ${maxSelections} pessoas`;
+
+      return NextResponse.json(
+        { error: message },
+        { status: 409 }
+      );
+    }
+
+    // Selecionar
+    const newSelectedBy = [...currentSelectedBy, clientPhone];
+
+    await giftRef.update({
+      isSelected: true,
+      selectedBy: newSelectedBy,
+      updatedAt: now,
+    });
+
+    // Add to giftSelections
+    await db.collection('giftSelections').add({
+      giftId,
+      giftName: gift?.name || '',
+      clientPhone,
+      clientName,
+      selectedAt: now,
+    });
+
+    return NextResponse.json({
+      success: true,
+      action: 'selected',
+      message: 'Presente adicionado à sua lista',
+    });
   } catch (error) {
     console.error('Erro ao selecionar presente:', error);
     return NextResponse.json(

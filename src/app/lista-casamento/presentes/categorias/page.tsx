@@ -11,14 +11,7 @@ const CATEGORY_ICONS: Record<GiftCategory, { icon: string; bg: string; color: st
   'cozinha-utensilios': { icon: '🍳', bg: 'bg-orange-100', color: 'text-orange-600' },
   'cozinha-servir': { icon: '🍽️', bg: 'bg-amber-100', color: 'text-amber-600' },
   'area-servico-maquinario': { icon: '🧺', bg: 'bg-cyan-100', color: 'text-cyan-600' },
-  'area-servico-limpeza': { icon: '🧹', bg: 'bg-teal-100', color: 'text-teal-600' },
-  'quarto-mobiliario': { icon: '🛏️', bg: 'bg-indigo-100', color: 'text-indigo-600' },
-  'quarto-enxoval': { icon: '🛋️', bg: 'bg-purple-100', color: 'text-purple-600' },
-  'sala-mobiliario': { icon: '🪑', bg: 'bg-emerald-100', color: 'text-emerald-600' },
-  'sala-decoracao': { icon: '🖼️', bg: 'bg-pink-100', color: 'text-pink-600' },
-  'banheiro': { icon: '🚿', bg: 'bg-sky-100', color: 'text-sky-600' },
-  'infraestrutura-ferramentas': { icon: '🔧', bg: 'bg-slate-100', color: 'text-slate-600' },
-  'infraestrutura-seguranca': { icon: '🔒', bg: 'bg-red-100', color: 'text-red-600' },
+  'quarto-enxoval': { icon: '🛏️', bg: 'bg-purple-100', color: 'text-purple-600' },
 };
 
 const CATEGORIES = Object.keys(GIFT_CATEGORY_LABELS) as GiftCategory[];

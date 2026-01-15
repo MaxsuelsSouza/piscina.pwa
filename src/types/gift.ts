@@ -7,29 +7,26 @@ export type GiftCategory =
   | 'cozinha-utensilios'
   | 'cozinha-servir'
   | 'area-servico-maquinario'
-  | 'area-servico-limpeza'
-  | 'quarto-mobiliario'
-  | 'quarto-enxoval'
-  | 'sala-mobiliario'
-  | 'sala-decoracao'
-  | 'banheiro'
-  | 'infraestrutura-ferramentas'
-  | 'infraestrutura-seguranca';
+  | 'quarto-enxoval';
 
 export const GIFT_CATEGORY_LABELS: Record<GiftCategory, string> = {
   'cozinha-eletrodomesticos': 'Cozinha - Eletrodomésticos',
   'cozinha-utensilios': 'Cozinha - Utensílios e Preparo',
   'cozinha-servir': 'Cozinha - Servir e Armazenar',
   'area-servico-maquinario': 'Área de Serviço - Maquinário',
-  'area-servico-limpeza': 'Área de Serviço - Limpeza',
-  'quarto-mobiliario': 'Quarto - Mobiliário',
   'quarto-enxoval': 'Quarto - Enxoval e Têxteis',
-  'sala-mobiliario': 'Sala - Mobiliário',
-  'sala-decoracao': 'Sala - Decoração',
-  'banheiro': 'Banheiro',
-  'infraestrutura-ferramentas': 'Infraestrutura - Ferramentas',
-  'infraestrutura-seguranca': 'Infraestrutura - Segurança',
 };
+
+/**
+ * Retorna o número máximo de seleções permitidas para uma categoria
+ */
+export function getMaxSelectionsForCategory(category: GiftCategory): number {
+  // Categoria quarto-enxoval permite 2 pessoas escolherem o mesmo presente
+  if (category === 'quarto-enxoval') {
+    return 2;
+  }
+  return 1;
+}
 
 export interface Gift {
   id: string;
@@ -38,8 +35,7 @@ export interface Gift {
   description?: string;
   imageUrl?: string;
   isSelected: boolean; // Se já foi escolhido por alguém
-  selectedBy?: string; // Phone do cliente que selecionou
-  selectedAt?: string; // Data da seleção
+  selectedBy?: string[]; // Array de phones dos clientes que selecionaram
   createdAt: string;
   updatedAt: string;
 }

@@ -92,6 +92,7 @@ export async function getGiftById(giftId: string): Promise<Gift | null> {
 
 /**
  * Seleciona um presente para um cliente
+ * Nota: Para categoria quarto-enxoval, permite até 2 seleções
  */
 export async function selectGift(
   giftId: string,
@@ -105,18 +106,31 @@ export async function selectGift(
     throw new Error('Presente não encontrado');
   }
 
-  if (gift.isSelected) {
+  // selectedBy agora é um array
+  const currentSelectedBy: string[] = Array.isArray(gift.selectedBy)
+    ? gift.selectedBy
+    : (gift.selectedBy ? [gift.selectedBy] : []);
+
+  // Verifica se o usuário já selecionou
+  if (currentSelectedBy.includes(clientPhone)) {
+    throw new Error('Você já selecionou este presente');
+  }
+
+  // Define máximo de seleções baseado na categoria
+  const maxSelections = gift.category === 'quarto-enxoval' ? 2 : 1;
+
+  if (currentSelectedBy.length >= maxSelections) {
     throw new Error('Este presente já foi escolhido por outra pessoa');
   }
 
   const now = new Date().toISOString();
+  const newSelectedBy = [...currentSelectedBy, clientPhone];
 
   // Atualiza o presente como selecionado
   const giftRef = doc(db, GIFTS_COLLECTION, giftId);
   await updateDoc(giftRef, {
     isSelected: true,
-    selectedBy: clientPhone,
-    selectedAt: now,
+    selectedBy: newSelectedBy,
     updatedAt: now,
   });
 
@@ -153,22 +167,23 @@ export async function unselectGift(
     throw new Error('Presente não encontrado');
   }
 
-  if (!gift.isSelected) {
-    throw new Error('Este presente não está selecionado');
-  }
+  // selectedBy agora é um array
+  const currentSelectedBy: string[] = Array.isArray(gift.selectedBy)
+    ? gift.selectedBy
+    : (gift.selectedBy ? [gift.selectedBy] : []);
 
-  if (gift.selectedBy !== clientPhone) {
-    throw new Error('Você não pode cancelar a seleção de outro cliente');
+  if (!currentSelectedBy.includes(clientPhone)) {
+    throw new Error('Você não selecionou este presente');
   }
 
   const now = new Date().toISOString();
+  const newSelectedBy = currentSelectedBy.filter((phone) => phone !== clientPhone);
 
   // Remove a seleção do presente
   const giftRef = doc(db, GIFTS_COLLECTION, giftId);
   await updateDoc(giftRef, {
-    isSelected: false,
-    selectedBy: null,
-    selectedAt: null,
+    isSelected: newSelectedBy.length > 0,
+    selectedBy: newSelectedBy.length > 0 ? newSelectedBy : null,
     updatedAt: now,
   });
 

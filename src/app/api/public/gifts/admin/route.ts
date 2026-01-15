@@ -104,3 +104,173 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+/**
+ * Normaliza telefone (remove caracteres não numéricos)
+ */
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
+
+/**
+ * POST - Limpar dados inconsistentes de presentes
+ * Ações disponíveis:
+ * - cleanOrphanSelections: Remove seleções de telefones que não existem como clientes
+ * - normalizePhones: Normaliza todos os telefones nos presentes
+ * - clearAllSelections: Remove todas as seleções (usar com cuidado!)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { phone, action } = body;
+
+    const normalizedPhone = normalizePhone(phone || '');
+
+    // Verify admin
+    if (normalizedPhone !== ADMIN_PHONE) {
+      return NextResponse.json(
+        { error: 'Acesso não autorizado' },
+        { status: 403 }
+      );
+    }
+
+    const db = adminDb();
+
+    if (action === 'cleanOrphanSelections') {
+      // Get all clients
+      const clientsSnapshot = await db.collection('clients').get();
+      const validPhones = new Set(clientsSnapshot.docs.map((doc) => doc.id));
+
+      // Get all gifts with selections
+      const giftsSnapshot = await db.collection('gifts').where('isSelected', '==', true).get();
+
+      let cleaned = 0;
+      const batch = db.batch();
+
+      for (const giftDoc of giftsSnapshot.docs) {
+        const gift = giftDoc.data();
+        const selectedBy = gift.selectedBy ? normalizePhone(gift.selectedBy) : null;
+
+        // If selectedBy is not a valid client, clear the selection
+        if (selectedBy && !validPhones.has(selectedBy)) {
+          batch.update(giftDoc.ref, {
+            isSelected: false,
+            selectedBy: null,
+            selectedAt: null,
+            updatedAt: new Date().toISOString(),
+          });
+          cleaned++;
+        }
+      }
+
+      // Also clean giftSelections collection
+      const selectionsSnapshot = await db.collection('giftSelections').get();
+      for (const selDoc of selectionsSnapshot.docs) {
+        const sel = selDoc.data();
+        const selPhone = sel.clientPhone ? normalizePhone(sel.clientPhone) : null;
+
+        if (selPhone && !validPhones.has(selPhone)) {
+          batch.delete(selDoc.ref);
+        }
+      }
+
+      await batch.commit();
+
+      return NextResponse.json({
+        success: true,
+        action: 'cleanOrphanSelections',
+        cleaned,
+        message: `${cleaned} seleções órfãs removidas`,
+      });
+    }
+
+    if (action === 'normalizePhones') {
+      // Normalize all selectedBy phones in gifts
+      const giftsSnapshot = await db.collection('gifts').where('isSelected', '==', true).get();
+
+      let normalized = 0;
+      const batch = db.batch();
+
+      for (const giftDoc of giftsSnapshot.docs) {
+        const gift = giftDoc.data();
+        if (gift.selectedBy) {
+          const normalizedSelectedBy = normalizePhone(gift.selectedBy);
+          if (normalizedSelectedBy !== gift.selectedBy) {
+            batch.update(giftDoc.ref, {
+              selectedBy: normalizedSelectedBy,
+              updatedAt: new Date().toISOString(),
+            });
+            normalized++;
+          }
+        }
+      }
+
+      // Also normalize in giftSelections
+      const selectionsSnapshot = await db.collection('giftSelections').get();
+      for (const selDoc of selectionsSnapshot.docs) {
+        const sel = selDoc.data();
+        if (sel.clientPhone) {
+          const normalizedClientPhone = normalizePhone(sel.clientPhone);
+          if (normalizedClientPhone !== sel.clientPhone) {
+            batch.update(selDoc.ref, {
+              clientPhone: normalizedClientPhone,
+            });
+          }
+        }
+      }
+
+      await batch.commit();
+
+      return NextResponse.json({
+        success: true,
+        action: 'normalizePhones',
+        normalized,
+        message: `${normalized} telefones normalizados`,
+      });
+    }
+
+    if (action === 'clearAllSelections') {
+      // Clear all gift selections (use with caution!)
+      const giftsSnapshot = await db.collection('gifts').where('isSelected', '==', true).get();
+
+      let cleared = 0;
+      const batch = db.batch();
+
+      for (const giftDoc of giftsSnapshot.docs) {
+        batch.update(giftDoc.ref, {
+          isSelected: false,
+          selectedBy: null,
+          selectedAt: null,
+          updatedAt: new Date().toISOString(),
+        });
+        cleared++;
+      }
+
+      // Also clear giftSelections collection
+      const selectionsSnapshot = await db.collection('giftSelections').get();
+      for (const selDoc of selectionsSnapshot.docs) {
+        batch.delete(selDoc.ref);
+      }
+
+      await batch.commit();
+
+      return NextResponse.json({
+        success: true,
+        action: 'clearAllSelections',
+        cleared,
+        message: `${cleared} seleções removidas`,
+      });
+    }
+
+    return NextResponse.json(
+      { error: 'Ação inválida. Use: cleanOrphanSelections, normalizePhones ou clearAllSelections' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Erro ao executar ação admin:', error);
+    return NextResponse.json(
+      { error: 'Erro ao executar ação', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
