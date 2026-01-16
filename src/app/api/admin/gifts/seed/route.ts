@@ -133,7 +133,7 @@ export async function DELETE(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { name, category } = body;
+    const { name, category, link } = body;
 
     if (!name || !category) {
       return NextResponse.json(
@@ -157,13 +157,20 @@ export async function PUT(request: Request) {
     const now = new Date().toISOString();
     const docRef = giftsRef.doc();
 
-    await docRef.set({
+    const giftData: Record<string, unknown> = {
       name,
       category,
       isSelected: false,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+
+    // Adiciona link se fornecido
+    if (link && link.trim()) {
+      giftData.link = link.trim();
+    }
+
+    await docRef.set(giftData);
 
     return NextResponse.json({
       success: true,
@@ -174,6 +181,82 @@ export async function PUT(request: Request) {
     console.error('Erro ao adicionar presente:', error);
     return NextResponse.json(
       { error: 'Erro ao adicionar presente', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH - Editar um presente existente
+ */
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, name, category, link } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'id é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    const db = adminDb();
+    const giftRef = db.collection('gifts').doc(id);
+
+    // Verifica se o presente existe
+    const giftDoc = await giftRef.get();
+    if (!giftDoc.exists) {
+      return NextResponse.json(
+        { error: 'Presente não encontrado', code: 'NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    // Se está alterando o nome, verifica se já existe outro com esse nome
+    if (name) {
+      const existing = await db.collection('gifts')
+        .where('name', '==', name)
+        .limit(1)
+        .get();
+
+      if (!existing.empty && existing.docs[0].id !== id) {
+        return NextResponse.json(
+          { error: 'Já existe um presente com esse nome', code: 'ALREADY_EXISTS' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const now = new Date().toISOString();
+    const updateData: Record<string, unknown> = {
+      updatedAt: now,
+    };
+
+    if (name) updateData.name = name;
+    if (category) updateData.category = category;
+
+    // Link pode ser string vazia para remover
+    if (link !== undefined) {
+      if (link && link.trim()) {
+        updateData.link = link.trim();
+      } else {
+        // Remove o campo link se for vazio
+        updateData.link = null;
+      }
+    }
+
+    await giftRef.update(updateData);
+
+    return NextResponse.json({
+      success: true,
+      message: `Presente atualizado com sucesso`,
+      id,
+    });
+  } catch (error) {
+    console.error('Erro ao editar presente:', error);
+    return NextResponse.json(
+      { error: 'Erro ao editar presente', details: String(error) },
       { status: 500 }
     );
   }

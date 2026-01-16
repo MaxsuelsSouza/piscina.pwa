@@ -194,12 +194,56 @@ export default function CategoryDetailPage() {
         </div>
       </header>
 
-      {/* Hint for multi-select */}
+      {/* Color Palette */}
       {!multiSelectMode && categoryGifts.length > 0 && (
         <div className="max-w-2xl mx-auto px-4 pt-4">
-          <p className="text-xs text-stone-400 text-center">
-            Toque no nome do presente para selecionar vários de uma vez
-          </p>
+          <div className="bg-white rounded-xl border border-stone-200 p-3">
+            <p className="text-xs text-stone-500 text-center mb-2">
+              Paleta de cores dos presentes
+            </p>
+            <div className="flex items-center justify-center gap-4">
+              {/* Preto */}
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className="w-6 h-6 rounded-full border border-stone-300"
+                  style={{ backgroundColor: '#000000' }}
+                />
+                <span className="text-xs text-stone-600">Preto</span>
+              </div>
+              {/* Inox */}
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className="w-6 h-6 rounded-full border border-stone-300"
+                  style={{ backgroundColor: '#D1D1D1' }}
+                />
+                <span className="text-xs text-stone-600">Inox</span>
+              </div>
+              {/* Branco */}
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className="w-6 h-6 rounded-full border border-stone-300"
+                  style={{ backgroundColor: '#FFFFFF' }}
+                />
+                <span className="text-xs text-stone-600">Branco</span>
+              </div>
+              {/* Marrom */}
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className="w-6 h-6 rounded-full border border-stone-300"
+                  style={{ backgroundColor: '#DEBF9F' }}
+                />
+                <span className="text-xs text-stone-600">Marrom</span>
+              </div>
+              {/* Verde */}
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className="w-6 h-6 rounded-full border border-stone-300"
+                  style={{ backgroundColor: '#70765D' }}
+                />
+                <span className="text-xs text-stone-600">Verde</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -277,33 +321,46 @@ export default function CategoryDetailPage() {
                     {gift.name}
                   </button>
 
-                  {/* Action button */}
+                  {/* Action buttons */}
                   {!multiSelectMode && (
-                    <>
+                    <div className="flex items-center gap-2 shrink-0">
                       {isUnavailable ? (
-                        <span className="text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full shrink-0">
+                        <span className="text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full">
                           Indisponível
                         </span>
                       ) : (
-                        <button
-                          onClick={() => handleSingleSelect(gift.id)}
-                          disabled={isSelecting}
-                          className={`shrink-0 px-4 py-1.5 text-sm rounded-full transition ${
-                            isMine
-                              ? 'bg-rose-100 text-rose-600 hover:bg-rose-200'
-                              : 'bg-stone-800 text-white hover:bg-stone-900'
-                          } disabled:opacity-50`}
-                        >
-                          {isSelecting ? (
-                            <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          ) : isMine ? (
-                            'Remover'
-                          ) : (
-                            'Escolher'
+                        <>
+                          {/* Sugestão button - only shows when selected by user and has link */}
+                          {isMine && gift.link && (
+                            <a
+                              href={gift.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 text-sm rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
+                            >
+                              Sugestão
+                            </a>
                           )}
-                        </button>
+                          <button
+                            onClick={() => handleSingleSelect(gift.id)}
+                            disabled={isSelecting}
+                            className={`px-4 py-1.5 text-sm rounded-full transition ${
+                              isMine
+                                ? 'bg-rose-100 text-rose-600 hover:bg-rose-200'
+                                : 'bg-stone-800 text-white hover:bg-stone-900'
+                            } disabled:opacity-50`}
+                          >
+                            {isSelecting ? (
+                              <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : isMine ? (
+                              'Remover'
+                            ) : (
+                              'Escolher'
+                            )}
+                          </button>
+                        </>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
               );

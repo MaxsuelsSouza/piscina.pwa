@@ -34,6 +34,7 @@ export interface Gift {
   category: GiftCategory;
   description?: string;
   imageUrl?: string;
+  link?: string; // Link de sugestão do produto
   isSelected: boolean; // Se já foi escolhido por alguém
   selectedBy?: string[]; // Array de phones dos clientes que selecionaram
   createdAt: string;

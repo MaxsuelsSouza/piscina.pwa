@@ -12,6 +12,7 @@ interface Gift {
   id: string;
   name: string;
   category: GiftCategory;
+  link?: string;
   isSelected: boolean;
   selectedBy?: string[];
 }
@@ -33,8 +34,15 @@ export default function GerenciarPresentesPage() {
   // Form state for new gift
   const [newGiftName, setNewGiftName] = useState('');
   const [newGiftCategory, setNewGiftCategory] = useState<GiftCategory>('cozinha-eletrodomesticos');
+  const [newGiftLink, setNewGiftLink] = useState('');
   const [newGiftIsSelected, setNewGiftIsSelected] = useState(false);
   const [newGiftSelectedBy, setNewGiftSelectedBy] = useState<string[]>([]);
+
+  // Edit modal state
+  const [editingGift, setEditingGift] = useState<Gift | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState<GiftCategory>('cozinha-eletrodomesticos');
+  const [editLink, setEditLink] = useState('');
 
   const isAdmin = client?.phone?.replace(/\D/g, '') === ADMIN_PHONE;
 
@@ -101,6 +109,7 @@ export default function GerenciarPresentesPage() {
         body: JSON.stringify({
           name: newGiftName.trim(),
           category: newGiftCategory,
+          link: newGiftLink.trim() || undefined,
         }),
       });
 
@@ -132,6 +141,7 @@ export default function GerenciarPresentesPage() {
       // Reset form
       setNewGiftName('');
       setNewGiftCategory('cozinha-eletrodomesticos');
+      setNewGiftLink('');
       setNewGiftIsSelected(false);
       setNewGiftSelectedBy([]);
 
@@ -188,6 +198,61 @@ export default function GerenciarPresentesPage() {
     );
   };
 
+  const openEditModal = (gift: Gift) => {
+    setEditingGift(gift);
+    setEditName(gift.name);
+    setEditCategory(gift.category);
+    setEditLink(gift.link || '');
+  };
+
+  const closeEditModal = () => {
+    setEditingGift(null);
+    setEditName('');
+    setEditCategory('cozinha-eletrodomesticos');
+    setEditLink('');
+  };
+
+  const handleEditGift = async () => {
+    if (!editingGift || !editName.trim()) {
+      showMessage('error', 'Nome do presente é obrigatório');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/gifts/seed', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingGift.id,
+          name: editName.trim(),
+          category: editCategory,
+          link: editLink.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao editar presente');
+      }
+
+      showMessage('success', `Presente "${editName}" atualizado!`);
+      closeEditModal();
+
+      // Refresh gifts list
+      const giftsRes = await fetch('/api/public/gifts');
+      const giftsData = await giftsRes.json();
+      if (giftsData.gifts) {
+        setGifts(giftsData.gifts);
+      }
+    } catch (error) {
+      showMessage('error', error instanceof Error ? error.message : 'Erro ao editar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
@@ -208,6 +273,19 @@ export default function GerenciarPresentesPage() {
     acc[gift.category].push(gift);
     return acc;
   }, {} as Record<GiftCategory, Gift[]>);
+
+  // Create a map from phone to name for display
+  const phoneToName = clients.reduce((acc, c) => {
+    acc[c.phone] = c.fullName;
+    return acc;
+  }, {} as Record<string, string>);
+
+  // Helper function to get names from phone numbers
+  const getSelectedByNames = (selectedBy?: string[]): string => {
+    if (!selectedBy || selectedBy.length === 0) return '';
+    const names = selectedBy.map(phone => phoneToName[phone] || `***${phone.slice(-4)}`);
+    return names.join(', ');
+  };
 
   return (
     <div className="min-h-screen bg-stone-50 pb-8">
@@ -260,28 +338,44 @@ export default function GerenciarPresentesPage() {
           <div className="space-y-4">
             {/* Nome */}
             <div>
-              <label className="block text-sm text-stone-600 mb-1">Nome do Presente</label>
+              <label className="block text-sm text-stone-600 dark:text-stone-400 mb-1">Nome do Presente</label>
               <input
                 type="text"
                 value={newGiftName}
                 onChange={(e) => setNewGiftName(e.target.value)}
                 placeholder="Ex: Jogo de Panelas"
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                style={{ color: '#1c1917' }}
               />
             </div>
 
             {/* Categoria */}
             <div>
-              <label className="block text-sm text-stone-600 mb-1">Categoria</label>
+              <label className="block text-sm text-stone-600 dark:text-stone-400 mb-1">Categoria</label>
               <select
                 value={newGiftCategory}
                 onChange={(e) => setNewGiftCategory(e.target.value as GiftCategory)}
                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                style={{ color: '#1c1917' }}
               >
                 {Object.entries(GIFT_CATEGORY_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Link de sugestão */}
+            <div>
+              <label className="block text-sm text-stone-600 dark:text-stone-400 mb-1">Link de Sugestão (opcional)</label>
+              <input
+                type="url"
+                value={newGiftLink}
+                onChange={(e) => setNewGiftLink(e.target.value)}
+                placeholder="https://www.exemplo.com/produto"
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                style={{ color: '#1c1917' }}
+              />
+              <p className="text-xs text-stone-400 mt-1">Link para sugerir onde comprar o presente</p>
             </div>
 
             {/* Já selecionado? */}
@@ -384,25 +478,44 @@ export default function GerenciarPresentesPage() {
                     {categoryGifts.map((gift) => (
                       <div key={gift.id} className="px-4 py-3 flex items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${gift.isSelected ? 'text-stone-500' : 'text-stone-700'}`}>
-                            {gift.name}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm ${gift.isSelected ? 'text-stone-500' : 'text-stone-700'}`}>
+                              {gift.name}
+                            </p>
+                            {gift.link && (
+                              <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">
+                                Link
+                              </span>
+                            )}
+                          </div>
                           {gift.isSelected && gift.selectedBy && gift.selectedBy.length > 0 && (
                             <p className="text-xs text-amber-600">
-                              Selecionado por {gift.selectedBy.length} pessoa{gift.selectedBy.length !== 1 ? 's' : ''}
+                              Selecionado por: {getSelectedByNames(gift.selectedBy)}
                             </p>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleDeleteGift(gift.name)}
-                          disabled={saving}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                          title="Excluir presente"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openEditModal(gift)}
+                            disabled={saving}
+                            className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg transition disabled:opacity-50"
+                            title="Editar presente"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGift(gift.name)}
+                            disabled={saving}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                            title="Excluir presente"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -412,6 +525,82 @@ export default function GerenciarPresentesPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingGift && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={closeEditModal}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white w-full max-w-md rounded-2xl p-6">
+            <h3 className="text-lg font-medium text-stone-800 mb-4">Editar Presente</h3>
+
+            <div className="space-y-4">
+              {/* Nome */}
+              <div>
+                <label className="block text-sm text-stone-600 mb-1">Nome do Presente</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  style={{ color: '#1c1917' }}
+                />
+              </div>
+
+              {/* Categoria */}
+              <div>
+                <label className="block text-sm text-stone-600 mb-1">Categoria</label>
+                <select
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value as GiftCategory)}
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                  style={{ color: '#1c1917' }}
+                >
+                  {Object.entries(GIFT_CATEGORY_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Link */}
+              <div>
+                <label className="block text-sm text-stone-600 mb-1">Link de Sugestão</label>
+                <input
+                  type="url"
+                  value={editLink}
+                  onChange={(e) => setEditLink(e.target.value)}
+                  placeholder="https://www.exemplo.com/produto"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  style={{ color: '#1c1917' }}
+                />
+                <p className="text-xs text-stone-400 mt-1">Deixe vazio para remover o link</p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={closeEditModal}
+                className="flex-1 py-2.5 text-stone-600 font-medium rounded-lg border border-stone-200 hover:bg-stone-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEditGift}
+                disabled={saving || !editName.trim()}
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition disabled:opacity-50"
+              >
+                {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
