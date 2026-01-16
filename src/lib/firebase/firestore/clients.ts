@@ -191,3 +191,53 @@ export async function updateClient(
     throw error;
   }
 }
+
+/**
+ * Verifica se o cliente tem senha cadastrada
+ */
+export async function checkClientHasPassword(phone: string): Promise<{ exists: boolean; hasPassword: boolean; fullName?: string }> {
+  try {
+    const client = await getClientByPhone(phone);
+
+    if (!client) {
+      return { exists: false, hasPassword: false };
+    }
+
+    return {
+      exists: true,
+      hasPassword: !!client.passwordHash,
+      fullName: client.fullName,
+    };
+  } catch {
+    return { exists: false, hasPassword: false };
+  }
+}
+
+/**
+ * Define senha para um cliente existente (que foi cadastrado sem senha pelo admin)
+ */
+export async function setClientPassword(phone: string, password: string): Promise<Client | null> {
+  try {
+    const normalizedPhone = normalizePhone(phone);
+    const client = await getClientByPhone(normalizedPhone);
+
+    if (!client) {
+      throw new Error('Cliente não encontrado');
+    }
+
+    if (client.passwordHash) {
+      throw new Error('Cliente já possui senha cadastrada');
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    await updateDoc(doc(db, CLIENTS_COLLECTION, normalizedPhone), {
+      passwordHash,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { ...client, passwordHash };
+  } catch (error) {
+    throw error;
+  }
+}

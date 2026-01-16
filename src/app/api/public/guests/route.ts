@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
         hasPassword: !!client.passwordHash,
         presenceStatus: presence?.status || null,
         companions: presence?.companions || 0,
+        companionNames: presence?.companionNames || [],
         createdAt: client.createdAt || '',
       };
     });

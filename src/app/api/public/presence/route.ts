@@ -12,6 +12,7 @@ interface PresenceConfirmation {
   name: string;
   status: 'pending' | 'confirmed' | 'declined';
   companions: number;
+  companionNames?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, name, status, companions } = body;
+    const { phone, name, status, companions, companionNames } = body;
 
     if (!phone || !name || !status) {
       return NextResponse.json(
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       name,
       status,
       companions: companions || 0,
+      companionNames: companionNames || [],
       createdAt: existingDoc.exists ? existingDoc.data()?.createdAt : now,
       updatedAt: now,
     };

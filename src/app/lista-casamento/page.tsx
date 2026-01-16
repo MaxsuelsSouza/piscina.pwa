@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 
-type Step = 'phone' | 'login' | 'register';
+type Step = 'phone' | 'login' | 'create-password' | 'register';
 
 export default function ListaCasamentoLoginPage() {
   const router = useRouter();
-  const { client, loading, login, register, checkPhoneExists } = useClientAuth();
+  const { client, loading, login, register, checkPhoneStatus, createPassword } = useClientAuth();
 
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
@@ -17,6 +17,7 @@ export default function ListaCasamentoLoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingName, setExistingName] = useState('');
 
   useEffect(() => {
     if (!loading && client) {
@@ -51,8 +52,19 @@ export default function ListaCasamentoLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const exists = await checkPhoneExists(phoneNumbers);
-      setStep(exists ? 'login' : 'register');
+      const status = await checkPhoneStatus(phoneNumbers);
+
+      if (status.exists) {
+        if (status.hasPassword) {
+          setStep('login');
+        } else {
+          // Usuário existe mas não tem senha (cadastrado pelo admin)
+          setExistingName(status.fullName || '');
+          setStep('create-password');
+        }
+      } else {
+        setStep('register');
+      }
     } catch {
       setError('Erro ao verificar. Tente novamente.');
     } finally {
@@ -120,11 +132,42 @@ export default function ListaCasamentoLoginPage() {
     }
   };
 
+  const handleCreatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (password.length < 6) {
+      setError('Senha deve ter 6+ caracteres');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Senhas não coincidem');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const phoneNumbers = phone.replace(/\D/g, '');
+      const success = await createPassword(phoneNumbers, password);
+
+      if (!success) {
+        setError('Erro ao criar senha');
+      }
+    } catch {
+      setError('Erro ao criar senha. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleBack = () => {
     setStep('phone');
     setFullName('');
     setPassword('');
     setConfirmPassword('');
+    setExistingName('');
     setError('');
   };
 
@@ -141,10 +184,11 @@ export default function ListaCasamentoLoginPage() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-serif text-stone-800">Lista de Presentes</h1>
+          <h1 className="text-2xl font-serif text-stone-800">Lista de Casa Nova</h1>
           <p className="text-stone-400 text-sm mt-2">
             {step === 'phone' && 'Digite seu telefone'}
             {step === 'login' && 'Bem-vindo de volta'}
+            {step === 'create-password' && `Olá, ${existingName || 'convidado'}!`}
             {step === 'register' && 'Criar conta'}
           </p>
         </div>
@@ -160,7 +204,8 @@ export default function ListaCasamentoLoginPage() {
                   value={phone}
                   onChange={handlePhoneChange}
                   placeholder="(00) 00000-0000"
-                  className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition text-stone-800 placeholder-stone-400"
+                  className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
+                  style={{ color: '#1c1917' }}
                   autoFocus
                   disabled={isSubmitting}
                 />
@@ -190,7 +235,8 @@ export default function ListaCasamentoLoginPage() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
                 placeholder="Senha"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition text-stone-800 placeholder-stone-400"
+                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
+                style={{ color: '#1c1917' }}
                 autoFocus
                 disabled={isSubmitting}
               />
@@ -215,6 +261,58 @@ export default function ListaCasamentoLoginPage() {
             </form>
           )}
 
+          {/* Create Password Step (for guests added by admin) */}
+          {step === 'create-password' && (
+            <form onSubmit={handleCreatePassword} className="space-y-4">
+              <div className="text-sm text-stone-500 bg-stone-50 px-3 py-2 rounded-lg">
+                {phone}
+              </div>
+
+              <p className="text-sm text-stone-600 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100">
+                Você foi convidado! Crie uma senha para acessar.
+              </p>
+
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                placeholder="Criar senha"
+                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
+                style={{ color: '#1c1917' }}
+                autoFocus
+                disabled={isSubmitting}
+              />
+
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+                placeholder="Confirmar senha"
+                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
+                style={{ color: '#1c1917' }}
+                disabled={isSubmitting}
+              />
+
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={isSubmitting || !password || !confirmPassword}
+                className="w-full py-3 bg-stone-800 hover:bg-stone-900 text-white font-medium rounded-lg transition disabled:opacity-50"
+              >
+                {isSubmitting ? 'Criando...' : 'Criar senha e entrar'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBack}
+                className="w-full text-sm text-stone-400 hover:text-stone-600 transition"
+              >
+                Voltar
+              </button>
+            </form>
+          )}
+
           {/* Register Step */}
           {step === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
@@ -227,7 +325,8 @@ export default function ListaCasamentoLoginPage() {
                 value={fullName}
                 onChange={(e) => { setFullName(e.target.value); setError(''); }}
                 placeholder="Seu nome"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition text-stone-800 placeholder-stone-400"
+                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
+                style={{ color: '#1c1917' }}
                 autoFocus
                 disabled={isSubmitting}
               />
@@ -237,7 +336,8 @@ export default function ListaCasamentoLoginPage() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
                 placeholder="Criar senha"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition text-stone-800 placeholder-stone-400"
+                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
+                style={{ color: '#1c1917' }}
                 disabled={isSubmitting}
               />
 
@@ -246,7 +346,8 @@ export default function ListaCasamentoLoginPage() {
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                 placeholder="Confirmar senha"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition text-stone-800 placeholder-stone-400"
+                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
+                style={{ color: '#1c1917' }}
                 disabled={isSubmitting}
               />
 

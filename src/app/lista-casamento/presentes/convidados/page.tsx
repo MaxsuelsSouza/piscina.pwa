@@ -13,6 +13,7 @@ interface Guest {
   hasPassword: boolean;
   presenceStatus: 'confirmed' | 'declined' | 'pending' | null;
   companions: number;
+  companionNames: string[];
   createdAt: string;
 }
 
@@ -261,24 +262,26 @@ export default function ConvidadosPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-stone-600 mb-1">Nome Completo</label>
+                <label className="block text-sm text-stone-600 dark:text-stone-400 mb-1">Nome Completo</label>
                 <input
                   type="text"
                   value={newGuestName}
                   onChange={(e) => setNewGuestName(e.target.value)}
                   placeholder="Ex: João da Silva"
-                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  style={{ color: '#1c1917' }}
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-stone-600 mb-1">Telefone (com DDD)</label>
+                <label className="block text-sm text-stone-600 dark:text-stone-400 mb-1">Telefone (com DDD)</label>
                 <input
                   type="tel"
                   value={newGuestPhone}
                   onChange={(e) => setNewGuestPhone(e.target.value)}
                   placeholder="Ex: 81999999999"
-                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  style={{ color: '#1c1917' }}
                 />
               </div>
 
@@ -388,12 +391,26 @@ export default function ConvidadosPage() {
                         : 'bg-stone-100 text-stone-600'
                   }`}>
                     {guest.presenceStatus === 'confirmed'
-                      ? `Confirmado${guest.companions > 0 ? ` +${guest.companions}` : ''}`
+                      ? 'Confirmado'
                       : guest.presenceStatus === 'declined'
                         ? 'Recusado'
                         : 'Pendente'}
                   </div>
                 </div>
+
+                {/* Companion Names */}
+                {guest.presenceStatus === 'confirmed' && guest.companionNames && guest.companionNames.length > 0 && (
+                  <div className="mt-2 bg-stone-50 rounded-lg p-2">
+                    <p className="text-xs text-stone-400 mb-1">Acompanhantes:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {guest.companionNames.map((name, idx) => (
+                        <span key={idx} className="text-xs bg-white text-stone-600 px-2 py-0.5 rounded border border-stone-200">
+                          {name || `Acompanhante ${idx + 1}`}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 mt-3">

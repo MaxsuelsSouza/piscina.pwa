@@ -13,7 +13,7 @@ export default function ConfirmPresencePage() {
   const router = useRouter();
   const { client, loading: authLoading } = useClientAuth();
   const [status, setStatus] = useState<PresenceStatus>('pending');
-  const [companions, setCompanions] = useState(0);
+  const [companionNames, setCompanionNames] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
@@ -63,7 +63,13 @@ export default function ConfirmPresencePage() {
         const data = await res.json();
         if (data.confirmation) {
           setStatus(data.confirmation.status);
-          setCompanions(data.confirmation.companions || 0);
+          // Support both old format (companions number) and new format (companionNames array)
+          if (data.confirmation.companionNames && data.confirmation.companionNames.length > 0) {
+            setCompanionNames(data.confirmation.companionNames);
+          } else if (data.confirmation.companions > 0) {
+            // Convert old format to new: create empty slots
+            setCompanionNames(Array(data.confirmation.companions).fill(''));
+          }
           setSubmitted(true);
         }
       }
@@ -119,10 +125,30 @@ export default function ConfirmPresencePage() {
     setStatus('pending'); // Reset status since they cancelled
   };
 
+  // Helper functions for companion names
+  const addCompanion = () => {
+    setCompanionNames([...companionNames, '']);
+  };
+
+  const removeCompanion = (index: number) => {
+    setCompanionNames(companionNames.filter((_, i) => i !== index));
+  };
+
+  const updateCompanionName = (index: number, name: string) => {
+    const updated = [...companionNames];
+    updated[index] = name;
+    setCompanionNames(updated);
+  };
+
   const handleSubmit = async () => {
     if (!client) return;
 
     setIsSubmitting(true);
+
+    // Filter out empty names
+    const validCompanionNames = status === 'confirmed'
+      ? companionNames.filter(name => name.trim() !== '')
+      : [];
 
     try {
       const res = await fetch('/api/public/presence', {
@@ -132,7 +158,8 @@ export default function ConfirmPresencePage() {
           phone: client.phone,
           name: client.fullName,
           status,
-          companions: status === 'confirmed' ? companions : 0,
+          companions: validCompanionNames.length,
+          companionNames: validCompanionNames,
         }),
       });
 
@@ -247,13 +274,27 @@ export default function ConfirmPresencePage() {
                   : 'Resposta Pendente'}
             </h2>
 
-            <p className="text-stone-500 mb-6">
+            <p className="text-stone-500 mb-4">
               {status === 'confirmed'
-                ? `Você${companions > 0 ? ` e mais ${companions} acompanhante${companions > 1 ? 's' : ''}` : ''} confirmou presença no casamento.`
+                ? `Você${companionNames.length > 0 ? ` e mais ${companionNames.length} acompanhante${companionNames.length > 1 ? 's' : ''}` : ''} confirmou presença no casamento.`
                 : status === 'declined'
                   ? 'Você informou que não poderá comparecer. Sentiremos sua falta!'
                   : 'Ainda aguardando sua confirmação.'}
             </p>
+
+            {/* Show companion names if confirmed */}
+            {status === 'confirmed' && companionNames.length > 0 && (
+              <div className="mb-6 text-left bg-stone-50 rounded-lg p-3">
+                <p className="text-xs text-stone-400 mb-2">Acompanhantes:</p>
+                <ul className="space-y-1">
+                  {companionNames.map((name, idx) => (
+                    <li key={idx} className="text-sm text-stone-600">
+                      {name || `Acompanhante ${idx + 1}`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <button
               onClick={() => setSubmitted(false)}
@@ -349,49 +390,67 @@ export default function ConfirmPresencePage() {
                 <p className="text-sm text-stone-500 mb-3">
                   Quantos acompanhantes virão com você?
                 </p>
-                <div className="flex items-center justify-center gap-4">
-                  <button
-                    onClick={() => setCompanions(Math.max(0, companions - 1))}
-                    className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200 transition"
+
+                {/* Companion name inputs */}
+                {companionNames.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {companionNames.map((name, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => updateCompanionName(index, e.target.value)}
+                          placeholder={`Nome do acompanhante ${index + 1}`}
+                          className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          style={{ color: '#1c1917' }}
+                        />
+                        <button
+                          onClick={() => removeCompanion(index)}
+                          className="w-8 h-8 flex items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition"
+                          title="Remover acompanhante"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add companion button */}
+                <button
+                  onClick={addCompanion}
+                  className="w-full py-2.5 border-2 border-dashed border-stone-200 rounded-lg text-sm text-stone-500 hover:border-stone-300 hover:text-stone-600 transition flex items-center justify-center gap-2"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20 12H4"
-                      />
-                    </svg>
-                  </button>
-                  <span className="text-2xl font-medium text-stone-800 w-12 text-center">
-                    {companions}
-                  </span>
-                  <button
-                    onClick={() => setCompanions(companions + 1)}
-                    className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200 transition"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <p className="text-xs text-stone-400 text-center mt-2">
-                  Total: {1 + companions} pessoa{1 + companions > 1 ? 's' : ''}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Adicionar acompanhante
+                </button>
+
+                <p className="text-xs text-stone-400 text-center mt-3">
+                  Total: {1 + companionNames.length} pessoa{1 + companionNames.length > 1 ? 's' : ''}
                 </p>
               </div>
             )}

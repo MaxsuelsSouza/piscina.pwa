@@ -12,6 +12,8 @@ import {
   authenticateClientWithPassword,
   createClientWithPassword,
   getClientByPhone,
+  checkClientHasPassword,
+  setClientPassword,
 } from '@/lib/firebase/firestore/clients';
 
 interface ClientAuthContextType {
@@ -20,6 +22,8 @@ interface ClientAuthContextType {
   login: (phone: string, password: string) => Promise<boolean>;
   register: (phone: string, password: string, fullName: string) => Promise<boolean>;
   checkPhoneExists: (phone: string) => Promise<boolean>;
+  checkPhoneStatus: (phone: string) => Promise<{ exists: boolean; hasPassword: boolean; fullName?: string }>;
+  createPassword: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshClientData: () => Promise<void>;
 }
@@ -87,6 +91,36 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     try {
       const client = await getClientByPhone(phone);
       return client !== null;
+    } catch {
+      return false;
+    }
+  };
+
+  const checkPhoneStatus = async (phone: string): Promise<{ exists: boolean; hasPassword: boolean; fullName?: string }> => {
+    try {
+      return await checkClientHasPassword(phone);
+    } catch {
+      return { exists: false, hasPassword: false };
+    }
+  };
+
+  const createPassword = async (phone: string, password: string): Promise<boolean> => {
+    try {
+      const clientData = await setClientPassword(phone, password);
+
+      if (!clientData) {
+        return false;
+      }
+
+      // Faz login automaticamente
+      const session: ClientSession = {
+        phone: clientData.phone,
+        loginTime: Date.now(),
+      };
+      localStorage.setItem(CLIENT_SESSION_KEY, JSON.stringify(session));
+
+      setClient(clientData);
+      return true;
     } catch {
       return false;
     }
@@ -162,6 +196,8 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         checkPhoneExists,
+        checkPhoneStatus,
+        createPassword,
         logout,
         refreshClientData,
       }}
