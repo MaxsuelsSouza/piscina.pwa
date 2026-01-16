@@ -15,6 +15,7 @@ interface Gift {
   link?: string;
   isSelected: boolean;
   selectedBy?: string[];
+  forceUnavailable?: boolean;
 }
 
 interface Client {
@@ -43,6 +44,9 @@ export default function GerenciarPresentesPage() {
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState<GiftCategory>('cozinha-eletrodomesticos');
   const [editLink, setEditLink] = useState('');
+
+  // Delete modal state
+  const [deletingGift, setDeletingGift] = useState<Gift | null>(null);
 
   const isAdmin = client?.phone?.replace(/\D/g, '') === ADMIN_PHONE;
 
@@ -158,24 +162,40 @@ export default function GerenciarPresentesPage() {
     }
   };
 
-  const handleDeleteGift = async (giftName: string) => {
-    if (!confirm(`Tem certeza que deseja excluir "${giftName}"?`)) return;
+  const openDeleteModal = (gift: Gift) => {
+    setDeletingGift(gift);
+  };
+
+  const closeDeleteModal = () => {
+    setDeletingGift(null);
+  };
+
+  const handleGiftAction = async (action: 'delete' | 'unavailable' | 'available') => {
+    if (!deletingGift) return;
 
     setSaving(true);
     try {
       const res = await fetch('/api/admin/gifts/seed', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: giftName }),
+        body: JSON.stringify({ id: deletingGift.id, action }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erro ao excluir presente');
+        throw new Error(data.error || 'Erro ao processar presente');
       }
 
-      showMessage('success', `Presente "${giftName}" excluído!`);
+      if (action === 'delete') {
+        showMessage('success', `Presente "${deletingGift.name}" excluído!`);
+      } else if (action === 'unavailable') {
+        showMessage('success', `Presente "${deletingGift.name}" marcado como indisponível!`);
+      } else {
+        showMessage('success', `Presente "${deletingGift.name}" marcado como disponível!`);
+      }
+
+      closeDeleteModal();
 
       // Refresh gifts list
       const giftsRes = await fetch('/api/public/gifts');
@@ -184,7 +204,7 @@ export default function GerenciarPresentesPage() {
         setGifts(giftsData.gifts);
       }
     } catch (error) {
-      showMessage('error', error instanceof Error ? error.message : 'Erro ao excluir presente');
+      showMessage('error', error instanceof Error ? error.message : 'Erro ao processar presente');
     } finally {
       setSaving(false);
     }
@@ -476,15 +496,20 @@ export default function GerenciarPresentesPage() {
                   </div>
                   <div className="divide-y divide-stone-100">
                     {categoryGifts.map((gift) => (
-                      <div key={gift.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                      <div key={gift.id} className={`px-4 py-3 flex items-center justify-between gap-3 ${gift.forceUnavailable ? 'bg-stone-50' : ''}`}>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className={`text-sm ${gift.isSelected ? 'text-stone-500' : 'text-stone-700'}`}>
+                            <p className={`text-sm truncate ${gift.isSelected || gift.forceUnavailable ? 'text-stone-500' : 'text-stone-700'}`}>
                               {gift.name}
                             </p>
                             {gift.link && (
-                              <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">
+                              <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded shrink-0">
                                 Link
+                              </span>
+                            )}
+                            {gift.forceUnavailable && (
+                              <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded shrink-0">
+                                Indisponível
                               </span>
                             )}
                           </div>
@@ -506,10 +531,10 @@ export default function GerenciarPresentesPage() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => handleDeleteGift(gift.name)}
+                            onClick={() => openDeleteModal(gift)}
                             disabled={saving}
                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                            title="Excluir presente"
+                            title="Excluir ou marcar indisponível"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -596,6 +621,73 @@ export default function GerenciarPresentesPage() {
                 className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition disabled:opacity-50"
               >
                 {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete/Unavailable Modal */}
+      {deletingGift && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={closeDeleteModal}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white w-full max-w-sm rounded-2xl p-6">
+            <h3 className="text-lg font-medium text-stone-800 mb-2">
+              O que deseja fazer?
+            </h3>
+            <p className="text-sm text-stone-500 mb-6">
+              Presente: <span className="font-medium text-stone-700">{deletingGift.name}</span>
+            </p>
+
+            <div className="space-y-3">
+              {/* Se já está indisponível, mostrar opção de tornar disponível */}
+              {deletingGift.forceUnavailable ? (
+                <button
+                  onClick={() => handleGiftAction('available')}
+                  disabled={saving}
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {saving ? 'Processando...' : 'Tornar Disponível'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleGiftAction('unavailable')}
+                  disabled={saving}
+                  className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                  {saving ? 'Processando...' : 'Marcar como Indisponível'}
+                </button>
+              )}
+
+              <button
+                onClick={() => handleGiftAction('delete')}
+                disabled={saving}
+                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                {saving ? 'Processando...' : 'Excluir Permanentemente'}
+              </button>
+
+              <button
+                onClick={closeDeleteModal}
+                disabled={saving}
+                className="w-full py-3 text-stone-600 font-medium rounded-xl border border-stone-200 hover:bg-stone-50 transition disabled:opacity-50"
+              >
+                Cancelar
               </button>
             </div>
           </div>

@@ -26,8 +26,9 @@ export default function CategoryDetailPage() {
     [gifts, category]
   );
 
-  // Stats - considera o máximo de seleções por categoria
+  // Stats - considera o máximo de seleções por categoria e forceUnavailable
   const availableCount = categoryGifts.filter((g) => {
+    if (g.forceUnavailable) return false;
     const maxSelections = getMaxSelectionsForCategory(g.category);
     const currentSelections = g.selectedBy?.length || 0;
     return currentSelections < maxSelections;
@@ -259,8 +260,8 @@ export default function CategoryDetailPage() {
               const isMine = mySelections.has(gift.id);
               const maxSelections = getMaxSelectionsForCategory(gift.category);
               const currentSelections = gift.selectedBy?.length || 0;
-              // Indisponível se atingiu o máximo de seleções E não é meu
-              const isUnavailable = currentSelections >= maxSelections && !isMine;
+              // Indisponível se: marcado pelo admin OU atingiu o máximo de seleções E não é meu
+              const isUnavailable = gift.forceUnavailable || (currentSelections >= maxSelections && !isMine);
               const isSelecting = selectingId === gift.id;
               const isSelected = selectedItems.has(gift.id);
 
@@ -333,7 +334,7 @@ export default function CategoryDetailPage() {
                           {/* Sugestão button - only shows when selected by user and has link */}
                           {isMine && gift.link && (
                             <a
-                              href={gift.link}
+                              href={gift.link.startsWith('http') ? gift.link : `https://${gift.link}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="px-3 py-1.5 text-sm rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"

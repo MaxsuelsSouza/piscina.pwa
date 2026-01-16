@@ -273,6 +273,17 @@ export default function MyGiftsPage() {
                           )}
                         </button>
 
+                        {gift.link && (
+                          <a
+                            href={gift.link.startsWith('http') ? gift.link : `https://${gift.link}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
+                          >
+                            Sugestão
+                          </a>
+                        )}
+
                         <button
                           onClick={() => handleRemove(gift.id)}
                           disabled={isRemoving}

@@ -37,6 +37,7 @@ export interface Gift {
   link?: string; // Link de sugestão do produto
   isSelected: boolean; // Se já foi escolhido por alguém
   selectedBy?: string[]; // Array de phones dos clientes que selecionaram
+  forceUnavailable?: boolean; // Marcado como indisponível pelo admin
   createdAt: string;
   updatedAt: string;
 }

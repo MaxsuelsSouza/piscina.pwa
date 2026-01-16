@@ -10,6 +10,22 @@ import { GIFTS_SEED_DATA } from '@/data/gifts-seed';
 // Força renderização dinâmica
 export const dynamic = 'force-dynamic';
 
+/**
+ * Normaliza um link para garantir que tenha protocolo https://
+ */
+function normalizeLink(link: string): string {
+  const trimmed = link.trim();
+  if (!trimmed) return '';
+
+  // Se já começa com http:// ou https://, retorna como está
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  // Adiciona https:// se não tiver protocolo
+  return `https://${trimmed}`;
+}
+
 export async function POST() {
   try {
     const db = adminDb();
@@ -79,16 +95,17 @@ export async function GET() {
 }
 
 /**
- * DELETE - Remover um presente pelo nome
+ * DELETE - Remover ou marcar como indisponível um presente
+ * action: 'delete' | 'unavailable' | 'available'
  */
 export async function DELETE(request: Request) {
   try {
     const body = await request.json();
-    const { name } = body;
+    const { name, id, action = 'delete' } = body;
 
-    if (!name) {
+    if (!name && !id) {
       return NextResponse.json(
-        { error: 'name é obrigatório' },
+        { error: 'name ou id é obrigatório' },
         { status: 400 }
       );
     }
@@ -96,8 +113,20 @@ export async function DELETE(request: Request) {
     const db = adminDb();
     const giftsRef = db.collection('gifts');
 
-    // Busca o presente pelo nome
-    const snapshot = await giftsRef.where('name', '==', name).get();
+    // Busca o presente pelo nome ou id
+    let snapshot;
+    if (id) {
+      const doc = await giftsRef.doc(id).get();
+      if (!doc.exists) {
+        return NextResponse.json(
+          { error: 'Presente não encontrado', code: 'NOT_FOUND' },
+          { status: 404 }
+        );
+      }
+      snapshot = { docs: [doc], empty: false, size: 1 };
+    } else {
+      snapshot = await giftsRef.where('name', '==', name).get();
+    }
 
     if (snapshot.empty) {
       return NextResponse.json(
@@ -106,22 +135,61 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Remove todos os documentos encontrados (deveria ser só 1)
     const batch = db.batch();
-    snapshot.docs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
+    const now = new Date().toISOString();
 
-    return NextResponse.json({
-      success: true,
-      message: `Presente "${name}" removido com sucesso`,
-      count: snapshot.size,
-    });
+    if (action === 'delete') {
+      // Remove todos os documentos encontrados
+      snapshot.docs.forEach((doc: any) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+
+      return NextResponse.json({
+        success: true,
+        message: `Presente removido com sucesso`,
+        action: 'deleted',
+      });
+    } else if (action === 'unavailable') {
+      // Marca como indisponível
+      snapshot.docs.forEach((doc: any) => {
+        batch.update(doc.ref, {
+          forceUnavailable: true,
+          updatedAt: now,
+        });
+      });
+      await batch.commit();
+
+      return NextResponse.json({
+        success: true,
+        message: `Presente marcado como indisponível`,
+        action: 'unavailable',
+      });
+    } else if (action === 'available') {
+      // Marca como disponível novamente
+      snapshot.docs.forEach((doc: any) => {
+        batch.update(doc.ref, {
+          forceUnavailable: false,
+          updatedAt: now,
+        });
+      });
+      await batch.commit();
+
+      return NextResponse.json({
+        success: true,
+        message: `Presente marcado como disponível`,
+        action: 'available',
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'action inválida. Use: delete, unavailable ou available' },
+        { status: 400 }
+      );
+    }
   } catch (error) {
-    console.error('Erro ao remover presente:', error);
+    console.error('Erro ao processar presente:', error);
     return NextResponse.json(
-      { error: 'Erro ao remover presente', details: String(error) },
+      { error: 'Erro ao processar presente', details: String(error) },
       { status: 500 }
     );
   }
