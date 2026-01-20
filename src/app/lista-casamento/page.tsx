@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
+import { isAdmin } from './_config/admin';
 
 type Step = 'phone' | 'login' | 'create-password' | 'register';
 
@@ -21,7 +22,12 @@ export default function ListaCasamentoLoginPage() {
 
   useEffect(() => {
     if (!loading && client) {
-      router.replace('/lista-casamento/presentes');
+      // Se é admin, redireciona para workspace
+      if (isAdmin(client.phone)) {
+        router.replace('/lista-casamento/workspace');
+      } else {
+        router.replace('/lista-casamento/presentes');
+      }
     }
   }, [client, loading, router]);
 

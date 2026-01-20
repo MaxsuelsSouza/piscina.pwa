@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { GIFT_CATEGORY_LABELS, type GiftCategory } from '@/types/gift';
-
-const ADMIN_PHONE = '81994625990';
+import { isAdmin as checkIsAdmin } from '../../_config/admin';
 
 interface GuestGift {
   id: string;
@@ -46,7 +45,7 @@ export default function AdminPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [expandedGuest, setExpandedGuest] = useState<string | null>(null);
 
-  const isAdmin = client?.phone?.replace(/\D/g, '') === ADMIN_PHONE;
+  const isAdmin = checkIsAdmin(client?.phone);
 
   useEffect(() => {
     if (!authLoading && !client) {
@@ -161,7 +160,7 @@ export default function AdminPage() {
       <header className="sticky top-0 z-10 bg-white border-b border-stone-200 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Link
-            href="/lista-casamento/presentes"
+            href="/lista-casamento/workspace"
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition"
           >
             <svg

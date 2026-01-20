@@ -233,9 +233,9 @@ export async function PUT(request: Request) {
       updatedAt: now,
     };
 
-    // Adiciona link se fornecido
+    // Adiciona link se fornecido (normalizado)
     if (link && link.trim()) {
-      giftData.link = link.trim();
+      giftData.link = normalizeLink(link);
     }
 
     await docRef.set(giftData);
@@ -307,7 +307,7 @@ export async function PATCH(request: Request) {
     // Link pode ser string vazia para remover
     if (link !== undefined) {
       if (link && link.trim()) {
-        updateData.link = link.trim();
+        updateData.link = normalizeLink(link);
       } else {
         // Remove o campo link se for vazio
         updateData.link = null;

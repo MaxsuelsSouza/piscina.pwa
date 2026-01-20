@@ -13,6 +13,8 @@ interface PixModalData {
   qrCodeBase64: string;
   pixPayload: string;
   amount: number;
+  paymentId?: number;
+  useMercadoPago?: boolean;
 }
 
 export default function MyGiftsPage() {
@@ -24,6 +26,8 @@ export default function MyGiftsPage() {
   const [pixAmount, setPixAmount] = useState<string>('');
   const [showAmountModal, setShowAmountModal] = useState<Gift | null>(null);
   const [copied, setCopied] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'approved' | 'error'>('pending');
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
 
   const { gifts, loading, error, selectGift, mySelections, refreshGifts } =
     useGifts(client?.phone || '', client?.fullName || '');
@@ -52,6 +56,35 @@ export default function MyGiftsPage() {
     }
   }, [authLoading, client, router]);
 
+  // Polling para verificar status do pagamento Mercado Pago
+  useEffect(() => {
+    if (!pixModal?.paymentId || !pixModal?.useMercadoPago || paymentStatus === 'approved') {
+      return;
+    }
+
+    const checkPayment = async () => {
+      try {
+        setIsCheckingPayment(true);
+        const res = await fetch(`/api/public/gifts/pix/status?paymentId=${pixModal.paymentId}`);
+        const data = await res.json();
+
+        if (data.status === 'approved') {
+          setPaymentStatus('approved');
+        }
+      } catch (err) {
+        console.error('Erro ao verificar pagamento:', err);
+      } finally {
+        setIsCheckingPayment(false);
+      }
+    };
+
+    // Verifica imediatamente e depois a cada 5 segundos
+    checkPayment();
+    const interval = setInterval(checkPayment, 5000);
+
+    return () => clearInterval(interval);
+  }, [pixModal?.paymentId, pixModal?.useMercadoPago, paymentStatus]);
+
   const handleRemove = async (giftId: string) => {
     setSelectingId(giftId);
     await selectGift(giftId);
@@ -71,6 +104,7 @@ export default function MyGiftsPage() {
 
     setPixLoading(showAmountModal.id);
     setShowAmountModal(null);
+    setPaymentStatus('pending'); // Reset status
 
     try {
       const res = await fetch('/api/public/gifts/pix', {
@@ -81,6 +115,7 @@ export default function MyGiftsPage() {
           giftId: showAmountModal.id,
           amount,
           clientName: client?.fullName || '',
+          clientPhone: client?.phone || '',
         }),
       });
 
@@ -95,6 +130,8 @@ export default function MyGiftsPage() {
         qrCodeBase64: data.qrCodeBase64,
         pixPayload: data.pixPayload,
         amount,
+        paymentId: data.paymentId,
+        useMercadoPago: data.useMercadoPago,
       });
     } catch (err) {
       console.error('Erro ao gerar PIX:', err);
@@ -364,73 +401,133 @@ export default function MyGiftsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => setPixModal(null)}
+            onClick={() => {
+              setPixModal(null);
+              setPaymentStatus('pending');
+            }}
           />
           <div className="relative bg-white w-full max-w-sm rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="text-center">
-              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-
-              <h3 className="text-lg font-medium text-stone-800 mb-1">
-                PIX para presente
-              </h3>
-              <p className="text-sm text-stone-500 mb-1">
-                {pixModal.gift.name}
-              </p>
-              <p className="text-2xl font-bold text-emerald-600 mb-4">
-                R$ {pixModal.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-
-              {/* QR Code */}
-              <div className="bg-white border-2 border-stone-200 rounded-xl p-4 mb-4 inline-block">
-                <Image
-                  src={pixModal.qrCodeBase64}
-                  alt="QR Code PIX"
-                  width={200}
-                  height={200}
-                  className="mx-auto"
-                />
-              </div>
-
-              <p className="text-xs text-stone-400 mb-4">
-                Escaneie o QR Code com o app do seu banco ou copie o código PIX
-              </p>
-
-              {/* Copy button */}
-              <button
-                onClick={handleCopyPix}
-                className={`w-full py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
-                  copied
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                }`}
-              >
-                {copied ? (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Pagamento Confirmado */}
+              {paymentStatus === 'approved' ? (
+                <>
+                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                    <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    Copiado!
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    Copiar código PIX
-                  </>
-                )}
-              </button>
+                  </div>
 
-              <button
-                onClick={() => setPixModal(null)}
-                className="w-full py-3 mt-3 text-stone-500 font-medium hover:text-stone-700 transition"
-              >
-                Fechar
-              </button>
+                  <h3 className="text-xl font-bold text-emerald-600 mb-2">
+                    Pagamento Confirmado!
+                  </h3>
+                  <p className="text-sm text-stone-500 mb-1">
+                    {pixModal.gift.name}
+                  </p>
+                  <p className="text-2xl font-bold text-emerald-600 mb-4">
+                    R$ {pixModal.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+
+                  <p className="text-sm text-stone-600 mb-6">
+                    Obrigado pelo presente! Seu pagamento foi confirmado com sucesso.
+                  </p>
+
+                  <button
+                    onClick={() => {
+                      setPixModal(null);
+                      setPaymentStatus('pending');
+                    }}
+                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-xl transition"
+                  >
+                    Fechar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+
+                  <h3 className="text-lg font-medium text-stone-800 mb-1">
+                    PIX para presente
+                  </h3>
+                  <p className="text-sm text-stone-500 mb-1">
+                    {pixModal.gift.name}
+                  </p>
+                  <p className="text-2xl font-bold text-emerald-600 mb-4">
+                    R$ {pixModal.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+
+                  {/* QR Code */}
+                  <div className="bg-white border-2 border-stone-200 rounded-xl p-4 mb-4 inline-block">
+                    <Image
+                      src={pixModal.qrCodeBase64.startsWith('data:') ? pixModal.qrCodeBase64 : `data:image/png;base64,${pixModal.qrCodeBase64}`}
+                      alt="QR Code PIX"
+                      width={200}
+                      height={200}
+                      className="mx-auto"
+                    />
+                  </div>
+
+                  {/* Status do pagamento */}
+                  {pixModal.useMercadoPago && (
+                    <div className="flex items-center justify-center gap-2 mb-3 text-sm text-stone-500">
+                      {isCheckingPayment ? (
+                        <>
+                          <span className="inline-block w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                          Verificando pagamento...
+                        </>
+                      ) : (
+                        <>
+                          <span className="inline-block w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                          Aguardando pagamento
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-stone-400 mb-4">
+                    Escaneie o QR Code com o app do seu banco ou copie o código PIX
+                  </p>
+
+                  {/* Copy button */}
+                  <button
+                    onClick={handleCopyPix}
+                    className={`w-full py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
+                      copied
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    {copied ? (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copiar código PIX
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setPixModal(null);
+                      setPaymentStatus('pending');
+                    }}
+                    className="w-full py-3 mt-3 text-stone-500 font-medium hover:text-stone-700 transition"
+                  >
+                    Fechar
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

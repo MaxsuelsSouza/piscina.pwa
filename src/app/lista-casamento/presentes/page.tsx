@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
+import { isAdmin as checkIsAdmin } from '../_config/admin';
 
 type PresenceStatus = 'pending' | 'confirmed' | 'declined' | null;
-
-const ADMIN_PHONE = '81994625990';
 
 export default function HomePage() {
   const router = useRouter();
@@ -16,7 +15,7 @@ export default function HomePage() {
   const [presenceCompanions, setPresenceCompanions] = useState(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const isAdmin = client?.phone?.replace(/\D/g, '') === ADMIN_PHONE;
+  const isAdmin = checkIsAdmin(client?.phone);
 
   useEffect(() => {
     if (!loading && !client) {
@@ -62,13 +61,35 @@ export default function HomePage() {
       {/* Header */}
       <header className="bg-white border-b border-stone-200 px-4 py-4">
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-serif text-stone-800">
-              Lista de Casa Nova
-            </h1>
-            <p className="text-sm text-stone-400 mt-0.5">
-              Olá, {client?.fullName?.split(' ')[0]}
-            </p>
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Link
+                href="/lista-casamento/workspace"
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition"
+              >
+                <svg
+                  className="w-5 h-5 text-stone-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </Link>
+            )}
+            <div>
+              <h1 className="text-xl font-serif text-stone-800">
+                Lista de Casa Nova
+              </h1>
+              <p className="text-sm text-stone-400 mt-0.5">
+                Olá, {client?.fullName?.split(' ')[0]}
+              </p>
+            </div>
           </div>
           <button
             onClick={logout}
