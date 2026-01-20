@@ -9,14 +9,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Lista de UIDs de administradores (mesmo que src/config/admin.ts)
-const ADMIN_UIDS = ['X7aWBsKSpkTQr25mAigi9DkGULG3'];
-
-// Rotas protegidas que requerem autenticação (admin ou cliente)
-const PROTECTED_ROUTES = ['/admin'];
+// Rotas protegidas que requerem autenticação
+const PROTECTED_ROUTES = ['/workspace', '/presentes', '/treino'];
 
 // Rotas de autenticação
-const AUTH_ROUTES = ['/login', '/register', '/forgot-password'];
+const AUTH_ROUTES = ['/login'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -65,8 +65,6 @@ export interface VenueInfo {
   condominiumPrice?: number; // Valor do condomínio/aluguel por dia
   bankingInfo?: BankingInfo; // Dados bancários para recebimento
 
-  // Dados específicos para barbearias
-  barbershopInfo?: import('./barbershop').BarbershopInfo;
 }
 
 export interface AppUser {

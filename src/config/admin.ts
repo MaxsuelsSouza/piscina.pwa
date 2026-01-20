@@ -1,28 +1,15 @@
 /**
- * Configuração de Usuários Administradores
- *
- * Este arquivo contém os UIDs dos usuários que têm permissões de administrador.
- * Estes UIDs devem corresponder aos usuários criados no Firebase Authentication.
+ * Configuracao do Admin da Lista de Casa Nova
  */
 
-export const ADMIN_UIDS = [
-  'X7aWBsKSpkTQr25mAigi9DkGULG3', // maxsuelsouza238@gmail.com
-] as const;
+// Telefone do admin (apenas digitos)
+export const ADMIN_PHONE = '81994625990';
 
 /**
- * Verifica se um UID pertence a um administrador
+ * Verifica se o telefone e do admin
  */
-export function isAdmin(uid: string | undefined | null): boolean {
-  if (!uid) return false;
-  return ADMIN_UIDS.includes(uid as any);
+export function isAdmin(phone: string | undefined): boolean {
+  if (!phone) return false;
+  const cleanPhone = phone.replace(/\D/g, '');
+  return cleanPhone === ADMIN_PHONE;
 }
-
-/**
- * Informações dos administradores
- */
-export const ADMIN_INFO = {
-  'X7aWBsKSpkTQr25mAigi9DkGULG3': {
-    email: 'maxsuelsouza238@gmail.com',
-    name: 'Admin Principal',
-  },
-} as const;

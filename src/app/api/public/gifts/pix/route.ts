@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPixPayment, isMercadoPagoConfigured } from '@/lib/mercadopago';
 import { generatePix } from '@/lib/pix/generator';
-import { PIX_CONFIG } from '@/app/lista-casamento/_config/pix';
+import { PIX_CONFIG } from '@/config/pix';
 import { adminDb } from '@/lib/firebase/admin';
 
 interface PixGiftRequest {

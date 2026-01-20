@@ -1,1 +1,0 @@
-export { ProfileCompleteness } from './ProfileCompleteness';

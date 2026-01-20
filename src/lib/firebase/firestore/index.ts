@@ -1,6 +1,6 @@
 /**
- * Exporta todos os serviços do Firestore
+ * Exporta todos os servicos do Firestore
  */
 
-export * from './bookings';
-export * from './blockedDates';
+export * from './gifts';
+export * from './clients';

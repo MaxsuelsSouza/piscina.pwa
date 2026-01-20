@@ -13,9 +13,9 @@ export const siteConfig = {
     twitter: "",
   },
   routes: {
-    public: ["/login", "/register", "/forgot-password"],
-    protected: ["/dashboard"],
-    afterLoginRedirect: "/dashboard",
+    public: ["/login"],
+    protected: ["/workspace", "/presentes", "/treino"],
+    afterLoginRedirect: "/presentes",
     afterLogoutRedirect: "/login",
   },
 } as const;

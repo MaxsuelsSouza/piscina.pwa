@@ -1,1 +1,0 @@
-export { YearBar } from './YearBar';
