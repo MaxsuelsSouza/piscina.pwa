@@ -4,8 +4,8 @@
  */
 
 export const siteConfig = {
-  name: "Lista de Casa Nova",
-  description: "Lista de presentes para a casa nova",
+  name: "Minhas Notas",
+  description: "Aplicativo de notas pessoais",
   url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   ogImage: "/og-image.png",
   links: {
