@@ -314,6 +314,35 @@ service cloud.firestore {
       // - Apenas admin pode deletar
       allow delete: if isAdmin();
     }
+
+    // ========================================
+    // QUIZ
+    // ========================================
+
+    // Regras para quizzes
+    // Coleção: quizzes
+    // Campos: nome, descricao, status, questoes, totalQuestoes, createdAt, updatedAt
+    match /quizzes/{quizId} {
+      // Leitura: apenas admin (autenticado)
+      allow read: if isAuthenticated();
+
+      // Escrita: apenas admin
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Regras para anotações de quiz
+    // Coleção: quiz_anotacoes
+    // Campos: quizId, questaoId, texto, data, criadoEm, atualizadoEm
+    match /quiz_anotacoes/{anotacaoId} {
+      // Leitura: apenas autenticado
+      allow read: if isAuthenticated();
+
+      // Criação e atualização: apenas autenticado
+      allow create, update: if isAuthenticated();
+
+      // Deleção: apenas admin
+      allow delete: if isAdmin();
+    }
   }
 }
 

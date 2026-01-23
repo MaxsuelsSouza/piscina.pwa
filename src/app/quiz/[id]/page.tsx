@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Quiz, Questao, NivelQuiz } from '../_types';
+import type { Quiz, Questao } from '../_types';
 import { NIVEL_QUIZ_COLORS } from '../_types';
 
 // Dias para bloquear repeticao de pergunta
@@ -20,6 +20,15 @@ interface HistoricoQuestao {
 interface QuestaoDoDia {
   questaoId: string;
   data: string; // YYYY-MM-DD
+}
+
+// Tipo para anotacao
+interface Anotacao {
+  id: string;
+  questaoId: string;
+  texto: string;
+  data: string; // YYYY-MM-DD
+  criadoEm: string; // ISO timestamp
 }
 
 // Helper para obter data atual no formato YYYY-MM-DD
@@ -107,11 +116,20 @@ export default function QuizPlayPage() {
   const [todasEstudadas, setTodasEstudadas] = useState(false);
   const [proximaData, setProximaData] = useState<string | null>(null);
 
+  // Estados para anotacoes
+  const [mostrarFormAnotacao, setMostrarFormAnotacao] = useState(false);
+  const [textoAnotacao, setTextoAnotacao] = useState('');
+  const [anotacaoAtualId, setAnotacaoAtualId] = useState<string | null>(null);
+  const [anotacoesQuestao, setAnotacoesQuestao] = useState<Anotacao[]>([]);
+  const [mostrarHistoricoAnotacoes, setMostrarHistoricoAnotacoes] = useState(false);
+  const [salvandoAnotacao, setSalvandoAnotacao] = useState(false);
+  const [carregandoAnotacoes, setCarregandoAnotacoes] = useState(false);
+
   const isAdmin = !!firebaseUser;
+  const hoje = getDataHoje();
 
   // Funcao para obter ou definir a questao do dia
   const obterQuestaoDoDia = (quizData: Quiz): Questao | null => {
-    const hoje = getDataHoje();
     const questaoDoDiaSalva = carregarQuestaoDoDia(quizId);
 
     // Se ja tem uma questao definida para hoje, usar ela
@@ -177,6 +195,71 @@ export default function QuizPlayPage() {
     return questaoSelecionada;
   };
 
+  // Carregar anotacoes da questao atual via API
+  const carregarAnotacoesQuestao = async (questaoId: string) => {
+    setCarregandoAnotacoes(true);
+    try {
+      const res = await fetch(`/api/quiz/anotacoes?quizId=${quizId}&questaoId=${questaoId}`);
+      const data = await res.json();
+
+      if (res.ok && data.anotacoes) {
+        const anotacoesDaQuestao = data.anotacoes as Anotacao[];
+        setAnotacoesQuestao(anotacoesDaQuestao);
+
+        // Verificar se ja existe anotacao de hoje
+        const anotacaoHoje = anotacoesDaQuestao.find(a => a.data === hoje);
+        if (anotacaoHoje) {
+          setTextoAnotacao(anotacaoHoje.texto);
+          setAnotacaoAtualId(anotacaoHoje.id);
+        } else {
+          setTextoAnotacao('');
+          setAnotacaoAtualId(null);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar anotacoes:', error);
+    } finally {
+      setCarregandoAnotacoes(false);
+    }
+  };
+
+  // Salvar anotacao via API
+  const handleSalvarAnotacao = async () => {
+    if (!questaoAtual || !textoAnotacao.trim()) return;
+
+    setSalvandoAnotacao(true);
+
+    try {
+      const res = await fetch('/api/quiz/anotacoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: anotacaoAtualId,
+          quizId,
+          questaoId: questaoAtual.id,
+          texto: textoAnotacao.trim(),
+          data: hoje,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (!anotacaoAtualId && data.id) {
+          setAnotacaoAtualId(data.id);
+        }
+        await carregarAnotacoesQuestao(questaoAtual.id);
+        setMostrarFormAnotacao(false);
+      } else {
+        console.error('Erro ao salvar anotacao:', data.error);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar anotacao:', error);
+    } finally {
+      setSalvandoAnotacao(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !firebaseUser) {
       router.replace('/login');
@@ -200,6 +283,10 @@ export default function QuizPlayPage() {
         setQuiz(data.quiz);
         const questao = obterQuestaoDoDia(data.quiz);
         setQuestaoAtual(questao);
+
+        if (questao) {
+          await carregarAnotacoesQuestao(questao.id);
+        }
       } catch (error) {
         console.error('Erro ao carregar quiz:', error);
       } finally {
@@ -326,9 +413,151 @@ export default function QuizPlayPage() {
 
             {/* Footer */}
             <div className="px-5 py-4 bg-stone-50 border-t border-stone-100">
-              <p className="text-xs text-stone-500 text-center">
+              <p className="text-xs text-stone-500 text-center mb-3">
                 Volte amanha para um novo assunto
               </p>
+
+              {/* Secao de Anotacoes */}
+              {anotacoesQuestao.length === 0 && !mostrarFormAnotacao ? (
+                // Sem anotacoes: apenas botao de adicionar
+                <button
+                  onClick={() => setMostrarFormAnotacao(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg border border-indigo-200 transition"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Adicionar anotacao
+                </button>
+              ) : mostrarFormAnotacao ? (
+                // Form de anotacao aberto
+                <div>
+                  <textarea
+                    value={textoAnotacao}
+                    onChange={(e) => setTextoAnotacao(e.target.value)}
+                    placeholder="Escreva o que voce aprendeu sobre este assunto..."
+                    rows={4}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:border-indigo-500 focus:ring-0 outline-none transition bg-white resize-none text-stone-800 text-sm"
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => {
+                        setMostrarFormAnotacao(false);
+                        // Restaurar texto se estava editando
+                        const anotacaoHoje = anotacoesQuestao.find(a => a.data === hoje);
+                        setTextoAnotacao(anotacaoHoje?.texto || '');
+                      }}
+                      className="flex-1 py-2 text-stone-600 font-medium text-sm rounded-lg border border-stone-200 hover:bg-stone-50 transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSalvarAnotacao}
+                      disabled={salvandoAnotacao || !textoAnotacao.trim()}
+                      className="flex-1 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium text-sm rounded-lg transition disabled:opacity-50"
+                    >
+                      {salvandoAnotacao ? 'Salvando...' : 'Salvar'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // Com anotacoes: collapsible
+                <div>
+                  <button
+                    onClick={() => setMostrarHistoricoAnotacoes(!mostrarHistoricoAnotacoes)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-stone-600 hover:text-stone-800 hover:bg-stone-100 rounded-lg border border-stone-200 transition"
+                  >
+                    <svg
+                      className={`w-4 h-4 transition-transform ${mostrarHistoricoAnotacoes ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    Minhas anotacoes ({anotacoesQuestao.length})
+                  </button>
+
+                  {mostrarHistoricoAnotacoes && (
+                    <div className="mt-3 max-h-80 overflow-y-auto">
+                      {/* Botao de adicionar (apenas se nao tem anotacao de hoje) */}
+                      {!anotacaoAtualId && (
+                        <button
+                          onClick={() => setMostrarFormAnotacao(true)}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 mb-3 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg border border-dashed border-indigo-300 transition"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Adicionar anotacao de hoje
+                        </button>
+                      )}
+
+                      {/* Timeline de anotacoes */}
+                      <div className="relative">
+                        {/* Linha do tempo vertical */}
+                        {anotacoesQuestao.length > 1 && (
+                          <div className="absolute left-[7px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-indigo-300 via-stone-300 to-stone-200" />
+                        )}
+
+                        {/* Todas as anotacoes em ordem cronologica (mais recente primeiro) */}
+                        <div className="space-y-3">
+                          {anotacoesQuestao.map((anotacao, index) => {
+                            const isHoje = anotacao.data === hoje;
+                            const isFirst = index === 0;
+                            const isLast = index === anotacoesQuestao.length - 1;
+                            return (
+                              <div key={anotacao.id} className="relative flex gap-3">
+                                {/* Ponto na timeline */}
+                                <div className="relative z-10 flex-shrink-0">
+                                  <div className={`w-4 h-4 rounded-full border-2 ${
+                                    isHoje
+                                      ? 'bg-indigo-500 border-indigo-500'
+                                      : isFirst
+                                        ? 'bg-stone-400 border-stone-400'
+                                        : 'bg-white border-stone-300'
+                                  }`}>
+                                    {isHoje && (
+                                      <div className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-50" />
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Card da anotacao */}
+                                <div className={`flex-1 p-3 rounded-xl ${isHoje ? 'bg-indigo-50 border border-indigo-200' : 'bg-white border border-stone-200'}`}>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className={`text-xs ${isHoje ? 'font-medium text-indigo-600' : 'text-stone-500'}`}>
+                                      {isHoje ? 'Hoje' : new Date(anotacao.data).toLocaleDateString('pt-BR', {
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric'
+                                      })}
+                                    </span>
+                                    {isHoje && (
+                                      <button
+                                        onClick={() => setMostrarFormAnotacao(true)}
+                                        className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-100 rounded transition"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                        Editar
+                                      </button>
+                                    )}
+                                  </div>
+                                  <p className={`text-sm whitespace-pre-wrap ${isHoje ? 'text-stone-700' : 'text-stone-600'}`}>
+                                    {anotacao.texto}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : todasEstudadas ? (
