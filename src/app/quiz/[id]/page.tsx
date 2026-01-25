@@ -413,10 +413,6 @@ export default function QuizPlayPage() {
 
             {/* Footer */}
             <div className="px-5 py-4 bg-stone-50 border-t border-stone-100">
-              <p className="text-xs text-stone-500 text-center mb-3">
-                Volte amanha para um novo assunto
-              </p>
-
               {/* Secao de Anotacoes */}
               {anotacoesQuestao.length === 0 && !mostrarFormAnotacao ? (
                 // Sem anotacoes: apenas botao de adicionar
@@ -510,17 +506,13 @@ export default function QuizPlayPage() {
                               <div key={anotacao.id} className="relative flex gap-3">
                                 {/* Ponto na timeline */}
                                 <div className="relative z-10 flex-shrink-0">
-                                  <div className={`w-4 h-4 rounded-full border-2 ${
+                                  <div className={`w-3 h-3 rounded-full ${
                                     isHoje
-                                      ? 'bg-indigo-500 border-indigo-500'
+                                      ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]'
                                       : isFirst
-                                        ? 'bg-stone-400 border-stone-400'
-                                        : 'bg-white border-stone-300'
-                                  }`}>
-                                    {isHoje && (
-                                      <div className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-50" />
-                                    )}
-                                  </div>
+                                        ? 'bg-stone-400'
+                                        : 'bg-stone-300'
+                                  }`} />
                                 </div>
 
                                 {/* Card da anotacao */}
@@ -558,6 +550,10 @@ export default function QuizPlayPage() {
                   )}
                 </div>
               )}
+
+              <p className="text-xs text-stone-500 text-center mt-4">
+                Volte amanha para um novo assunto
+              </p>
             </div>
           </div>
         ) : todasEstudadas ? (
