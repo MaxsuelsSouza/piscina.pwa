@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ClientAuthProvider } from "@/contexts/ClientAuthContext";
 import { ConfirmProvider } from "@/contexts/ConfirmContext";
 import { PWAInstallControl } from "@/components/PWAInstallControl";
+import { NotificationSetup } from "@/components/NotificationSetup";
 import { ToastContainer } from "@/components/Toast";
 
 const inter = Inter({
@@ -78,6 +79,7 @@ export default function RootLayout({
           <ClientAuthProvider>
             <ConfirmProvider>
               <PWAInstallControl />
+              <NotificationSetup />
               <ToastContainer />
               {children}
             </ConfirmProvider>
