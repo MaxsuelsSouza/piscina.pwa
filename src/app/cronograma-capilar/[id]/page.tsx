@@ -204,18 +204,29 @@ export default function CronogramaCapilarDetalhePage() {
         return;
       }
 
-      // Disparar notificacao diretamente (sem service worker)
-      const notif = new Notification('Teste de Notificacao', {
+      const notificationOptions = {
         body: 'Teste do Cronograma Capilar! ' + new Date().toLocaleTimeString(),
-        icon: '/favicon.svg',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
         tag: `test-${Date.now()}`,
-      });
+      };
 
+      // Tentar via Service Worker primeiro (necessario para PWA mobile)
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.showNotification('Teste de Notificacao', notificationOptions);
+          showMessage('success', 'Notificacao enviada (SW)!');
+          return;
+        }
+      }
+
+      // Fallback para desktop
+      const notif = new Notification('Teste de Notificacao', notificationOptions);
       notif.onclick = () => {
         window.focus();
         notif.close();
       };
-
       showMessage('success', 'Notificacao enviada!');
     } catch (error) {
       console.error('Erro ao testar notificacao:', error);
