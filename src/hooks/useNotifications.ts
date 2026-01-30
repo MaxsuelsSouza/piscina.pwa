@@ -38,16 +38,24 @@ async function fireNotification(notification: ScheduledNotification) {
   };
 
   try {
-    const registration = await navigator.serviceWorker?.ready;
-    if (registration) {
-      await registration.showNotification(notification.title, options);
-      return;
+    // Tentar via Service Worker primeiro (necessario para PWA mobile)
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        await registration.showNotification(notification.title, options);
+        return;
+      }
     }
   } catch {
     // fallback below
   }
 
-  new Notification(notification.title, options);
+  // Fallback para desktop
+  try {
+    new Notification(notification.title, options);
+  } catch {
+    // Ignora se nao conseguir
+  }
 }
 
 function checkAndFirePending() {

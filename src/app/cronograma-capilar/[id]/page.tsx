@@ -120,8 +120,7 @@ export default function CronogramaCapilarDetalhePage() {
   const [contagem, setContagem] = useState<string | null>(null);
   const [intervaloAlvo, setIntervaloAlvo] = useState<Date | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const { schedule: scheduleNotification, permission: notifPermission, requestPermission } = useNotifications();
-  const [testingNotification, setTestingNotification] = useState(false);
+  const { schedule: scheduleNotification, permission: notifPermission } = useNotifications();
 
   const isAdmin = !!firebaseUser;
 
@@ -184,58 +183,6 @@ export default function CronogramaCapilarDetalhePage() {
     return () => clearInterval(interval);
   }, [intervaloAlvo]);
 
-  const handleTestNotification = async () => {
-    setTestingNotification(true);
-    try {
-      // Verificar suporte
-      if (!('Notification' in window)) {
-        showMessage('error', 'Navegador nao suporta notificacoes');
-        return;
-      }
-
-      // Pedir permissao se ainda nao foi concedida
-      let perm = Notification.permission;
-      if (perm === 'default') {
-        perm = await Notification.requestPermission();
-      }
-
-      if (perm !== 'granted') {
-        showMessage('error', `Permissao: ${perm}`);
-        return;
-      }
-
-      const notificationOptions = {
-        body: 'Teste do Cronograma Capilar! ' + new Date().toLocaleTimeString(),
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-        tag: `test-${Date.now()}`,
-      };
-
-      // Tentar via Service Worker primeiro (necessario para PWA mobile)
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          await registration.showNotification('Teste de Notificacao', notificationOptions);
-          showMessage('success', 'Notificacao enviada (SW)!');
-          return;
-        }
-      }
-
-      // Fallback para desktop
-      const notif = new Notification('Teste de Notificacao', notificationOptions);
-      notif.onclick = () => {
-        window.focus();
-        notif.close();
-      };
-      showMessage('success', 'Notificacao enviada!');
-    } catch (error) {
-      console.error('Erro ao testar notificacao:', error);
-      showMessage('error', `Erro: ${error instanceof Error ? error.message : 'desconhecido'}`);
-    } finally {
-      setTestingNotification(false);
-    }
-  };
-
   const handleMarcarFeito = async () => {
     if (!cronograma) return;
 
@@ -262,14 +209,36 @@ export default function CronogramaCapilarDetalhePage() {
 
       showMessage('success', `${TRATAMENTO_LABELS[proximo]} registrada!`);
 
+      // Calcular qual sera o proximo tratamento apos este
+      const historicoAtualizado = [...cronograma.historico, tratamentoRealizado];
+      const proximoTratamentoFuturo = calcularProximoTratamento(historicoAtualizado, cronograma.tratamentosAtivos);
+
+      // Emojis para cada tipo de tratamento
+      const tratamentoEmojis: Record<TipoTratamento, string> = {
+        hidratacao: '💧',
+        nutricao: '🥑',
+        reconstrucao: '💪',
+      };
+
+      // Mensagens personalizadas para cada tipo
+      const tratamentoMensagens: Record<TipoTratamento, string> = {
+        hidratacao: 'Hora de repor a agua dos fios! Use mascaras com aloe vera ou pantenol.',
+        nutricao: 'Seus fios precisam de oleos! Use mascaras com oleo de coco ou argan.',
+        reconstrucao: 'Momento de fortalecer! Use mascaras com queratina ou aminoacidos.',
+      };
+
       // Schedule notification for when 48h interval passes
       if (notifPermission === 'granted') {
         const scheduledFor = new Date(Date.now() + INTERVALO_MINIMO_HORAS * 60 * 60 * 1000).toISOString();
+        const emoji = tratamentoEmojis[proximoTratamentoFuturo];
+        const mensagem = tratamentoMensagens[proximoTratamentoFuturo];
+        const tempo = TRATAMENTO_PAUSA[proximoTratamentoFuturo];
+
         scheduleNotification({
           id: `cronograma-capilar-${cronogramaId}`,
           module: 'cronograma-capilar',
-          title: 'Cronograma Capilar',
-          body: 'Seu proximo tratamento esta disponivel!',
+          title: `${emoji} ${cronograma.nome} - ${TRATAMENTO_LABELS[proximoTratamentoFuturo]}`,
+          body: `${mensagem} Tempo: ${tempo}`,
           scheduledFor,
           link: `/cronograma-capilar/${cronogramaId}`,
         });
@@ -339,21 +308,6 @@ export default function CronogramaCapilarDetalhePage() {
             <h1 className="text-lg font-serif text-stone-800">{cronograma.nome}</h1>
             <p className="text-xs text-stone-400">Cronograma Capilar</p>
           </div>
-          {/* Botao de teste de notificacao */}
-          <button
-            onClick={handleTestNotification}
-            disabled={testingNotification}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-purple-500 text-white hover:bg-purple-600 transition disabled:opacity-50"
-            title="Testar Notificacao"
-          >
-            {testingNotification ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            )}
-          </button>
         </div>
       </header>
 

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import type { Quiz, Questao } from '../_types';
 import { NIVEL_QUIZ_COLORS } from '../_types';
 
@@ -127,6 +128,80 @@ export default function QuizPlayPage() {
 
   const isAdmin = !!firebaseUser;
   const hoje = getDataHoje();
+
+  // Notificacoes
+  const { schedule: scheduleNotification, permission: notifPermission, cancelByModule, requestPermission } = useNotifications();
+  const [ativandoNotificacoes, setAtivandoNotificacoes] = useState(false);
+
+  // Horarios das notificacoes diarias (08h, 14h, 20h)
+  const HORARIOS_NOTIFICACAO = [8, 14, 20];
+
+  // Mensagens motivacionais para cada horario
+  const getMensagemNotificacao = (hora: number, questao: Questao, nomeQuiz: string): { titulo: string; corpo: string } => {
+    const emojis = {
+      8: '🌅',   // Manha
+      14: '☀️',  // Tarde
+      20: '🌙',  // Noite
+    };
+
+    const saudacoes = {
+      8: 'Bom dia!',
+      14: 'Boa tarde!',
+      20: 'Boa noite!',
+    };
+
+    const emoji = emojis[hora as keyof typeof emojis] || '📚';
+    const saudacao = saudacoes[hora as keyof typeof saudacoes] || 'Hora de estudar!';
+
+    return {
+      titulo: `${emoji} ${saudacao} Guerreiro`,
+      corpo: `${questao.pergunta}`,
+    };
+  };
+
+  // Agendar notificacoes do quiz para o dia
+  const agendarNotificacoesQuiz = useCallback((questao: Questao, nomeQuiz: string) => {
+    if (notifPermission !== 'granted') return;
+
+    const agora = new Date();
+    const hojeStr = hoje;
+
+    // Cancelar notificacoes anteriores do quiz
+    cancelByModule(`quiz-${quizId}`);
+
+    // Agendar para cada horario
+    HORARIOS_NOTIFICACAO.forEach((hora) => {
+      const dataNotificacao = new Date();
+      dataNotificacao.setHours(hora, 0, 0, 0);
+
+      // Se o horario ja passou hoje, nao agendar
+      if (dataNotificacao <= agora) return;
+
+      const { titulo, corpo } = getMensagemNotificacao(hora, questao, nomeQuiz);
+
+      scheduleNotification({
+        id: `quiz-${quizId}-${hojeStr}-${hora}h`,
+        module: `quiz-${quizId}`,
+        title: titulo,
+        body: corpo,
+        scheduledFor: dataNotificacao.toISOString(),
+        link: `/quiz/${quizId}`,
+      });
+    });
+  }, [notifPermission, quizId, hoje, scheduleNotification, cancelByModule]);
+
+  // Ativar notificacoes
+  const handleAtivarNotificacoes = async () => {
+    setAtivandoNotificacoes(true);
+    try {
+      const perm = await requestPermission();
+      if (perm === 'granted' && questaoAtual && quiz) {
+        agendarNotificacoesQuiz(questaoAtual, quiz.nome);
+      }
+    } finally {
+      setAtivandoNotificacoes(false);
+    }
+  };
 
   // Funcao para obter ou definir a questao do dia
   const obterQuestaoDoDia = (quizData: Quiz): Questao | null => {
@@ -286,6 +361,8 @@ export default function QuizPlayPage() {
 
         if (questao) {
           await carregarAnotacoesQuestao(questao.id);
+          // Agendar notificacoes diarias para lembrar do estudo
+          agendarNotificacoesQuiz(questao, data.quiz.nome);
         }
       } catch (error) {
         console.error('Erro ao carregar quiz:', error);
@@ -354,9 +431,10 @@ export default function QuizPlayPage() {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         {/* Card do assunto do dia */}
         {questaoAtual ? (
+          <>
           <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
             {/* Header do card */}
             <div className="px-5 py-4 bg-gradient-to-r from-indigo-500 to-indigo-600">
@@ -556,6 +634,51 @@ export default function QuizPlayPage() {
               </p>
             </div>
           </div>
+
+          {/* Card de Notificacoes */}
+          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  notifPermission === 'granted' ? 'bg-emerald-100' : 'bg-amber-100'
+                }`}>
+                  <svg
+                    className={`w-5 h-5 ${notifPermission === 'granted' ? 'text-emerald-600' : 'text-amber-600'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-stone-800 text-sm">
+                    {notifPermission === 'granted' ? 'Lembretes ativos' : 'Ativar lembretes'}
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    {notifPermission === 'granted'
+                      ? 'Voce recebera lembretes as 8h, 14h e 20h'
+                      : 'Receba 3 lembretes diarios para estudar'}
+                  </p>
+                </div>
+                {notifPermission !== 'granted' && (
+                  <button
+                    onClick={handleAtivarNotificacoes}
+                    disabled={ativandoNotificacoes}
+                    className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+                  >
+                    {ativandoNotificacoes ? '...' : 'Ativar'}
+                  </button>
+                )}
+                {notifPermission === 'granted' && (
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+                    Ativo
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          </>
         ) : todasEstudadas ? (
           <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center">
             <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
