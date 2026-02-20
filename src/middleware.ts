@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Rotas protegidas que requerem autenticação
-const PROTECTED_ROUTES = ['/workspace', '/presentes', '/treino'];
+const PROTECTED_ROUTES = ['/workspace', '/presentes', '/treino', '/vale-a-pena'];
 
 // Rotas de autenticação
 const AUTH_ROUTES = ['/login'];
