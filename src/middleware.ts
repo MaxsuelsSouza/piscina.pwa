@@ -56,7 +56,7 @@ export async function middleware(request: NextRequest) {
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' data: https:; " +
     "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com; " +
-    "frame-src 'self' https://accounts.google.com;"
+    "frame-src 'self' https://accounts.google.com https://www.youtube.com https://youtube.com;"
   );
 
   // Prevent clickjacking

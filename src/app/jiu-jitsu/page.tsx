@@ -51,6 +51,9 @@ export default function JiuJitsuPage() {
   // Delete
   const [deletingTecId, setDeletingTecId] = useState<string | null>(null);
 
+  // Video player expandido
+  const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
   }, [user, authLoading, router]);
@@ -172,6 +175,34 @@ export default function JiuJitsuPage() {
   const tecnicasFiltradas =tecnicas
     .filter((t) => filtroCategoria === 'todas' || t.categoria === filtroCategoria)
     .filter((t) => !apenasF || t.favorita);
+
+  const getEmbedUrl = (url: string): string | null => {
+    try {
+      const base = 'autoplay=1&playsinline=1&rel=0&modestbranding=1';
+
+      // youtube.com/shorts/ID
+      const shortsMatch = url.match(/youtube\.com\/shorts\/([\w-]+)/);
+      if (shortsMatch) return `https://www.youtube.com/embed/${shortsMatch[1]}?${base}`;
+
+      // youtu.be/ID
+      const shortMatch = url.match(/youtu\.be\/([\w-]+)/);
+      if (shortMatch) {
+        const t = url.match(/[?&]t=(\d+)/);
+        return `https://www.youtube.com/embed/${shortMatch[1]}?${base}${t ? `&start=${t[1]}` : ''}`;
+      }
+
+      // youtube.com/watch?v=ID
+      const watchMatch = url.match(/youtube\.com\/watch\?.*v=([\w-]+)/);
+      if (watchMatch) {
+        const t = url.match(/[?&]t=(\d+)/);
+        return `https://www.youtube.com/embed/${watchMatch[1]}?${base}${t ? `&start=${t[1]}` : ''}`;
+      }
+
+      return null; // Instagram ou outros — não embeddável
+    } catch {
+      return null;
+    }
+  };
 
   const nivelColor = (n: NivelJJ) =>
     n === 'iniciante' ? 'bg-emerald-100 text-emerald-700' :
@@ -387,38 +418,73 @@ export default function JiuJitsuPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {tecnicasFiltradas.map((tec) => (
-                  <div key={tec.id} className="bg-stone-900 border border-stone-800 rounded-2xl px-4 py-3">
-                    <div className="flex items-start gap-3">
-                      <button onClick={() => handleToggleFav(tec)}
-                        className={`mt-0.5 text-xl leading-none transition shrink-0 ${tec.favorita ? 'text-amber-400' : 'text-stone-700 hover:text-amber-500'}`}>
-                        ★
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <span className="text-white text-sm font-medium">{tec.nome}</span>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${nivelColor(tec.nivel)}`}>
-                            {NIVEIS_JJ_LABELS[tec.nivel]}
-                          </span>
+                {tecnicasFiltradas.map((tec) => {
+                  const embedUrl = tec.videoUrl ? getEmbedUrl(tec.videoUrl) : null;
+                  const isExpanded = expandedVideoId === tec.id;
+
+                  return (
+                    <div key={tec.id} className="bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden">
+                      <div className="flex items-start gap-3 px-4 py-3">
+                        <button onClick={() => handleToggleFav(tec)}
+                          className={`mt-0.5 text-xl leading-none transition shrink-0 ${tec.favorita ? 'text-amber-400' : 'text-stone-700 hover:text-amber-500'}`}>
+                          ★
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span className="text-white text-sm font-medium">{tec.nome}</span>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${nivelColor(tec.nivel)}`}>
+                              {NIVEIS_JJ_LABELS[tec.nivel]}
+                            </span>
+                          </div>
+                          <p className="text-stone-500 text-xs">{CATEGORIAS_JJ_LABELS[tec.categoria]}</p>
+                          {tec.notas && <p className="text-stone-600 text-xs mt-1 line-clamp-2">{tec.notas}</p>}
+                          {tec.videoUrl && (
+                            <div className="flex items-center gap-3 mt-2">
+                              {embedUrl ? (
+                                <button
+                                  onClick={() => setExpandedVideoId(isExpanded ? null : tec.id)}
+                                  className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition font-medium"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d={isExpanded
+                                      ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z'
+                                      : 'M8 5v14l11-7z'} />
+                                  </svg>
+                                  {isExpanded ? 'Fechar vídeo' : 'Ver vídeo'}
+                                </button>
+                              ) : (
+                                <a href={tec.videoUrl} target="_blank" rel="noopener noreferrer"
+                                  className="text-xs text-red-400 hover:text-red-300 transition">
+                                  Ver vídeo →
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <p className="text-stone-500 text-xs">{CATEGORIAS_JJ_LABELS[tec.categoria]}</p>
-                        {tec.notas && <p className="text-stone-600 text-xs mt-1 line-clamp-2">{tec.notas}</p>}
-                        {tec.videoUrl && (
-                          <a href={tec.videoUrl} target="_blank" rel="noopener noreferrer"
-                            className="text-xs text-red-400 hover:text-red-300 mt-1 inline-block">
-                            Ver vídeo →
-                          </a>
-                        )}
+                        <button onClick={() => setDeletingTecId(tec.id)}
+                          className="p-1.5 text-stone-700 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
-                      <button onClick={() => setDeletingTecId(tec.id)}
-                        className="p-1.5 text-stone-700 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition shrink-0">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+
+                      {/* Player inline */}
+                      {isExpanded && embedUrl && (
+                        <div className="px-4 pb-4">
+                          <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingTop: '56.25%' }}>
+                            <iframe
+                              src={embedUrl}
+                              className="absolute inset-0 w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
