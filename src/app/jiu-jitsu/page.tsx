@@ -51,6 +51,11 @@ export default function JiuJitsuPage() {
   // Delete
   const [deletingTecId, setDeletingTecId] = useState<string | null>(null);
 
+  // Edit
+  const [editingTec, setEditingTec] = useState<Tecnica | null>(null);
+  const [editVideoUrl, setEditVideoUrl] = useState('');
+  const [editNotas, setEditNotas] = useState('');
+
   // Video player expandido
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
 
@@ -166,6 +171,27 @@ export default function JiuJitsuPage() {
       showMsg('success', 'Técnica removida!');
     } catch {
       showMsg('error', 'Erro ao remover');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTec) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/jiu-jitsu/tecnicas/${editingTec.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoUrl: editVideoUrl.trim(), notas: editNotas.trim() }),
+      });
+      setTecnicas((prev) => prev.map((t) =>
+        t.id === editingTec.id ? { ...t, videoUrl: editVideoUrl.trim(), notas: editNotas.trim() } : t
+      ));
+      setEditingTec(null);
+      showMsg('success', 'Técnica atualizada!');
+    } catch {
+      showMsg('error', 'Erro ao salvar');
     } finally {
       setSaving(false);
     }
@@ -461,6 +487,13 @@ export default function JiuJitsuPage() {
                             </div>
                           )}
                         </div>
+                        <button
+                          onClick={() => { setEditingTec(tec); setEditVideoUrl(tec.videoUrl ?? ''); setEditNotas(tec.notas ?? ''); }}
+                          className="p-1.5 text-stone-700 hover:text-blue-400 hover:bg-blue-900/30 rounded-lg transition shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
                         <button onClick={() => setDeletingTecId(tec.id)}
                           className="p-1.5 text-stone-700 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition shrink-0">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -520,6 +553,57 @@ export default function JiuJitsuPage() {
           </button>
         </div>
       </nav>
+
+      {/* ── EDIT MODAL ──────────────────────────────────────────────────────── */}
+      {editingTec && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setEditingTec(null)} />
+          <div className="relative bg-stone-900 border border-stone-700 w-full max-w-sm rounded-2xl p-5 space-y-4">
+            <div>
+              <h3 className="text-white font-semibold text-sm truncate">{editingTec.nome}</h3>
+              <p className="text-stone-500 text-xs mt-0.5">{CATEGORIAS_JJ_LABELS[editingTec.categoria]}</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-stone-400 mb-1.5">Link do vídeo</label>
+              <input
+                type="url"
+                value={editVideoUrl}
+                onChange={(e) => setEditVideoUrl(e.target.value)}
+                placeholder="https://youtu.be/..."
+                className="w-full px-3 py-2.5 rounded-xl bg-stone-800 border border-stone-700 text-white text-sm placeholder-stone-600 focus:border-blue-500 focus:ring-0 outline-none transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-stone-400 mb-1.5">Notas</label>
+              <textarea
+                value={editNotas}
+                onChange={(e) => setEditNotas(e.target.value)}
+                placeholder="Detalhes da técnica..."
+                rows={3}
+                className="w-full px-3 py-2.5 rounded-xl bg-stone-800 border border-stone-700 text-white text-sm placeholder-stone-600 focus:border-blue-500 focus:ring-0 outline-none transition resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditingTec(null)}
+                className="flex-1 py-3 text-stone-400 font-medium rounded-xl border border-stone-700 hover:bg-stone-800 transition text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition disabled:opacity-50 text-sm"
+              >
+                {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── DELETE MODAL ────────────────────────────────────────────────────── */}
       {deletingTecId && (
