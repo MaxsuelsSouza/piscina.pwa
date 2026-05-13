@@ -251,9 +251,12 @@ service cloud.firestore {
                        request.resource.data.phone.matches('^[0-9]+$');
 
       // Atualização:
-      // - Apenas admin pode atualizar (para segurança do passwordHash)
-      // - No futuro, pode-se adicionar lógica para "esqueci minha senha"
-      allow update: if isAdmin();
+      // - Admin pode atualizar tudo
+      // - Qualquer um pode marcar welcomeSeen como true (flag de boas-vindas)
+      allow update: if isAdmin() ||
+                       (request.resource.data.diff(resource.data)
+                         .affectedKeys().hasOnly(['welcomeSeen', 'updatedAt']) &&
+                        request.resource.data.welcomeSeen == true);
 
       // Deleção:
       // - Apenas admin pode deletar

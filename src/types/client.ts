@@ -7,6 +7,7 @@ export interface Client {
   fullName?: string;
   birthDate?: string; // Formato: YYYY-MM-DD (opcional agora)
   passwordHash?: string; // Hash da senha para autenticação
+  welcomeSeen?: boolean; // Flag de boas-vindas exibidas
   createdAt: string;
   updatedAt: string;
 }

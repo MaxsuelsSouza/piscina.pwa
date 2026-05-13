@@ -34,7 +34,7 @@ const modules: WorkspaceModule[] = [
         />
       </svg>
     ),
-    href: "/presentes",
+    href: "/presentes/gerenciar",
     color: "bg-rose-500",
   },
   {

@@ -10,11 +10,12 @@ type PresenceStatus = 'pending' | 'confirmed' | 'declined' | null;
 
 export default function HomePage() {
   const router = useRouter();
-  const { client, loading: clientLoading, logout: clientLogout } = useClientAuth();
+  const { client, loading: clientLoading, logout: clientLogout, markWelcomeSeen } = useClientAuth();
   const { user: firebaseUser, loading: firebaseLoading, logout: firebaseLogout } = useAuth();
   const [presenceStatus, setPresenceStatus] = useState<PresenceStatus>(null);
   const [presenceCompanions, setPresenceCompanions] = useState(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   // Admin é quem está logado via Firebase Auth
   const isAdmin = !!firebaseUser;
@@ -36,6 +37,18 @@ export default function HomePage() {
       router.replace('/login');
     }
   }, [loading, isAuthenticated, router]);
+
+  // Verifica primeiro acesso do convidado via flag no banco
+  useEffect(() => {
+    if (client && !firebaseUser && client.welcomeSeen !== true) {
+      setShowWelcome(true);
+    }
+  }, [client, firebaseUser]);
+
+  const handleCloseWelcome = async () => {
+    setShowWelcome(false);
+    await markWelcomeSeen();
+  };
 
   // Fetch presence status
   useEffect(() => {
@@ -472,6 +485,43 @@ export default function HomePage() {
           )}
         </div>
       </div>
+
+      {/* Welcome Modal */}
+      {showWelcome && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-xl">
+            {/* Topo decorativo */}
+            <div className="bg-rose-500 px-6 py-8 text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-serif text-white">Bem-vindo!</h2>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="px-6 py-6 text-center">
+              <p className="text-stone-600 leading-relaxed">
+                Você fez parte da nossa vida, obrigado por participar desse momento especial para nós.
+                Você e seu love estão convidados para esse incrível momento.
+              </p>
+
+              <p className="text-sm text-stone-400 mt-3">
+                Com amor, Maxsuel &amp; Kirley 💍
+              </p>
+
+              <button
+                onClick={handleCloseWelcome}
+                className="mt-6 w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-medium rounded-xl transition"
+              >
+                Ver Lista de Presentes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm Presence Modal */}
       {showConfirmModal && (

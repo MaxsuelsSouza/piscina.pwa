@@ -15,6 +15,7 @@ import {
   getClientByPhone,
   checkClientHasPassword,
   setClientPassword,
+  updateClient,
 } from '@/lib/firebase/firestore/clients';
 
 interface ClientAuthContextType {
@@ -27,6 +28,7 @@ interface ClientAuthContextType {
   checkPhoneExists: (phone: string) => Promise<boolean>;
   checkPhoneStatus: (phone: string) => Promise<{ exists: boolean; hasPassword: boolean; fullName?: string }>;
   createPassword: (phone: string, password: string) => Promise<boolean>;
+  markWelcomeSeen: () => Promise<void>;
   logout: () => void;
   refreshClientData: () => Promise<void>;
 }
@@ -200,6 +202,16 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const markWelcomeSeen = async () => {
+    if (!client) return;
+    try {
+      await updateClient(client.phone, { welcomeSeen: true });
+      setClient({ ...client, welcomeSeen: true });
+    } catch {
+      // silently fail
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem(CLIENT_SESSION_KEY);
     setClient(null);
@@ -230,6 +242,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         checkPhoneExists,
         checkPhoneStatus,
         createPassword,
+        markWelcomeSeen,
         logout,
         refreshClientData,
       }}
