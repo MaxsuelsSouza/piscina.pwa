@@ -504,7 +504,7 @@ export default function HomePage() {
             {/* Conteúdo */}
             <div className="px-6 py-6 text-center">
               <p className="text-stone-600 leading-relaxed">
-                Você fez parte da nossa vida, obrigado por participar deste momento especial para nós. Você e seu love estão convidados para esse incrível acontecimento.
+                Momentos especiais só são completos quando estamos com quem amamos; por isso, obrigado por fazer parte da nossa história. Você e seu love são nossos convidados para esse dia incrível.
               </p>
 
               <p className="text-sm text-stone-400 mt-3">
