@@ -341,6 +341,30 @@ export default function GerenciarPresentesPage() {
         </div>
       </header>
 
+      {/* Link de convite para convidados */}
+      <div className="max-w-2xl mx-auto px-4 pt-4">
+        <div className="bg-stone-800 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-stone-400 mb-0.5">Link para convidados</p>
+            <p className="text-sm text-white font-mono truncate">
+              {typeof window !== 'undefined' ? `${window.location.origin}/login` : '/login'}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/login`;
+              navigator.clipboard.writeText(url);
+            }}
+            className="shrink-0 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs rounded-lg transition flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Copiar
+          </button>
+        </div>
+      </div>
+
       {/* Message */}
       {message && (
         <div className="max-w-2xl mx-auto px-4 pt-4">
