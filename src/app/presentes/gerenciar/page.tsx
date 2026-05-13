@@ -16,6 +16,7 @@ interface Gift {
   isSelected: boolean;
   selectedBy?: string[];
   forceUnavailable?: boolean;
+  maxSelections?: number;
 }
 
 interface Client {
@@ -548,6 +549,45 @@ export default function GerenciarPresentesPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-1">
+                          {/* Contador maxSelections */}
+                          <div className="flex items-center gap-1 border border-stone-200 rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => {
+                                const current = gift.maxSelections ?? 1;
+                                if (current <= 1) return;
+                                const updated = current - 1;
+                                setGifts(prev => prev.map(g => g.id === gift.id ? { ...g, maxSelections: updated } : g));
+                                fetch('/api/public/gifts', {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: gift.id, maxSelections: updated }),
+                                });
+                              }}
+                              disabled={saving || (gift.maxSelections ?? 1) <= 1}
+                              className="w-6 h-6 flex items-center justify-center text-stone-500 hover:bg-stone-100 transition disabled:opacity-30 text-sm"
+                            >
+                              −
+                            </button>
+                            <span className="w-5 text-center text-xs font-medium text-stone-700">
+                              {gift.maxSelections ?? 1}
+                            </span>
+                            <button
+                              onClick={() => {
+                                const current = gift.maxSelections ?? 1;
+                                const updated = current + 1;
+                                setGifts(prev => prev.map(g => g.id === gift.id ? { ...g, maxSelections: updated } : g));
+                                fetch('/api/public/gifts', {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: gift.id, maxSelections: updated }),
+                                });
+                              }}
+                              disabled={saving}
+                              className="w-6 h-6 flex items-center justify-center text-stone-500 hover:bg-stone-100 transition disabled:opacity-30 text-sm"
+                            >
+                              +
+                            </button>
+                          </div>
                           <button
                             onClick={() => openEditModal(gift)}
                             disabled={saving}

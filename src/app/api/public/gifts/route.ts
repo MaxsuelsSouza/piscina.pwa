@@ -3,12 +3,32 @@
  * GET /api/public/gifts
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import type { Gift } from '@/types/gift';
 
 // Força renderização dinâmica
 export const dynamic = 'force-dynamic';
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { id, maxSelections } = await req.json();
+
+    if (!id || typeof maxSelections !== 'number' || maxSelections < 1) {
+      return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 });
+    }
+
+    const db = adminDb();
+    await db.collection('gifts').doc(id).update({
+      maxSelections,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ error: 'Erro ao atualizar', details: String(error) }, { status: 500 });
+  }
+}
 
 export async function GET() {
   try {

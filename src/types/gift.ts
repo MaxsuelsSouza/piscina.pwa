@@ -38,6 +38,7 @@ export interface Gift {
   isSelected: boolean; // Se já foi escolhido por alguém
   selectedBy?: string[]; // Array de phones dos clientes que selecionaram
   forceUnavailable?: boolean; // Marcado como indisponível pelo admin
+  maxSelections?: number; // Máximo de pessoas que podem escolher este presente
   createdAt: string;
   updatedAt: string;
 }

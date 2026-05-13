@@ -105,7 +105,7 @@ export default function CategoryDetailPage() {
   // Stats - considera o máximo de seleções por categoria e forceUnavailable
   const availableCount = categoryGifts.filter((g) => {
     if (g.forceUnavailable) return false;
-    const maxSelections = getMaxSelectionsForCategory(g.category);
+    const maxSelections = g.maxSelections ?? getMaxSelectionsForCategory(g.category);
     const currentSelections = g.selectedBy?.length || 0;
     return currentSelections < maxSelections;
   }).length;
@@ -334,7 +334,7 @@ export default function CategoryDetailPage() {
           <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
             {categoryGifts.map((gift, index) => {
               const isMine = mySelections.has(gift.id);
-              const maxSelections = getMaxSelectionsForCategory(gift.category);
+              const maxSelections = gift.maxSelections ?? getMaxSelectionsForCategory(gift.category);
               const currentSelections = gift.selectedBy?.length || 0;
               // Indisponível se: marcado pelo admin OU atingiu o máximo de seleções E não é meu
               const isUnavailable = gift.forceUnavailable || (currentSelections >= maxSelections && !isMine);
