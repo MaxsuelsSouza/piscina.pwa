@@ -5,33 +5,25 @@ import { useRouter } from 'next/navigation';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 
-type Step = 'phone' | 'login' | 'create-password' | 'register';
+type Step = 'phone' | 'register';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { client, loading, login, register, checkPhoneStatus, createPassword } = useClientAuth();
+  const { client, loading, loginByPhone, registerWithName, checkPhoneStatus } = useClientAuth();
   const { user: firebaseUser, loading: firebaseLoading } = useAuth();
 
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [existingName, setExistingName] = useState('');
 
   useEffect(() => {
-    // Se Firebase user está logado (admin via email), redireciona para workspace
     if (!firebaseLoading && firebaseUser) {
       router.replace('/workspace');
       return;
     }
-
-    // Se cliente está logado (via telefone)
     if (!loading && client) {
-      // Admin via telefone também vai para workspace? Não, vai para presentes
-      // Workspace é exclusivo para login via Firebase Auth (email)
       router.replace('/presentes');
     }
   }, [client, loading, firebaseUser, firebaseLoading, router]);
@@ -45,8 +37,7 @@ export default function LoginPage() {
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhone(e.target.value);
-    setPhone(formatted);
+    setPhone(formatPhone(e.target.value));
     setError('');
   };
 
@@ -66,42 +57,13 @@ export default function LoginPage() {
       const status = await checkPhoneStatus(phoneNumbers);
 
       if (status.exists) {
-        if (status.hasPassword) {
-          setStep('login');
-        } else {
-          setExistingName(status.fullName || '');
-          setStep('create-password');
-        }
+        const success = await loginByPhone(phoneNumbers);
+        if (!success) setError('Erro ao entrar. Tente novamente.');
       } else {
         setStep('register');
       }
     } catch {
       setError('Erro ao verificar. Tente novamente.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!password) {
-      setError('Digite sua senha');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const phoneNumbers = phone.replace(/\D/g, '');
-      const success = await login(phoneNumbers, password);
-
-      if (!success) {
-        setError('Senha incorreta');
-      }
-    } catch {
-      setError('Erro ao entrar. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -116,57 +78,14 @@ export default function LoginPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Senha deve ter 6+ caracteres');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Senhas não coincidem');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
       const phoneNumbers = phone.replace(/\D/g, '');
-      const success = await register(phoneNumbers, password, fullName.trim());
-
-      if (!success) {
-        setError('Erro ao criar conta');
-      }
+      const success = await registerWithName(phoneNumbers, fullName.trim());
+      if (!success) setError('Erro ao criar conta. Tente novamente.');
     } catch {
       setError('Erro ao criar conta. Tente novamente.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCreatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (password.length < 6) {
-      setError('Senha deve ter 6+ caracteres');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Senhas não coincidem');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const phoneNumbers = phone.replace(/\D/g, '');
-      const success = await createPassword(phoneNumbers, password);
-
-      if (!success) {
-        setError('Erro ao criar senha');
-      }
-    } catch {
-      setError('Erro ao criar senha. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -175,9 +94,6 @@ export default function LoginPage() {
   const handleBack = () => {
     setStep('phone');
     setFullName('');
-    setPassword('');
-    setConfirmPassword('');
-    setExistingName('');
     setError('');
   };
 
@@ -192,34 +108,26 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
       <div className="w-full max-w-sm">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-serif text-stone-800">Lista de Casa Nova</h1>
           <p className="text-stone-400 text-sm mt-2">
-            {step === 'phone' && 'Digite seu telefone'}
-            {step === 'login' && 'Bem-vindo de volta'}
-            {step === 'create-password' && `Olá, ${existingName || 'convidado'}!`}
-            {step === 'register' && 'Criar conta'}
+            {step === 'phone' ? 'Digite seu telefone' : 'Como devemos te chamar?'}
           </p>
         </div>
 
-        {/* Form */}
         <div className="bg-white rounded-xl border border-stone-200 p-6">
-          {/* Phone Step */}
           {step === 'phone' && (
             <form onSubmit={handleCheckPhone} className="space-y-4">
-              <div>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  placeholder="(00) 00000-0000"
-                  className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
-                  style={{ color: '#1c1917' }}
-                  autoFocus
-                  disabled={isSubmitting}
-                />
-              </div>
+              <input
+                type="tel"
+                value={phone}
+                onChange={handlePhoneChange}
+                placeholder="(00) 00000-0000"
+                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
+                style={{ color: '#1c1917' }}
+                autoFocus
+                disabled={isSubmitting}
+              />
 
               {error && <p className="text-red-500 text-sm">{error}</p>}
 
@@ -228,102 +136,11 @@ export default function LoginPage() {
                 disabled={isSubmitting || !phone}
                 className="w-full py-3 bg-stone-800 hover:bg-stone-900 text-white font-medium rounded-lg transition disabled:opacity-50"
               >
-                {isSubmitting ? 'Verificando...' : 'Continuar'}
-              </button>
-            </form>
-          )}
-
-          {/* Login Step */}
-          {step === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="text-sm text-stone-500 bg-stone-50 px-3 py-2 rounded-lg">
-                {phone}
-              </div>
-
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder="Senha"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
-                style={{ color: '#1c1917' }}
-                autoFocus
-                disabled={isSubmitting}
-              />
-
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-
-              <button
-                type="submit"
-                disabled={isSubmitting || !password}
-                className="w-full py-3 bg-stone-800 hover:bg-stone-900 text-white font-medium rounded-lg transition disabled:opacity-50"
-              >
                 {isSubmitting ? 'Entrando...' : 'Entrar'}
               </button>
-
-              <button
-                type="button"
-                onClick={handleBack}
-                className="w-full text-sm text-stone-400 hover:text-stone-600 transition"
-              >
-                Voltar
-              </button>
             </form>
           )}
 
-          {/* Create Password Step */}
-          {step === 'create-password' && (
-            <form onSubmit={handleCreatePassword} className="space-y-4">
-              <div className="text-sm text-stone-500 bg-stone-50 px-3 py-2 rounded-lg">
-                {phone}
-              </div>
-
-              <p className="text-sm text-stone-600 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100">
-                Você foi convidado! Crie uma senha para acessar.
-              </p>
-
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder="Criar senha"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
-                style={{ color: '#1c1917' }}
-                autoFocus
-                disabled={isSubmitting}
-              />
-
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
-                placeholder="Confirmar senha"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
-                style={{ color: '#1c1917' }}
-                disabled={isSubmitting}
-              />
-
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-
-              <button
-                type="submit"
-                disabled={isSubmitting || !password || !confirmPassword}
-                className="w-full py-3 bg-stone-800 hover:bg-stone-900 text-white font-medium rounded-lg transition disabled:opacity-50"
-              >
-                {isSubmitting ? 'Criando...' : 'Criar senha e entrar'}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleBack}
-                className="w-full text-sm text-stone-400 hover:text-stone-600 transition"
-              >
-                Voltar
-              </button>
-            </form>
-          )}
-
-          {/* Register Step */}
           {step === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="text-sm text-stone-500 bg-stone-50 px-3 py-2 rounded-lg">
@@ -334,30 +151,10 @@ export default function LoginPage() {
                 type="text"
                 value={fullName}
                 onChange={(e) => { setFullName(e.target.value); setError(''); }}
-                placeholder="Seu nome"
+                placeholder="Seu nome completo"
                 className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
                 style={{ color: '#1c1917' }}
                 autoFocus
-                disabled={isSubmitting}
-              />
-
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder="Criar senha"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
-                style={{ color: '#1c1917' }}
-                disabled={isSubmitting}
-              />
-
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
-                placeholder="Confirmar senha"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
-                style={{ color: '#1c1917' }}
                 disabled={isSubmitting}
               />
 
@@ -365,10 +162,10 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting || !fullName || !password || !confirmPassword}
+                disabled={isSubmitting || !fullName.trim()}
                 className="w-full py-3 bg-stone-800 hover:bg-stone-900 text-white font-medium rounded-lg transition disabled:opacity-50"
               >
-                {isSubmitting ? 'Criando...' : 'Criar conta'}
+                {isSubmitting ? 'Criando...' : 'Continuar'}
               </button>
 
               <button

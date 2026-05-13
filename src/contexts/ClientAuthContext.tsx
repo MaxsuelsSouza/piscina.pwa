@@ -11,6 +11,7 @@ import type { Client } from '@/types/client';
 import {
   authenticateClientWithPassword,
   createClientWithPassword,
+  createClientWithoutPassword,
   getClientByPhone,
   checkClientHasPassword,
   setClientPassword,
@@ -20,7 +21,9 @@ interface ClientAuthContextType {
   client: Client | null;
   loading: boolean;
   login: (phone: string, password: string) => Promise<boolean>;
+  loginByPhone: (phone: string) => Promise<boolean>;
   register: (phone: string, password: string, fullName: string) => Promise<boolean>;
+  registerWithName: (phone: string, fullName: string) => Promise<boolean>;
   checkPhoneExists: (phone: string) => Promise<boolean>;
   checkPhoneStatus: (phone: string) => Promise<{ exists: boolean; hasPassword: boolean; fullName?: string }>;
   createPassword: (phone: string, password: string) => Promise<boolean>;
@@ -126,6 +129,33 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginByPhone = async (phone: string): Promise<boolean> => {
+    try {
+      const clientData = await getClientByPhone(phone);
+      if (!clientData) return false;
+
+      const session: ClientSession = { phone: clientData.phone, loginTime: Date.now() };
+      localStorage.setItem(CLIENT_SESSION_KEY, JSON.stringify(session));
+      setClient(clientData);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const registerWithName = async (phone: string, fullName: string): Promise<boolean> => {
+    try {
+      const clientData = await createClientWithoutPassword({ phone, fullName });
+
+      const session: ClientSession = { phone: clientData.phone, loginTime: Date.now() };
+      localStorage.setItem(CLIENT_SESSION_KEY, JSON.stringify(session));
+      setClient(clientData);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const login = async (phone: string, password: string): Promise<boolean> => {
     try {
       const clientData = await authenticateClientWithPassword(phone, password);
@@ -194,7 +224,9 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         client,
         loading,
         login,
+        loginByPhone,
         register,
+        registerWithName,
         checkPhoneExists,
         checkPhoneStatus,
         createPassword,

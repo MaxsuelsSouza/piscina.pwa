@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(rm:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

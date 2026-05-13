@@ -214,6 +214,31 @@ export async function checkClientHasPassword(phone: string): Promise<{ exists: b
 }
 
 /**
+ * Cria cliente apenas com telefone e nome (sem senha)
+ */
+export async function createClientWithoutPassword(data: {
+  phone: string;
+  fullName: string;
+}): Promise<Client> {
+  const normalizedPhone = normalizePhone(data.phone);
+
+  const existing = await getClientByPhone(normalizedPhone);
+  if (existing) {
+    throw new Error('Já existe uma conta com este telefone');
+  }
+
+  const clientData: ClientDocument = {
+    phone: normalizedPhone,
+    fullName: data.fullName.trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  await setDoc(doc(db, CLIENTS_COLLECTION, normalizedPhone), clientData);
+  return clientData;
+}
+
+/**
  * Define senha para um cliente existente (que foi cadastrado sem senha pelo admin)
  */
 export async function setClientPassword(phone: string, password: string): Promise<Client | null> {

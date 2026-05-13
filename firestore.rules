@@ -246,10 +246,9 @@ service cloud.firestore {
 
       // Criação:
       // - Qualquer um pode criar uma conta de cliente (registro público)
-      // - Validação: telefone deve ser apenas números, deve ter passwordHash
+      // - Validação: telefone deve ser apenas números (senha não obrigatória)
       allow create: if request.resource.data.phone is string &&
-                       request.resource.data.phone.matches('^[0-9]+$') &&
-                       request.resource.data.passwordHash is string;
+                       request.resource.data.phone.matches('^[0-9]+$');
 
       // Atualização:
       // - Apenas admin pode atualizar (para segurança do passwordHash)
