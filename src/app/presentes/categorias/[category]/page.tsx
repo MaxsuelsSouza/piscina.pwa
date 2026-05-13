@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGifts } from '@/hooks/useGifts';
 import { GIFT_CATEGORY_LABELS, getMaxSelectionsForCategory, type GiftCategory } from '@/types/gift';
+
+const CATEGORY_ORDER: GiftCategory[] = [
+  'cozinha-eletrodomesticos',
+  'cozinha-utensilios',
+  'cozinha-servir',
+  'area-servico-maquinario',
+  'quarto-enxoval',
+];
 
 export default function CategoryDetailPage() {
   const router = useRouter();
@@ -21,6 +29,69 @@ export default function CategoryDetailPage() {
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const touchStartY = useRef<number>(0);
+  const navigating = useRef(false);
+
+  const currentIndex = CATEGORY_ORDER.indexOf(category);
+  const prevCategory = currentIndex > 0 ? CATEGORY_ORDER[currentIndex - 1] : null;
+  const nextCategory = currentIndex < CATEGORY_ORDER.length - 1 ? CATEGORY_ORDER[currentIndex + 1] : null;
+
+  const navigateTo = useCallback((cat: GiftCategory) => {
+    if (navigating.current) return;
+    navigating.current = true;
+    router.push(`/presentes/categorias/${cat}`);
+  }, [router]);
+
+  const isAtTop = () => window.scrollY <= 0;
+  const isAtBottom = () => window.innerHeight + window.scrollY >= document.body.scrollHeight - 4;
+
+  // Touch swipe
+  useEffect(() => {
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const delta = touchStartY.current - e.changedTouches[0].clientY;
+      const threshold = 60;
+
+      if (delta > threshold && isAtBottom() && nextCategory) {
+        navigateTo(nextCategory);
+      } else if (delta < -threshold && isAtTop() && prevCategory) {
+        navigateTo(prevCategory);
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [navigateTo, prevCategory, nextCategory]);
+
+  // Wheel (desktop)
+  useEffect(() => {
+    let wheelTimeout: ReturnType<typeof setTimeout>;
+
+    const onWheel = (e: WheelEvent) => {
+      clearTimeout(wheelTimeout);
+      wheelTimeout = setTimeout(() => {
+        if (e.deltaY > 0 && isAtBottom() && nextCategory) {
+          navigateTo(nextCategory);
+        } else if (e.deltaY < 0 && isAtTop() && prevCategory) {
+          navigateTo(prevCategory);
+        }
+      }, 80);
+    };
+
+    window.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      window.removeEventListener('wheel', onWheel);
+      clearTimeout(wheelTimeout);
+    };
+  }, [navigateTo, prevCategory, nextCategory]);
 
   const { gifts, loading, error, selectGift, mySelections, refreshGifts } =
     useGifts(client?.phone || '', client?.fullName || '');
@@ -433,6 +504,35 @@ export default function CategoryDetailPage() {
               Ver todos meus presentes
             </Link>
           </div>
+        </div>
+      )}
+
+      {/* Navegação entre categorias */}
+      {!multiSelectMode && (
+        <div className="max-w-2xl mx-auto px-4 pb-8 flex items-center justify-between gap-3 mt-2">
+          {prevCategory ? (
+            <button
+              onClick={() => navigateTo(prevCategory)}
+              className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-800 transition group"
+            >
+              <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="truncate max-w-[120px]">{GIFT_CATEGORY_LABELS[prevCategory]}</span>
+            </button>
+          ) : <div />}
+
+          {nextCategory ? (
+            <button
+              onClick={() => navigateTo(nextCategory)}
+              className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-800 transition group"
+            >
+              <span className="truncate max-w-[120px]">{GIFT_CATEGORY_LABELS[nextCategory]}</span>
+              <svg className="w-4 h-4 group-hover:translate-x-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ) : <div />}
         </div>
       )}
     </div>
