@@ -6,6 +6,22 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ListaCompras, StatusLista } from './_types';
 
+const STATUS_LABEL: Record<string, string> = {
+  planejamento: 'Planejando',
+  comprando: 'Comprando',
+  concluida: 'Concluída',
+  ativa: 'Planejando', // legado
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  planejamento: 'bg-stone-100 text-stone-600',
+  comprando: 'bg-amber-100 text-amber-700',
+  concluida: 'bg-emerald-100 text-emerald-700',
+  ativa: 'bg-stone-100 text-stone-600',
+};
+
+type FiltroStatus = StatusLista | 'todas';
+
 export default function ListaComprasPage() {
   const router = useRouter();
   const { user: firebaseUser, loading: authLoading } = useAuth();
@@ -20,12 +36,11 @@ export default function ListaComprasPage() {
   const [descricaoLista, setDescricaoLista] = useState('');
 
   // Filter state
-  const [filtroStatus, setFiltroStatus] = useState<StatusLista | 'todas'>('ativa');
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('todas');
 
   // Delete confirmation
   const [deletingLista, setDeletingLista] = useState<ListaCompras | null>(null);
 
-  // Só Firebase Auth pode acessar
   const isAdmin = !!firebaseUser;
 
   useEffect(() => {
@@ -34,7 +49,6 @@ export default function ListaComprasPage() {
     }
   }, [firebaseUser, authLoading, router]);
 
-  // Fetch listas
   useEffect(() => {
     if (!isAdmin) return;
 
@@ -93,7 +107,10 @@ export default function ListaComprasPage() {
 
       setListas((prev) => [data.lista, ...prev]);
       resetForm();
-      showMessage('success', 'Lista criada com sucesso!');
+      showMessage('success', 'Lista criada!');
+
+      // Navega direto para a lista criada para começar a adicionar produtos
+      router.push(`/lista-compras/${data.id}`);
     } catch (error) {
       showMessage('error', error instanceof Error ? error.message : 'Erro ao criar lista');
     } finally {
@@ -116,7 +133,7 @@ export default function ListaComprasPage() {
 
       setListas((prev) => prev.filter((l) => l.id !== deletingLista.id));
       setDeletingLista(null);
-      showMessage('success', 'Lista excluída com sucesso!');
+      showMessage('success', 'Lista excluída!');
     } catch (error) {
       showMessage('error', error instanceof Error ? error.message : 'Erro ao excluir lista');
     } finally {
@@ -124,44 +141,44 @@ export default function ListaComprasPage() {
     }
   };
 
-  const handleToggleStatus = async (lista: ListaCompras) => {
-    const newStatus: StatusLista = lista.status === 'ativa' ? 'concluida' : 'ativa';
-
+  const handleReabrirLista = async (lista: ListaCompras) => {
     try {
       const res = await fetch(`/api/lista-compras/${lista.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: 'comprando' }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erro ao atualizar status');
+        throw new Error(data.error || 'Erro ao reabrir lista');
       }
 
-      setListas((prev) =>
-        prev.map((l) => (l.id === lista.id ? data.lista : l))
-      );
+      setListas((prev) => prev.map((l) => (l.id === lista.id ? data.lista : l)));
     } catch (error) {
-      showMessage('error', 'Erro ao atualizar status');
+      showMessage('error', 'Erro ao reabrir lista');
     }
   };
 
-  // Filter listas
+  // Normaliza status legado
+  const normalizeStatus = (status: string): string =>
+    status === 'ativa' ? 'planejamento' : status;
+
   const listasFiltradas = listas.filter((lista) => {
     if (filtroStatus === 'todas') return true;
-    return lista.status === filtroStatus;
+    const s = normalizeStatus(lista.status);
+    const f = filtroStatus as string;
+    return s === f;
   });
 
-  // Stats
   const stats = {
     total: listas.length,
-    ativas: listas.filter((l) => l.status === 'ativa').length,
+    planejamento: listas.filter((l) => normalizeStatus(l.status) === 'planejamento').length,
+    comprando: listas.filter((l) => l.status === 'comprando').length,
     concluidas: listas.filter((l) => l.status === 'concluida').length,
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('pt-BR', {
@@ -192,18 +209,8 @@ export default function ListaComprasPage() {
             href="/workspace"
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition"
           >
-            <svg
-              className="w-5 h-5 text-stone-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
+            <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
           <div className="flex-1">
@@ -236,24 +243,41 @@ export default function ListaComprasPage() {
         </div>
       )}
 
-      {/* Filter */}
+      {/* Filters */}
       <div className="max-w-2xl mx-auto px-4 py-4">
         <div className="flex gap-2 overflow-x-auto">
-          {(['todas', 'ativa', 'concluida'] as const).map((status) => (
-            <button
-              key={status}
-              onClick={() => setFiltroStatus(status)}
-              className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap transition ${
-                filtroStatus === status
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-white text-stone-600 border border-stone-200'
-              }`}
-            >
-              {status === 'todas' && `Todas (${stats.total})`}
-              {status === 'ativa' && `Ativas (${stats.ativas})`}
-              {status === 'concluida' && `Concluídas (${stats.concluidas})`}
-            </button>
-          ))}
+          <button
+            onClick={() => setFiltroStatus('todas')}
+            className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap transition ${
+              filtroStatus === 'todas' ? 'bg-emerald-500 text-white' : 'bg-white text-stone-600 border border-stone-200'
+            }`}
+          >
+            Todas ({stats.total})
+          </button>
+          <button
+            onClick={() => setFiltroStatus('planejamento')}
+            className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap transition ${
+              filtroStatus === 'planejamento' ? 'bg-stone-700 text-white' : 'bg-white text-stone-600 border border-stone-200'
+            }`}
+          >
+            Planejando ({stats.planejamento})
+          </button>
+          <button
+            onClick={() => setFiltroStatus('comprando')}
+            className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap transition ${
+              filtroStatus === 'comprando' ? 'bg-amber-500 text-white' : 'bg-white text-stone-600 border border-stone-200'
+            }`}
+          >
+            Comprando ({stats.comprando})
+          </button>
+          <button
+            onClick={() => setFiltroStatus('concluida')}
+            className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap transition ${
+              filtroStatus === 'concluida' ? 'bg-emerald-500 text-white' : 'bg-white text-stone-600 border border-stone-200'
+            }`}
+          >
+            Concluídas ({stats.concluidas})
+          </button>
         </div>
       </div>
 
@@ -278,12 +302,15 @@ export default function ListaComprasPage() {
           <div className="space-y-3">
             {listasFiltradas.map((lista) => {
               const totalItens = lista.itens?.length || 0;
+              const itensSemPreco = lista.itens?.filter((i) => !i.preco).length || 0;
+              const statusNorm = normalizeStatus(lista.status);
+              const isConcluida = lista.status === 'concluida';
 
               return (
                 <div
                   key={lista.id}
                   className={`bg-white rounded-xl border overflow-hidden ${
-                    lista.status === 'concluida' ? 'border-emerald-200 bg-emerald-50/50' : 'border-stone-200'
+                    isConcluida ? 'border-emerald-200' : statusNorm === 'comprando' ? 'border-amber-200' : 'border-stone-200'
                   }`}
                 >
                   <Link
@@ -292,15 +319,11 @@ export default function ListaComprasPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className={`font-medium truncate ${lista.status === 'concluida' ? 'text-emerald-700' : 'text-stone-800'}`}>
-                            {lista.nome}
-                          </h3>
-                          {lista.status === 'concluida' && (
-                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                              Concluída
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-medium text-stone-800 truncate">{lista.nome}</h3>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_BADGE[statusNorm] || STATUS_BADGE.planejamento}`}>
+                            {STATUS_LABEL[statusNorm] || 'Planejando'}
+                          </span>
                         </div>
                         {lista.descricao && (
                           <p className="text-sm text-stone-500 truncate mt-0.5">{lista.descricao}</p>
@@ -309,9 +332,12 @@ export default function ListaComprasPage() {
                           <span className="text-xs text-stone-400">
                             {totalItens} {totalItens === 1 ? 'item' : 'itens'}
                           </span>
-                          <span className="text-xs text-stone-400">
-                            {formatDate(lista.createdAt)}
-                          </span>
+                          {statusNorm === 'comprando' && itensSemPreco > 0 && (
+                            <span className="text-xs text-amber-600">
+                              {itensSemPreco} sem preço
+                            </span>
+                          )}
+                          <span className="text-xs text-stone-400">{formatDate(lista.createdAt)}</span>
                         </div>
                       </div>
                       <svg className="w-5 h-5 text-stone-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,17 +348,17 @@ export default function ListaComprasPage() {
 
                   {/* Actions */}
                   <div className="flex border-t border-stone-100">
-                    <button
-                      onClick={() => handleToggleStatus(lista)}
-                      className={`flex-1 py-2 text-xs font-medium transition ${
-                        lista.status === 'concluida'
-                          ? 'text-amber-600 hover:bg-amber-50'
-                          : 'text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                    >
-                      {lista.status === 'concluida' ? 'Reabrir' : 'Concluir'}
-                    </button>
-                    <div className="w-px bg-stone-100" />
+                    {isConcluida && (
+                      <>
+                        <button
+                          onClick={() => handleReabrirLista(lista)}
+                          className="flex-1 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 transition"
+                        >
+                          Reabrir
+                        </button>
+                        <div className="w-px bg-stone-100" />
+                      </>
+                    )}
                     <button
                       onClick={() => setDeletingLista(lista)}
                       className="flex-1 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition"
@@ -352,7 +378,8 @@ export default function ListaComprasPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={resetForm} />
           <div className="relative bg-white w-full max-w-md rounded-2xl p-6">
-            <h3 className="text-lg font-medium text-stone-800 mb-4">Nova Lista</h3>
+            <h3 className="text-lg font-medium text-stone-800 mb-1">Nova Lista</h3>
+            <p className="text-sm text-stone-400 mb-4">Você vai adicionar os produtos em seguida</p>
 
             <div className="space-y-4">
               <div>
@@ -365,6 +392,7 @@ export default function ListaComprasPage() {
                   className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   style={{ color: '#1c1917' }}
                   autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateLista()}
                 />
               </div>
 
@@ -393,7 +421,7 @@ export default function ListaComprasPage() {
                 disabled={saving || !nomeLista.trim()}
                 className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition disabled:opacity-50"
               >
-                {saving ? 'Criando...' : 'Criar Lista'}
+                {saving ? 'Criando...' : 'Criar e Adicionar Produtos'}
               </button>
             </div>
           </div>

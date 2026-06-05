@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       nome: nome.trim(),
       descricao: descricao?.trim() || '',
       itens: [],
-      status: 'ativa',
+      status: 'planejamento',
       createdAt: now,
       updatedAt: now,
     };

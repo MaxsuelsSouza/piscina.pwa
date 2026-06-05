@@ -25,7 +25,7 @@ export interface ListaCompras {
   updatedAt: string;
 }
 
-export type StatusLista = 'ativa' | 'concluida' | 'arquivada';
+export type StatusLista = 'planejamento' | 'comprando' | 'concluida' | 'arquivada' | 'ativa';
 
 export type CategoriaItem =
   | 'frutas-verduras'
