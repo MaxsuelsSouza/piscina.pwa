@@ -58,6 +58,23 @@ export const CATEGORIA_LABELS: Record<CategoriaItem, string> = {
   'outros': 'Outros',
 };
 
+// Ordem de exibição das categorias na listagem (frutas/verduras e grãos primeiro, depois proteínas...)
+export const CATEGORIA_ORDER: CategoriaItem[] = [
+  'frutas-verduras',
+  'graos-cereais',
+  'carnes-proteinas',
+  'laticinios',
+  'padaria',
+  'bebidas',
+  'mantimentos',
+  'temperos-molhos',
+  'congelados',
+  'doces-snacks',
+  'limpeza',
+  'higiene',
+  'outros',
+];
+
 export const CATEGORIA_ICONS: Record<CategoriaItem, string> = {
   'frutas-verduras': '🥬',
   'carnes-proteinas': '🥩',

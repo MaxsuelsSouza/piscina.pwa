@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ListaCompras, ItemCompra, CategoriaItem, Unidade } from '../_types';
-import { CATEGORIA_LABELS, CATEGORIA_ICONS, UNIDADES, UNIDADE_LABELS } from '../_types';
+import { CATEGORIA_LABELS, CATEGORIA_ICONS, CATEGORIA_ORDER, UNIDADES, UNIDADE_LABELS } from '../_types';
 
 export default function ListaComprasDetailPage() {
   const router = useRouter();
@@ -283,7 +283,20 @@ export default function ListaComprasDetailPage() {
     return grupos;
   }, [itens]);
 
-  const categoriasComItens = Object.keys(itensPorCategoria) as CategoriaItem[];
+  const categoriasComItens = CATEGORIA_ORDER.filter((cat) => itensPorCategoria[cat]);
+
+  // Agrupa itens por categoria, na ordem definida em CATEGORIA_ORDER, mais recentes primeiro dentro de cada grupo
+  const agruparPorCategoria = (lista: ItemCompra[]): { categoria: CategoriaItem; itens: ItemCompra[] }[] => {
+    const grupos = new Map<CategoriaItem, ItemCompra[]>();
+    [...lista].reverse().forEach((item) => {
+      if (!grupos.has(item.categoria)) grupos.set(item.categoria, []);
+      grupos.get(item.categoria)!.push(item);
+    });
+    return CATEGORIA_ORDER.filter((cat) => grupos.has(cat)).map((cat) => ({
+      categoria: cat,
+      itens: grupos.get(cat)!,
+    }));
+  };
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -415,126 +428,26 @@ export default function ListaComprasDetailPage() {
                 <p className="text-stone-400 text-sm mt-1">Adicione os produtos que você precisa</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {[...itens].reverse().map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-white rounded-xl border border-stone-200 px-4 py-3 flex items-center gap-3"
-                  >
-                    <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center text-xl shrink-0">
-                      {CATEGORIA_ICONS[item.categoria]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-stone-800 truncate">{item.nome}</p>
-                      <p className="text-xs text-stone-400">
-                        {item.quantidade} {UNIDADE_LABELS[item.unidade as Unidade] || item.unidade}
-                        {' · '}{CATEGORIA_LABELS[item.categoria]}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => openEditForm(item)}
-                        className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => setDeletingItem(item)}
-                        className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Modo: Comprando */}
-        {isComprando && (
-          <>
-            {itens.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-stone-500">Nenhum produto na lista</p>
-              </div>
-            ) : (
-              <>
-                {/* Itens sem preço (pendentes) */}
-                {itensSemPreco.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-2">
-                      Pendentes ({itensSemPreco.length})
+              <div className="space-y-5">
+                {agruparPorCategoria(itens).map(({ categoria, itens: itensCat }) => (
+                  <div key={categoria}>
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">
+                      <span>{CATEGORIA_ICONS[categoria]}</span>
+                      {CATEGORIA_LABELS[categoria]} ({itensCat.length})
                     </p>
                     <div className="space-y-2">
-                      {itensSemPreco.map((item) => (
+                      {itensCat.map((item) => (
                         <div
                           key={item.id}
-                          className="bg-white rounded-xl border border-amber-200 px-4 py-3 flex items-center gap-3"
+                          className="bg-white rounded-xl border border-stone-200 px-4 py-3 flex items-center gap-3"
                         >
-                          <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-xl shrink-0">
+                          <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center text-xl shrink-0">
                             {CATEGORIA_ICONS[item.categoria]}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-stone-800 truncate">{item.nome}</p>
                             <p className="text-xs text-stone-400">
                               {item.quantidade} {UNIDADE_LABELS[item.unidade as Unidade] || item.unidade}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => openPrecificar(item)}
-                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition"
-                            >
-                              + Preço
-                            </button>
-                            <button
-                              onClick={() => setDeletingItem(item)}
-                              className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Itens com preço (comprados) */}
-                {itensComPreco.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-2">
-                      Comprados ({itensComPreco.length})
-                    </p>
-                    <div className="space-y-2">
-                      {[...itensComPreco].reverse().map((item) => (
-                        <div
-                          key={item.id}
-                          className="bg-white rounded-xl border border-emerald-200 px-4 py-3 flex items-center gap-3"
-                        >
-                          <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-xl shrink-0">
-                            {CATEGORIA_ICONS[item.categoria]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-stone-800 truncate">{item.nome}</p>
-                            <p className="text-xs text-stone-400">
-                              {item.quantidade} {UNIDADE_LABELS[item.unidade as Unidade] || item.unidade}
-                              {item.unidade === 'un' && item.quantidade > 1 && item.preco && (
-                                <span> × {formatCurrency(item.preco)}</span>
-                              )}
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-sm font-semibold text-emerald-600">
-                              {formatCurrency(calcularValorItem(item))}
                             </p>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
@@ -559,6 +472,135 @@ export default function ListaComprasDetailPage() {
                       ))}
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Modo: Comprando */}
+        {isComprando && (
+          <>
+            {itens.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-stone-500">Nenhum produto na lista</p>
+              </div>
+            ) : (
+              <>
+                {/* Itens sem preço (pendentes) */}
+                {itensSemPreco.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-2">
+                      Pendentes ({itensSemPreco.length})
+                    </p>
+                    <div className="space-y-4">
+                      {agruparPorCategoria(itensSemPreco).map(({ categoria, itens: itensCat }) => (
+                        <div key={categoria}>
+                          <p className="flex items-center gap-1.5 text-xs text-stone-400 mb-2">
+                            <span>{CATEGORIA_ICONS[categoria]}</span>
+                            {CATEGORIA_LABELS[categoria]}
+                          </p>
+                          <div className="space-y-2">
+                            {itensCat.map((item) => (
+                              <div
+                                key={item.id}
+                                className="bg-white rounded-xl border border-amber-200 px-4 py-3 flex items-center gap-3"
+                              >
+                                <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-xl shrink-0">
+                                  {CATEGORIA_ICONS[item.categoria]}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-stone-800 truncate">{item.nome}</p>
+                                  <p className="text-xs text-stone-400">
+                                    {item.quantidade} {UNIDADE_LABELS[item.unidade as Unidade] || item.unidade}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => openPrecificar(item)}
+                                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition"
+                                  >
+                                    + Preço
+                                  </button>
+                                  <button
+                                    onClick={() => setDeletingItem(item)}
+                                    className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Itens com preço (comprados) */}
+                {itensComPreco.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-2">
+                      Comprados ({itensComPreco.length})
+                    </p>
+                    <div className="space-y-4">
+                      {agruparPorCategoria(itensComPreco).map(({ categoria, itens: itensCat }) => (
+                        <div key={categoria}>
+                          <p className="flex items-center gap-1.5 text-xs text-stone-400 mb-2">
+                            <span>{CATEGORIA_ICONS[categoria]}</span>
+                            {CATEGORIA_LABELS[categoria]}
+                          </p>
+                          <div className="space-y-2">
+                            {itensCat.map((item) => (
+                              <div
+                                key={item.id}
+                                className="bg-white rounded-xl border border-emerald-200 px-4 py-3 flex items-center gap-3"
+                              >
+                                <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-xl shrink-0">
+                                  {CATEGORIA_ICONS[item.categoria]}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-stone-800 truncate">{item.nome}</p>
+                                  <p className="text-xs text-stone-400">
+                                    {item.quantidade} {UNIDADE_LABELS[item.unidade as Unidade] || item.unidade}
+                                    {item.unidade === 'un' && item.quantidade > 1 && item.preco && (
+                                      <span> × {formatCurrency(item.preco)}</span>
+                                    )}
+                                  </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-sm font-semibold text-emerald-600">
+                                    {formatCurrency(calcularValorItem(item))}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => openEditForm(item)}
+                                    className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => setDeletingItem(item)}
+                                    className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </>
             )}
@@ -567,35 +609,45 @@ export default function ListaComprasDetailPage() {
 
         {/* Modo: Concluída (somente leitura) */}
         {isConcluida && (
-          <div className="space-y-2">
+          <div className="space-y-5">
             {itens.length === 0 ? (
               <p className="text-center text-stone-400 py-8">Nenhum item registrado</p>
             ) : (
-              [...itens].reverse().map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-xl border border-stone-200 px-4 py-3 flex items-center gap-3"
-                >
-                  <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center text-xl shrink-0">
-                    {CATEGORIA_ICONS[item.categoria]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-stone-800 truncate">{item.nome}</p>
-                    <p className="text-xs text-stone-400">
-                      {item.quantidade} {UNIDADE_LABELS[item.unidade as Unidade] || item.unidade}
-                      {item.unidade === 'un' && item.quantidade > 1 && item.preco && (
-                        <span> × {formatCurrency(item.preco)}</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {item.preco ? (
-                      <p className="text-sm font-semibold text-emerald-600">
-                        {formatCurrency(calcularValorItem(item))}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-stone-400">Sem preço</p>
-                    )}
+              agruparPorCategoria(itens).map(({ categoria, itens: itensCat }) => (
+                <div key={categoria}>
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">
+                    <span>{CATEGORIA_ICONS[categoria]}</span>
+                    {CATEGORIA_LABELS[categoria]} ({itensCat.length})
+                  </p>
+                  <div className="space-y-2">
+                    {itensCat.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-white rounded-xl border border-stone-200 px-4 py-3 flex items-center gap-3"
+                      >
+                        <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center text-xl shrink-0">
+                          {CATEGORIA_ICONS[item.categoria]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-stone-800 truncate">{item.nome}</p>
+                          <p className="text-xs text-stone-400">
+                            {item.quantidade} {UNIDADE_LABELS[item.unidade as Unidade] || item.unidade}
+                            {item.unidade === 'un' && item.quantidade > 1 && item.preco && (
+                              <span> × {formatCurrency(item.preco)}</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          {item.preco ? (
+                            <p className="text-sm font-semibold text-emerald-600">
+                              {formatCurrency(calcularValorItem(item))}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-stone-400">Sem preço</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))
