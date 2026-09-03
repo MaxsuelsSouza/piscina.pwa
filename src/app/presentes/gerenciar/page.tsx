@@ -22,6 +22,8 @@ interface Gift {
 interface Client {
   phone: string;
   fullName: string;
+  presenceStatus: 'pending' | 'confirmed' | 'declined' | null;
+  companions: number;
 }
 
 export default function GerenciarPresentesPage() {
@@ -49,6 +51,9 @@ export default function GerenciarPresentesPage() {
 
   // Delete modal state
   const [deletingGift, setDeletingGift] = useState<Gift | null>(null);
+
+  // Confirmed guests section
+  const [showConfirmedGuests, setShowConfirmedGuests] = useState(false);
 
   const authLoading = clientLoading || firebaseLoading;
   // Admin é quem está logado via Firebase Auth
@@ -85,6 +90,8 @@ export default function GerenciarPresentesPage() {
           setClients(clientsData.guests.map((g: any) => ({
             phone: g.phone,
             fullName: g.name,
+            presenceStatus: g.presenceStatus,
+            companions: g.companions || 0,
           })));
         }
       } catch (error) {
@@ -299,6 +306,11 @@ export default function GerenciarPresentesPage() {
     return acc;
   }, {} as Record<GiftCategory, Gift[]>);
 
+  // Confirmed guests
+  const confirmedGuests = clients.filter((c) => c.presenceStatus === 'confirmed');
+  const totalCompanions = confirmedGuests.reduce((acc, c) => acc + (c.companions || 0), 0);
+  const totalAttending = confirmedGuests.length + totalCompanions;
+
   // Create a map from phone to name for display
   const phoneToName = clients.reduce((acc, c) => {
     acc[c.phone] = c.fullName;
@@ -363,6 +375,63 @@ export default function GerenciarPresentesPage() {
             </svg>
             Copiar
           </button>
+        </div>
+      </div>
+
+      {/* Confirmados */}
+      <div className="max-w-2xl mx-auto px-4 pt-4">
+        <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+          <button
+            onClick={() => setShowConfirmedGuests(!showConfirmedGuests)}
+            className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-stone-50 transition"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-stone-800">
+                  {confirmedGuests.length} convidado{confirmedGuests.length !== 1 ? 's' : ''} confirmado{confirmedGuests.length !== 1 ? 's' : ''}
+                </p>
+                <p className="text-xs text-stone-400">
+                  {totalAttending} pessoa{totalAttending !== 1 ? 's' : ''} no total (com acompanhantes)
+                </p>
+              </div>
+            </div>
+            <svg
+              className={`w-4 h-4 text-stone-400 transition-transform shrink-0 ${showConfirmedGuests ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showConfirmedGuests && (
+            <div className="border-t border-stone-100">
+              {confirmedGuests.length === 0 ? (
+                <p className="px-4 py-4 text-sm text-stone-400 italic">
+                  Nenhum convidado confirmou presença ainda
+                </p>
+              ) : (
+                <div className="divide-y divide-stone-100">
+                  {confirmedGuests.map((guest) => (
+                    <div key={guest.phone} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                      <p className="text-sm text-stone-700 truncate">{guest.fullName}</p>
+                      {guest.companions > 0 && (
+                        <span className="text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">
+                          +{guest.companions} acompanhante{guest.companions > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
