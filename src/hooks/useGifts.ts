@@ -3,11 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Gift, GiftCategory } from '@/types/gift';
 
+interface SelectGiftResult {
+  success: boolean;
+  error?: string;
+}
+
 interface UseGiftsReturn {
   gifts: Gift[];
   loading: boolean;
   error: string | null;
-  selectGift: (giftId: string) => Promise<boolean>;
+  selectGift: (giftId: string) => Promise<SelectGiftResult>;
   mySelections: Set<string>;
   refreshGifts: () => Promise<void>;
 }
@@ -56,7 +61,7 @@ export function useGifts(clientPhone: string, clientName: string): UseGiftsRetur
   }, [clientPhone, fetchGifts]);
 
   const selectGift = useCallback(
-    async (giftId: string): Promise<boolean> => {
+    async (giftId: string): Promise<SelectGiftResult> => {
       try {
         const res = await fetch('/api/public/gifts/select', {
           method: 'POST',
@@ -100,10 +105,10 @@ export function useGifts(clientPhone: string, clientName: string): UseGiftsRetur
           );
         }
 
-        return true;
+        return { success: true };
       } catch (err) {
         console.error('Erro ao selecionar presente:', err);
-        return false;
+        return { success: false, error: err instanceof Error ? err.message : 'Erro ao selecionar presente' };
       }
     },
     [clientPhone, clientName]

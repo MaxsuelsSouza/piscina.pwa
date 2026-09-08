@@ -29,6 +29,7 @@ export default function CategoryDetailPage() {
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const touchStartY = useRef<number>(0);
   const navigating = useRef(false);
@@ -117,6 +118,13 @@ export default function CategoryDetailPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
+  // Auto-hide error message
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timeout = setTimeout(() => setErrorMessage(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [errorMessage]);
+
   // Toggle item in multi-select mode
   const toggleItemSelection = (giftId: string) => {
     const gift = categoryGifts.find((g) => g.id === giftId);
@@ -153,6 +161,7 @@ export default function CategoryDetailPage() {
     if (selectedItems.size === 0) return;
 
     setIsSubmitting(true);
+    const failedNames: string[] = [];
 
     // Process each selected item
     for (const giftId of selectedItems) {
@@ -161,8 +170,16 @@ export default function CategoryDetailPage() {
 
       // Only select if not already mine
       if (!mySelections.has(giftId)) {
-        await selectGift(giftId);
+        const result = await selectGift(giftId);
+        if (!result.success) {
+          failedNames.push(gift.name);
+        }
       }
+    }
+
+    if (failedNames.length > 0) {
+      setErrorMessage(`Não foi possível escolher: ${failedNames.join(', ')}`);
+      await refreshGifts();
     }
 
     setIsSubmitting(false);
@@ -177,7 +194,11 @@ export default function CategoryDetailPage() {
     }
 
     setSelectingId(giftId);
-    await selectGift(giftId);
+    const result = await selectGift(giftId);
+    if (!result.success) {
+      setErrorMessage(result.error || 'Não foi possível escolher este presente');
+      await refreshGifts();
+    }
     setSelectingId(null);
   };
 
@@ -270,6 +291,15 @@ export default function CategoryDetailPage() {
           </div>
         </div>
       </header>
+
+      {/* Error message */}
+      {errorMessage && (
+        <div className="max-w-2xl mx-auto px-4 pt-4">
+          <div className="px-4 py-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+            {errorMessage}
+          </div>
+        </div>
+      )}
 
       {/* Color Palette */}
       {!multiSelectMode && categoryGifts.length > 0 && (

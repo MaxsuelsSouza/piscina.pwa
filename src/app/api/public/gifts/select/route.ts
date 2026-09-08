@@ -26,11 +26,16 @@ function normalizePhone(phone: string): string {
 }
 
 /**
- * Retorna o número máximo de seleções permitidas para uma categoria
+ * Retorna o número máximo de seleções permitidas para um presente.
+ * Respeita o valor customizado pelo admin (gift.maxSelections) quando
+ * definido; caso contrário, cai no padrão da categoria.
  */
-function getMaxSelections(category: string): number {
+function getMaxSelections(gift: { category?: string; maxSelections?: number } | undefined): number {
+  if (typeof gift?.maxSelections === 'number' && gift.maxSelections > 0) {
+    return gift.maxSelections;
+  }
   // Categorias que permitem 2 pessoas escolherem o mesmo presente
-  if (category === 'quarto-enxoval' || category === 'cozinha-servir') {
+  if (gift?.category === 'quarto-enxoval' || gift?.category === 'cozinha-servir') {
     return 2;
   }
   return 1;
@@ -62,8 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     const gift = giftDoc.data();
-    const category = gift?.category || '';
-    const maxSelections = getMaxSelections(category);
+    const maxSelections = getMaxSelections(gift);
 
     // selectedBy pode ser string (formato antigo) ou array (formato novo)
     const rawSelectedBy = gift?.selectedBy;
