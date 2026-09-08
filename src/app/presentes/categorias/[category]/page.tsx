@@ -407,8 +407,8 @@ export default function CategoryDetailPage() {
                         </span>
                       ) : (
                         <>
-                          {/* Sugestão button - only shows when selected by user and has link */}
-                          {isMine && gift.link && (
+                          {/* Sugestão button - shows whenever the gift has a link */}
+                          {gift.link && (
                             <a
                               href={gift.link.startsWith('http') ? gift.link : `https://${gift.link}`}
                               target="_blank"
