@@ -1,1 +1,0 @@
-export { PixPaymentModal } from './PixPaymentModal';

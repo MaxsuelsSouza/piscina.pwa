@@ -1,268 +1,138 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
+/** Workspace: entrada dos módulos (Jiu-Jitsu e Lista de Compras), com um resumo de cada um. */
 
-interface WorkspaceModule {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-  color: string;
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { FaixaReal, type FaixaId } from '@/app/jiu-jitsu/components/FaixaReal';
+import type { ListaCompras } from '@/app/lista-compras/_types';
+
+const NOME_FAIXA: Record<FaixaId, string> = { branca: 'Branca', azul: 'Azul', roxa: 'Roxa', marrom: 'Marrom', preta: 'Preta' };
+
+function saudacao() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
 }
-
-const modules: WorkspaceModule[] = [
-  {
-    id: "lista-casa-nova",
-    title: "Lista de Casa Nova",
-    description: "Gerenciar presentes, convidados e pagamentos",
-    icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
-        />
-      </svg>
-    ),
-    href: "/presentes/gerenciar",
-    color: "bg-rose-500",
-  },
-  {
-    id: "treino",
-    title: "Treino",
-    description: "Gerenciar treinos e exercicios",
-    icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 10h2v4H4v-4zm14 0h2v4h-2v-4zm-12 1h2v2H6v-2zm10 0h2v2h-2v-2zM8 11h8v2H8v-2z"
-        />
-      </svg>
-    ),
-    href: "/treino",
-    color: "bg-blue-500",
-  },
-  {
-    id: "jiu-jitsu",
-    title: "Jiu-Jitsu",
-    description: "Gerenciar técnicas e aulas de jiu-jitsu",
-    icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-        />
-      </svg>
-    ),
-    href: "/jiu-jitsu",
-    color: "bg-red-600",
-  },
-  {
-    id: "lista-compras",
-    title: "Lista de Compras",
-    description: "Gerenciar listas de compras",
-    icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-        />
-      </svg>
-    ),
-    href: "/lista-compras",
-    color: "bg-emerald-500",
-  },
-  {
-    id: "quiz",
-    title: "Quiz",
-    description: "Testar conhecimentos com questoes de programacao",
-    icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    href: "/quiz",
-    color: "bg-indigo-500",
-  },
-  {
-    id: "cronograma-capilar",
-    title: "Cronograma Capilar",
-    description: "Gerenciar tratamentos capilares e cronobiologia",
-    icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-    href: "/cronograma-capilar",
-    color: "bg-pink-500",
-  },
-  {
-    id: "vale-a-pena",
-    title: "Vale a Pena Comprar?",
-    description: "Calcular horas de trabalho para comprar um produto",
-    icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    href: "/vale-a-pena",
-    color: "bg-amber-500",
-  },
-];
 
 export default function WorkspacePage() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
-
-  const userName = user?.email || "Admin";
+  const [faixa, setFaixa] = useState<{ faixa: FaixaId; listras: number } | null>(null);
+  const [listas, setListas] = useState<ListaCompras[] | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
-    }
+    if (!loading && !user) router.replace('/login');
   }, [user, loading, router]);
 
-  const handleLogout = async () => {
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/jiu-jitsu/progresso')
+      .then((r) => r.json())
+      .then((d) => setFaixa({ faixa: d.faixa ?? 'branca', listras: d.listras ?? 0 }))
+      .catch(() => setFaixa(null));
+    fetch('/api/lista-compras')
+      .then((r) => r.json())
+      .then((d) => setListas(d.listas ?? []))
+      .catch(() => setListas(null));
+  }, [user]);
+
+  const sair = async () => {
     await logout();
-    router.replace("/login/admin");
+    router.replace('/login');
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
-        <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-stone-950">
+        <div className="w-6 h-6 border-2 border-stone-700 border-t-stone-300 rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  const abertas = (listas ?? []).filter((l) => l.status !== 'concluida' && l.status !== 'arquivada');
+  const pendentes = abertas.reduce((n, l) => n + l.itens.filter((i) => !i.comprado).length, 0);
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* Header */}
-      <header className="bg-white border-b border-stone-200">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-serif text-stone-800">Workspace</h1>
-              <p className="text-sm text-stone-400">Ola, {userName}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition"
-            >
-              Sair
-            </button>
-          </div>
+    <div className="min-h-screen bg-stone-950 text-white">
+      <header className="max-w-lg mx-auto px-5 pt-10 pb-6 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm text-stone-400 first-letter:uppercase">
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight mt-0.5">{saudacao()}</h1>
+          <p className="text-xs text-stone-500 truncate mt-0.5">{user.email}</p>
         </div>
+        <button
+          onClick={sair}
+          className="shrink-0 h-9 px-3.5 rounded-full border border-stone-700 text-sm text-stone-300 hover:bg-stone-900 transition"
+        >
+          Sair
+        </button>
       </header>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h2 className="text-lg font-medium text-stone-700 mb-6">Modulos</h2>
+      <main className="max-w-lg mx-auto px-4 pb-10 flex flex-col gap-3">
+        <Link
+          href="/jiu-jitsu"
+          className="group block rounded-3xl bg-stone-900 border border-stone-800 hover:border-stone-700 p-5 transition"
+        >
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-red-950 text-red-400 flex items-center justify-center shrink-0">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h5v4H3zM3 15h5v4H3zM8 7h3v10H8M11 12h4M15 10h6v4h-6z" />
+              </svg>
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-lg font-semibold">Jiu-Jitsu</span>
+              <span className="block text-[13px] text-stone-400">
+                {faixa ? `Faixa ${NOME_FAIXA[faixa.faixa].toLowerCase()} · ${faixa.listras ? `${faixa.listras}º grau` : 'sem grau'}` : 'Faixa, técnicas e lutas'}
+              </span>
+            </span>
+            <Seta />
+          </div>
+          {faixa && <FaixaReal faixa={faixa.faixa} graus={faixa.listras} className="w-full mt-4" />}
+        </Link>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {modules.map((module) => (
-            <Link
-              key={module.id}
-              href={module.href}
-              className="bg-white rounded-xl border border-stone-200 p-6 hover:shadow-lg hover:border-stone-300 transition group"
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className={`${module.color} text-white p-3 rounded-xl group-hover:scale-110 transition`}
-                >
-                  {module.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-medium text-stone-800 group-hover:text-rose-600 transition">
-                    {module.title}
-                  </h3>
-                  <p className="text-sm text-stone-500 mt-1">
-                    {module.description}
-                  </p>
-                </div>
-                <svg
-                  className="w-5 h-5 text-stone-300 group-hover:text-stone-500 group-hover:translate-x-1 transition"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
+        <Link
+          href="/lista-compras"
+          className="group block rounded-3xl bg-stone-900 border border-stone-800 hover:border-stone-700 p-5 transition"
+        >
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-emerald-950 text-emerald-400 flex items-center justify-center shrink-0">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-lg font-semibold">Lista de Compras</span>
+              <span className="block text-[13px] text-stone-400">
+                {listas === null
+                  ? 'Suas listas de mercado'
+                  : abertas.length === 0
+                    ? 'Nenhuma lista aberta'
+                    : `${abertas.length} ${abertas.length === 1 ? 'lista aberta' : 'listas abertas'} · ${pendentes} ${pendentes === 1 ? 'item' : 'itens'} para comprar`}
+              </span>
+            </span>
+            <Seta />
+          </div>
+        </Link>
+      </main>
     </div>
+  );
+}
+
+function Seta() {
+  return (
+    <svg
+      className="w-5 h-5 text-stone-600 group-hover:text-stone-300 group-hover:translate-x-0.5 transition shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
   );
 }

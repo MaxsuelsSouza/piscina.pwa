@@ -1,183 +1,104 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useClientAuth } from '@/contexts/ClientAuthContext';
-import { useAuth } from '@/contexts/AuthContext';
+/** Login por e-mail e senha (Firebase Auth). Depois de entrar, vai para o workspace. */
 
-type Step = 'phone' | 'register';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { client, loading, loginByPhone, registerWithName, checkPhoneStatus } = useClientAuth();
-  const { user: firebaseUser, loading: firebaseLoading } = useAuth();
+  const { user, loading, login } = useAuth();
 
-  const [step, setStep] = useState<Step>('phone');
-  const [phone, setPhone] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!firebaseLoading && firebaseUser) {
-      router.replace('/workspace');
-      return;
-    }
-    if (!loading && client) {
-      router.replace('/presentes');
-    }
-  }, [client, loading, firebaseUser, firebaseLoading, router]);
+    if (!loading && user) router.replace('/workspace');
+  }, [user, loading, router]);
 
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 2) return numbers;
-    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-    if (numbers.length <= 11) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
-    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(formatPhone(e.target.value));
-    setError('');
-  };
-
-  const handleCheckPhone = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    const phoneNumbers = phone.replace(/\D/g, '');
-    if (phoneNumbers.length < 10 || phoneNumbers.length > 11) {
-      setError('Telefone inválido');
-      return;
-    }
+    if (!email.trim()) return setError('Digite seu e-mail');
+    if (!password) return setError('Digite sua senha');
 
     setIsSubmitting(true);
-
     try {
-      const status = await checkPhoneStatus(phoneNumbers);
-
-      if (status.exists) {
-        const success = await loginByPhone(phoneNumbers);
-        if (!success) setError('Erro ao entrar. Tente novamente.');
-      } else {
-        setStep('register');
-      }
+      await login(email.trim(), password);
     } catch {
-      setError('Erro ao verificar. Tente novamente.');
+      setError('E-mail ou senha incorretos');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!fullName.trim()) {
-      setError('Digite seu nome');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const phoneNumbers = phone.replace(/\D/g, '');
-      const success = await registerWithName(phoneNumbers, fullName.trim());
-      if (!success) setError('Erro ao criar conta. Tente novamente.');
-    } catch {
-      setError('Erro ao criar conta. Tente novamente.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleBack = () => {
-    setStep('phone');
-    setFullName('');
-    setError('');
-  };
-
-  if (loading || firebaseLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
-        <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-stone-950">
+        <div className="w-6 h-6 border-2 border-stone-700 border-t-stone-300 rounded-full animate-spin" />
       </div>
     );
   }
 
+  const campo =
+    'w-full h-12 px-4 rounded-2xl bg-stone-900 border border-stone-700 text-white placeholder-stone-500 outline-none focus:border-red-500 transition';
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-stone-950 p-5 text-white">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-serif text-stone-800">Lista de Casa Nova</h1>
-          <p className="text-stone-400 text-sm mt-2">
-            {step === 'phone' ? 'Digite seu telefone' : 'Como devemos te chamar?'}
-          </p>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">Entrar</h1>
+          <p className="text-stone-400 text-sm mt-1">Acesse o seu workspace</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-stone-200 p-6">
-          {step === 'phone' && (
-            <form onSubmit={handleCheckPhone} className="space-y-4">
-              <input
-                type="tel"
-                value={phone}
-                onChange={handlePhoneChange}
-                placeholder="(00) 00000-0000"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
-                style={{ color: '#1c1917' }}
-                autoFocus
-                disabled={isSubmitting}
-              />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
+          <label className="sr-only" htmlFor="email">E-mail</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError('');
+            }}
+            placeholder="voce@email.com"
+            className={campo}
+            autoFocus
+            autoComplete="email"
+            disabled={isSubmitting}
+          />
+          <label className="sr-only" htmlFor="senha">Senha</label>
+          <input
+            id="senha"
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError('');
+            }}
+            placeholder="Senha"
+            className={campo}
+            autoComplete="current-password"
+            disabled={isSubmitting}
+          />
 
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-
-              <button
-                type="submit"
-                disabled={isSubmitting || !phone}
-                className="w-full py-3 bg-stone-800 hover:bg-stone-900 text-white font-medium rounded-lg transition disabled:opacity-50"
-              >
-                {isSubmitting ? 'Entrando...' : 'Entrar'}
-              </button>
-            </form>
+          {error && (
+            <p role="alert" className="text-red-300 text-sm">
+              {error}
+            </p>
           )}
 
-          {step === 'register' && (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="text-sm text-stone-500 bg-stone-50 px-3 py-2 rounded-lg">
-                {phone}
-              </div>
-
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => { setFullName(e.target.value); setError(''); }}
-                placeholder="Seu nome completo"
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:border-stone-400 focus:ring-0 outline-none transition bg-white placeholder-stone-400"
-                style={{ color: '#1c1917' }}
-                autoFocus
-                disabled={isSubmitting}
-              />
-
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-
-              <button
-                type="submit"
-                disabled={isSubmitting || !fullName.trim()}
-                className="w-full py-3 bg-stone-800 hover:bg-stone-900 text-white font-medium rounded-lg transition disabled:opacity-50"
-              >
-                {isSubmitting ? 'Criando...' : 'Continuar'}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleBack}
-                className="w-full text-sm text-stone-400 hover:text-stone-600 transition"
-              >
-                Voltar
-              </button>
-            </form>
-          )}
-        </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-2 h-12 rounded-2xl bg-red-600 hover:bg-red-500 font-semibold transition disabled:opacity-50"
+          >
+            {isSubmitting ? 'Entrando…' : 'Entrar'}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -14,8 +14,8 @@ export const siteConfig = {
   },
   routes: {
     public: ["/login"],
-    protected: ["/workspace", "/presentes", "/treino"],
-    afterLoginRedirect: "/presentes",
+    protected: ["/workspace", "/jiu-jitsu", "/lista-compras"],
+    afterLoginRedirect: "/workspace",
     afterLogoutRedirect: "/login",
   },
 } as const;
