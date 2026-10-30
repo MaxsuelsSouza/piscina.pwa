@@ -138,7 +138,7 @@ export function Folha({
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto bg-stone-900 border-t border-stone-700 rounded-t-3xl px-5 pt-2 pb-7 flex flex-col gap-4 animate-[jjSobe_.28s_cubic-bezier(.2,.9,.3,1)]"
+        className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto text-white bg-stone-900 border-t border-stone-700 rounded-t-3xl px-5 pt-2 pb-7 flex flex-col gap-4 animate-[jjSobe_.28s_cubic-bezier(.2,.9,.3,1)]"
       >
         <div className="flex justify-center">
           <span className="w-10 h-1 rounded bg-stone-600" />

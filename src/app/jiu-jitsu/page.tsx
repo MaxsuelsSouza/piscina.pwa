@@ -11,6 +11,7 @@ import {
   NIVEIS_JJ,
   NIVEIS_JJ_LABELS,
 } from './_types';
+import { AtalhosLutas } from './components/AtalhosLutas';
 import { BeltProgress, type EventoHistorico } from './components/BeltProgress';
 
 type Tab = 'inicio' | 'tecnicas';
@@ -90,19 +91,25 @@ export default function JiuJitsuPage() {
   };
 
   const handleBeltUpdate = useCallback(async (faixa: FaixaId, listras: number, evento: EventoHistorico) => {
+    const antes = { faixa: beltFaixa, listras: beltListras, historico: beltHistorico };
     setBeltFaixa(faixa);
     setBeltListras(listras);
     setBeltHistorico((prev) => [...prev, evento]);
     try {
-      await fetch('/api/jiu-jitsu/progresso', {
+      const res = await fetch('/api/jiu-jitsu/progresso', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ faixa, listras, evento }),
       });
+      if (!res.ok) throw new Error();
+      showMsg('success', 'Faixa atualizada');
     } catch {
-      // silently ignore
+      setBeltFaixa(antes.faixa);
+      setBeltListras(antes.listras);
+      setBeltHistorico(antes.historico);
+      showMsg('error', 'Não deu para salvar a faixa. Tente de novo.');
     }
-  }, []);
+  }, [beltFaixa, beltListras, beltHistorico]);
 
   const fetchAll = async () => {
     setLoadingData(true);
@@ -260,22 +267,22 @@ export default function JiuJitsuPage() {
       {tab === 'inicio' && (
         <div className="flex-1 overflow-y-auto pb-24">
 
-          {/* Header hero */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-stone-900 via-red-950/60 to-stone-900 px-4 pt-10 pb-6">
+          {/* Cabeçalho */}
+          <div className="max-w-lg mx-auto px-4 pt-4 pb-1 flex items-center gap-3">
             <Link
               href="/workspace"
-              className="absolute top-4 left-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition"
+              aria-label="Voltar"
+              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-stone-900 hover:bg-stone-800 transition"
             >
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
-            <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-red-700/15 blur-2xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-red-900/20 blur-2xl pointer-events-none" />
-
-            <div className="max-w-lg mx-auto text-center relative pt-2">
-              <h1 className="text-2xl font-bold text-white tracking-tight">Jiu-Jitsu</h1>
-              <p className="text-red-300/80 text-xs mt-0.5">Treine. Aprenda. Evolua.</p>
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold text-white tracking-tight">Jiu-Jitsu</h1>
+              <p className="text-xs text-stone-400 first-letter:uppercase">
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
             </div>
           </div>
 
@@ -288,11 +295,11 @@ export default function JiuJitsuPage() {
             </div>
           )}
 
-          <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
+          <div className="max-w-lg mx-auto px-4 py-3 space-y-3">
 
-            {/* ── BELT PROGRESS (replaces stats cards) ── */}
+            {/* ── Faixa, jornada e atalhos ── */}
             {beltLoading ? (
-              <div className="h-64 bg-stone-900/50 rounded-3xl animate-pulse" />
+              <div className="h-56 bg-stone-900/50 rounded-2xl animate-pulse" />
             ) : (
               <BeltProgress
                 initialFaixa={beltFaixa}
@@ -302,15 +309,16 @@ export default function JiuJitsuPage() {
               />
             )}
 
+            <AtalhosLutas />
 
-{/* Técnicas favoritas */}
+            {/* Técnicas favoritas */}
             {tecnicas.filter((t) => t.favorita).length > 0 && (
-              <div>
-                <h2 className="text-stone-400 font-semibold text-xs uppercase tracking-widest mb-3">⭐ Favoritas</h2>
+              <div className="pt-2">
+                <h2 className="text-stone-400 font-semibold text-[11px] uppercase tracking-widest mb-2">Favoritas</h2>
                 <div className="space-y-2">
                   {tecnicas.filter((t) => t.favorita).slice(0, 4).map((tec) => (
                     <div key={tec.id} className="bg-stone-900 border border-stone-800 rounded-2xl px-4 py-3 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-red-900/40 flex items-center justify-center shrink-0 text-lg">★</div>
+                      <div className="w-10 h-10 rounded-xl bg-red-900/40 text-red-400 flex items-center justify-center shrink-0 text-lg">★</div>
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-medium truncate">{tec.nome}</p>
                         <p className="text-stone-500 text-xs">{CATEGORIAS_JJ_LABELS[tec.categoria]}</p>
