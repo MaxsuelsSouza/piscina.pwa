@@ -9,8 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { exigirUsuario } from '@/lib/jiu-jitsu/auth';
-import { gerarChave } from '@/lib/jiu-jitsu/chave';
-import { detalheChave, podeAlterarInscricoes, snapshotAtleta, type ChaveDoc } from '@/lib/jiu-jitsu/chaves';
+import { detalheChave, podeAlterarInscricoes, sortearDoc } from '@/lib/jiu-jitsu/chaves';
 import { ErroHttp, respostaDeErro } from '@/lib/jiu-jitsu/http';
 import { lerChaveDoUsuario, lerLutadoresDoUsuario, refChave } from '@/lib/jiu-jitsu/repositorio';
 
@@ -34,11 +33,7 @@ export async function POST(request: NextRequest, { params }: Contexto) {
       if (atual.inscritos.length < 2) throw new ErroHttp(400, 'Inscreva pelo menos 2 atletas para sortear');
 
       const lutadores = await lerLutadoresDoUsuario(db, atual.inscritos, auth.usuario.uid, tx);
-      const atletas = atual.inscritos.map((id) => snapshotAtleta(id, lutadores.get(id)!));
-      const chave = gerarChave(atletas, { aleatorio: Math.random });
-
-      const agora = new Date().toISOString();
-      const proximo: ChaveDoc = { ...atual, atletas, chave, cronometros: {}, sorteadaEm: agora, updatedAt: agora };
+      const proximo = sortearDoc(atual, lutadores, new Date().toISOString());
       tx.set(ref, proximo);
       return proximo;
     });

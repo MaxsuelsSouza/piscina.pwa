@@ -9,8 +9,10 @@
  *      { tipo: 'desafio', lutadorId, lutaId, cor }   → fica esperando o desafiado responder
  *      { tipo: 'substituir', lutadorId, ausente }
  *      { tipo: 'repescagem', lutadorId }             → entra na fila da repescagem
+ *      { tipo: 'incluir', lutadorIds: [...] }        → só antes da 1ª luta começar:
+ *                                                      entram como inscritos normais e a chave é sorteada de novo
  *
- * Quem entra atrasado não recebe compensação.
+ * Quem entra atrasado (vaga, desafio, substituição, repescagem) não recebe compensação.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

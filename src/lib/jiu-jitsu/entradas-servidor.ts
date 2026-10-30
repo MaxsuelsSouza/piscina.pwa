@@ -5,7 +5,7 @@
 import type { DocumentReference, Firestore } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { buscarLuta, type Chave } from './chave';
-import { snapshotAtleta, type AtletaSnapshot, type ChaveDoc } from './chaves';
+import { podeAlterarInscricoes, snapshotAtleta, sortearDoc, type AtletaSnapshot, type ChaveDoc } from './chaves';
 import {
   ocuparVaga,
   opcoesDeEntrada,
@@ -16,7 +16,8 @@ import {
 } from './entradas';
 import { ErroHttp } from './http';
 import { COLECAO_LUTADORES, type LutadorDoc } from './lutadores';
-import { lerChaveDoUsuario, refChave } from './repositorio';
+import { MAX_ATLETAS_CHAVE } from './schemas';
+import { lerChaveDoUsuario, lerLutadoresDoUsuario, refChave } from './repositorio';
 import { limparCronometrosOrfaos } from './tatame';
 
 export const EntradaSchema = z.discriminatedUnion('tipo', [
@@ -24,6 +25,8 @@ export const EntradaSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('desafio'), lutadorId: z.string().min(1), lutaId: z.string().min(1), cor: z.enum(['azul', 'branco']) }),
   z.object({ tipo: z.literal('substituir'), lutadorId: z.string().min(1), ausente: z.string().min(1) }),
   z.object({ tipo: z.literal('repescagem'), lutadorId: z.string().min(1) }),
+  // Nenhuma luta começou: entra(m) na chave como inscrito(s) normal(is) e sorteia de novo.
+  z.object({ tipo: z.literal('incluir'), lutadorIds: z.array(z.string().min(1)).min(1).max(MAX_ATLETAS_CHAVE) }),
 ]);
 export type Entrada = z.infer<typeof EntradaSchema>;
 
@@ -46,7 +49,17 @@ export type OpcoesComNomes = OpcoesEntrada & {
   atleta: AtletaSnapshot;
   nomes: Record<string, string>;
   repescagem: { id: string | null; aceitaFila: boolean };
+  /**
+   * Nenhuma luta começou ainda: dá para incluir na chave e sortear de novo,
+   * com compensação normal. `lugares` = quantos ainda cabem (máx. 30).
+   */
+  incluir: { possivel: boolean; lugares: number };
 };
+
+/** Só a chave principal, antes da primeira luta começar. */
+function aceitaIncluir(doc: ChaveDoc) {
+  return (doc.tipo ?? 'principal') === 'principal' && podeAlterarInscricoes(doc);
+}
 
 export async function consultarOpcoes(db: Firestore, uid: string, chaveId: string, lutadorId: string): Promise<OpcoesComNomes> {
   const [doc, lutador] = await db.runTransaction(async (tx) => {
@@ -65,10 +78,35 @@ export async function consultarOpcoes(db: Firestore, uid: string, chaveId: strin
     atleta,
     nomes,
     repescagem: { id: doc.repescagemId ?? null, aceitaFila: principal && !doc.repescagemId },
+    incluir: { possivel: aceitaIncluir(doc), lugares: Math.max(0, MAX_ATLETAS_CHAVE - doc.inscritos.length) },
   };
 }
 
+/** Inclui um ou mais lutadores como inscritos normais e refaz o sorteio. */
+async function incluirESortear(db: Firestore, uid: string, chaveId: string, lutadorIds: string[]): Promise<ChaveDoc> {
+  const ref = refChave(db, chaveId);
+  return db.runTransaction(async (tx) => {
+    const atual = await lerChaveDoUsuario(tx, ref, uid);
+    if (!atual.chave) throw new ErroHttp(409, 'A chave ainda não foi sorteada');
+    if (!aceitaIncluir(atual)) {
+      throw new ErroHttp(409, 'As lutas já começaram; agora só dá para entrar por vaga, desafio, substituição ou repescagem');
+    }
+    const novos = Array.from(new Set(lutadorIds)).filter((id) => !atual.inscritos.includes(id));
+    if (novos.length === 0) throw new ErroHttp(409, 'Essas pessoas já estão na chave');
+    const inscritos = [...atual.inscritos, ...novos];
+    if (inscritos.length > MAX_ATLETAS_CHAVE) {
+      throw new ErroHttp(400, `A chave aceita no máximo ${MAX_ATLETAS_CHAVE} atletas`);
+    }
+    const lutadores = await lerLutadoresDoUsuario(db, inscritos, uid, tx);
+    const fila = (atual.filaRepescagem ?? []).filter((id) => !novos.includes(id));
+    const proximo = sortearDoc({ ...atual, inscritos, filaRepescagem: fila }, lutadores, new Date().toISOString());
+    tx.set(ref, proximo);
+    return proximo;
+  });
+}
+
 export async function registrarEntrada(db: Firestore, uid: string, chaveId: string, entrada: Entrada): Promise<ChaveDoc> {
+  if (entrada.tipo === 'incluir') return incluirESortear(db, uid, chaveId, entrada.lutadorIds);
   const ref = refChave(db, chaveId);
   return db.runTransaction(async (tx) => {
     const atual = await lerChaveDoUsuario(tx, ref, uid);

@@ -92,6 +92,10 @@ export async function DELETE(request: NextRequest, { params }: Contexto) {
       if (statusDaChave(atual) === 'em_andamento') {
         throw new ErroHttp(409, 'Não é possível excluir uma chave com lutas em andamento');
       }
+      // A repescagem pertence à chave principal (que guarda o id dela).
+      if ((atual.tipo ?? 'principal') === 'repescagem') {
+        throw new ErroHttp(409, 'A repescagem faz parte da chave principal e não pode ser excluída sozinha');
+      }
       tx.delete(ref);
     });
     return new NextResponse(null, { status: 204 });

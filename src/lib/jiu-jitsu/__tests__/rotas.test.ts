@@ -450,6 +450,50 @@ describe('desempenho, repescagem, entradas e ranking pelas rotas', () => {
     expect((await lerLutador(parecido)).desempenho.lutas).toBe(0); // W.O. não conta
   });
 
+  it('antes da 1ª luta: incluir vários de uma vez sorteia de novo, sem marcar como atrasado', async () => {
+    const { id, ids } = await montar(6);
+    const novos = [(await cadastrar('Chegou 1', { peso: 70 })).id, (await cadastrar('Chegou 2', { peso: 75 })).id];
+    const { GET, POST } = await entradas();
+
+    const op = (await (await GET(req(`/x?lutador=${novos[0]}`), { params: { id } })).json()).opcoes;
+    expect(op.incluir).toEqual({ possivel: true, lugares: 24 });
+
+    const res = await POST(req('/x', { method: 'POST', body: { tipo: 'incluir', lutadorIds: [...novos, novos[0], ids[0]] } }), { params: { id } });
+    expect(res.status).toBe(200);
+    const det = (await res.json()).chave;
+    expect(det.status).toBe('sorteada');
+    expect(det.atletas).toHaveLength(8);
+    expect(det.atletas.some((a: { atrasado?: boolean }) => a.atrasado)).toBe(false);
+    const naChave = det.chave.lutas.flatMap((l: { azul: string | null; branco: string | null }) => [l.azul, l.branco]);
+    expect(novos.every((n) => naChave.includes(n))).toBe(true);
+
+    // Todo mundo repetido: nada a incluir.
+    expect((await POST(req('/x', { method: 'POST', body: { tipo: 'incluir', lutadorIds: novos } }), { params: { id } })).status).toBe(409);
+  });
+
+  it('incluir é recusado depois que uma luta começou, e respeita o limite de 30', async () => {
+    let { id, det } = await montar(4);
+    const novo = (await cadastrar('Tarde', { peso: 70 })).id;
+    const { GET, POST } = await entradas();
+    det = await vencer(id, det, 'A-1-1');
+    expect((await (await GET(req(`/x?lutador=${novo}`), { params: { id } })).json()).opcoes.incluir.possivel).toBe(false);
+    expect((await POST(req('/x', { method: 'POST', body: { tipo: 'incluir', lutadorIds: [novo] } }), { params: { id } })).status).toBe(409);
+
+    const cheia = await montar(29);
+    const dois = [(await cadastrar('X1')).id, (await cadastrar('X2')).id];
+    expect((await POST(req('/x', { method: 'POST', body: { tipo: 'incluir', lutadorIds: dois } }), { params: { id: cheia.id } })).status).toBe(400);
+    expect((await POST(req('/x', { method: 'POST', body: { tipo: 'incluir', lutadorIds: [dois[0]] } }), { params: { id: cheia.id } })).status).toBe(200);
+  });
+
+  it('excluir: sorteada sem luta pode; repescagem sozinha não', async () => {
+    const a = await montar(4);
+    expect((await chave.DELETE(req('/x', { method: 'DELETE' }), { params: { id: a.id } })).status).toBe(204);
+
+    let { id, det } = await montar(8);
+    for (const l of ['A-1-1', 'A-1-2', 'B-1-1', 'B-1-2']) det = await vencer(id, det, l);
+    expect((await chave.DELETE(req('/x', { method: 'DELETE' }), { params: { id: det.repescagemId! } })).status).toBe(409);
+  });
+
   it('ranking pelas rotas', async () => {
     let { id, det } = await montar(4);
     for (const l of ['A-1-1', 'B-1-1']) det = await vencer(id, det, l);

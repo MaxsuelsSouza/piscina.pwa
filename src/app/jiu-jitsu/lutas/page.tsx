@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { ResumoChave } from '@/lib/jiu-jitsu/chaves';
-import { Aviso, Carregando, IconeMais, IconeTrofeu, Rotulo } from './_components/ui';
+import { Aviso, Botao, Carregando, Folha, IconeMais, IconeTrofeu, Rotulo } from './_components/ui';
 import { mensagemDe, useApi, useExigirLogin } from './_lib/api';
 import { dataCurta } from './_lib/formato';
 
@@ -21,6 +21,23 @@ export default function LutasInicio() {
   const api = useApi();
   const [chaves, setChaves] = useState<ResumoChave[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [excluir, setExcluir] = useState<ResumoChave | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const confirmarExclusao = async () => {
+    if (!excluir) return;
+    setOcupado(true);
+    try {
+      await api(`/chaves/${excluir.id}`, { method: 'DELETE' });
+      setChaves((cs) => cs?.filter((c) => c.id !== excluir.id) ?? null);
+      setExcluir(null);
+    } catch (e) {
+      setErro(mensagemDe(e));
+      setExcluir(null);
+    } finally {
+      setOcupado(false);
+    }
+  };
 
   useEffect(() => {
     if (!pronto) return;
@@ -71,31 +88,46 @@ export default function LutasInicio() {
         {abertas.length > 0 && (
           <section className="flex flex-col gap-2.5">
             <Rotulo>Em andamento</Rotulo>
-            {abertas.map((c) => (
-              <Link
-                key={c.id}
-                href={c.status === 'rascunho' ? `/jiu-jitsu/lutas/nova?chave=${c.id}` : `/jiu-jitsu/lutas/${c.id}`}
-                className="flex flex-col gap-3 p-4 rounded-[18px] bg-stone-900 border border-stone-700 hover:bg-stone-800 transition"
-              >
-                <span className="flex justify-between items-center gap-3">
-                  <span className="text-[15px] font-semibold truncate">{c.nome}</span>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-950 text-amber-300 shrink-0">
-                    {c.rodadaAtual ?? STATUS_LABEL[c.status]}
+            {abertas.map((c) => {
+              const href = c.status === 'rascunho' ? `/jiu-jitsu/lutas/nova?chave=${c.id}` : `/jiu-jitsu/lutas/${c.id}`;
+              // Só dá para excluir enquanto nenhuma luta começou.
+              const podeExcluir = c.status === 'rascunho' || c.status === 'sorteada';
+              return (
+                <div key={c.id} className="flex flex-col gap-3 p-4 rounded-[18px] bg-stone-900 border border-stone-700">
+                  <Link href={href} className="flex flex-col gap-3">
+                    <span className="flex justify-between items-center gap-3">
+                      <span className="text-[15px] font-semibold truncate">{c.nome}</span>
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-950 text-amber-300 shrink-0">
+                        {c.status === 'sorteada' ? STATUS_LABEL.sorteada : c.rodadaAtual ?? STATUS_LABEL[c.status]}
+                      </span>
+                    </span>
+                    {c.status !== 'rascunho' && (
+                      <span className="h-1.5 rounded bg-stone-700 overflow-hidden" aria-label={`${Math.round(c.progresso * 100)}% das lutas`}>
+                        <span className="block h-full bg-red-500" style={{ width: `${c.progresso * 100}%` }} />
+                      </span>
+                    )}
+                    <span className="text-[13px] text-stone-400">
+                      {c.totalAtletas} atletas{c.status !== 'rascunho' ? ` · ${c.restantes} restantes` : ''}
+                    </span>
+                  </Link>
+                  <span className="flex justify-between items-center -mb-1">
+                    {podeExcluir ? (
+                      <button
+                        onClick={() => setExcluir(c)}
+                        className="flex items-center gap-1.5 h-9 -ml-2 px-2 rounded-lg text-[13px] text-stone-400 hover:text-red-300 hover:bg-stone-800"
+                      >
+                        <IconeLixo /> Excluir
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+                    <Link href={href} className="h-9 flex items-center text-[13px] text-red-400 font-semibold">
+                      Continuar
+                    </Link>
                   </span>
-                </span>
-                {c.status !== 'rascunho' && (
-                  <span className="h-1.5 rounded bg-stone-700 overflow-hidden" aria-label={`${Math.round(c.progresso * 100)}% das lutas`}>
-                    <span className="block h-full bg-red-500" style={{ width: `${c.progresso * 100}%` }} />
-                  </span>
-                )}
-                <span className="flex justify-between text-[13px] text-stone-400">
-                  <span>
-                    {c.totalAtletas} atletas{c.status !== 'rascunho' ? ` · ${c.restantes} restantes` : ''}
-                  </span>
-                  <span className="text-red-400 font-semibold">Continuar</span>
-                </span>
-              </Link>
-            ))}
+                </div>
+              );
+            })}
           </section>
         )}
 
@@ -130,6 +162,18 @@ export default function LutasInicio() {
         )}
       </main>
 
+      <Folha
+        aberta={!!excluir}
+        aoFechar={() => setExcluir(null)}
+        titulo="Excluir a chave?"
+        subtitulo={excluir ? `"${excluir.nome}" e o sorteio somem. Os lutadores continuam salvos.` : undefined}
+      >
+        <div className="grid grid-cols-2 gap-2.5">
+          <Botao variante="secundario" onClick={() => setExcluir(null)}>Cancelar</Botao>
+          <Botao onClick={confirmarExclusao} disabled={ocupado}>{ocupado ? 'Excluindo…' : 'Excluir'}</Botao>
+        </div>
+      </Folha>
+
       <NavJiuJitsu />
     </div>
   );
@@ -159,5 +203,13 @@ function NavJiuJitsu() {
         </span>
       </div>
     </nav>
+  );
+}
+
+function IconeLixo() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+    </svg>
   );
 }

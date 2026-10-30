@@ -15,6 +15,7 @@ import { z } from 'zod';
 import {
   classificacao,
   filaDeLutas,
+  gerarChave,
   nomeRodada,
   regraEspecialFinal,
   textoRegraFinal,
@@ -111,6 +112,21 @@ export function statusDaChave(doc: Pick<ChaveDoc, 'chave'>): StatusChave {
 export function podeAlterarInscricoes(doc: Pick<ChaveDoc, 'chave'>): boolean {
   const status = statusDaChave(doc);
   return status === 'rascunho' || status === 'sorteada';
+}
+
+/**
+ * Sorteia (ou refaz) as lutas a partir dos inscritos, com a foto atual de cada
+ * lutador. Quem é sorteado aqui não é atrasado: recebe compensação normal.
+ */
+export function sortearDoc(
+  atual: ChaveDoc,
+  lutadores: Map<string, LutadorDoc>,
+  agora: string,
+  aleatorio: () => number = Math.random
+): ChaveDoc {
+  const atletas = atual.inscritos.map((id) => snapshotAtleta(id, lutadores.get(id)!));
+  const chave = gerarChave(atletas, { aleatorio });
+  return { ...atual, atletas, chave, cronometros: {}, sorteadaEm: agora, updatedAt: agora };
 }
 
 export function snapshotAtleta(id: string, lutador: LutadorDoc, atrasado = false): AtletaSnapshot {

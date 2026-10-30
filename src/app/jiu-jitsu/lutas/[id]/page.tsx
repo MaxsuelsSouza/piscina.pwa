@@ -26,6 +26,7 @@ export default function ChavePage({ params }: { params: { id: string } }) {
   const [vista, setVista] = useState<'chave' | 'lista'>('chave');
   const [confirmarTatame, setConfirmarTatame] = useState(false);
   const [confirmarSorteio, setConfirmarSorteio] = useState(false);
+  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
   const [ocupado, setOcupado] = useState(false);
 
   const carregar = useCallback(async () => {
@@ -95,6 +96,18 @@ export default function ChavePage({ params }: { params: { id: string } }) {
     }
   };
 
+  const excluirChave = async () => {
+    setOcupado(true);
+    try {
+      await api(`/chaves/${det.id}`, { method: 'DELETE' });
+      router.replace('/jiu-jitsu/lutas');
+    } catch (e) {
+      setErro(mensagemDe(e));
+      setConfirmarExclusao(false);
+      setOcupado(false);
+    }
+  };
+
   const levarAoTatame = async () => {
     setOcupado(true);
     try {
@@ -125,6 +138,17 @@ export default function ChavePage({ params }: { params: { id: string } }) {
       voltar="/jiu-jitsu/lutas"
       direita={
         <div className="flex gap-2">
+          {det.status === 'sorteada' && det.tipo === 'principal' && (
+            <button
+              onClick={() => setConfirmarExclusao(true)}
+              aria-label="Excluir chave"
+              className="w-11 h-11 rounded-full bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-red-300 flex items-center justify-center"
+            >
+              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+              </svg>
+            </button>
+          )}
           {det.status !== 'encerrada' && (
             <Link
               href={`/jiu-jitsu/lutas/${det.id}/chegou`}
@@ -328,6 +352,13 @@ export default function ChavePage({ params }: { params: { id: string } }) {
         <div className="grid grid-cols-2 gap-2.5">
           <Botao variante="secundario" onClick={() => setConfirmarSorteio(false)}>Cancelar</Botao>
           <Botao onClick={sortearDeNovo} disabled={ocupado}>{ocupado ? 'Sorteando…' : 'Sortear'}</Botao>
+        </div>
+      </Folha>
+
+      <Folha aberta={confirmarExclusao} aoFechar={() => setConfirmarExclusao(false)} titulo="Excluir a chave?" subtitulo="Nenhuma luta começou. O sorteio some; os lutadores continuam salvos.">
+        <div className="grid grid-cols-2 gap-2.5">
+          <Botao variante="secundario" onClick={() => setConfirmarExclusao(false)}>Cancelar</Botao>
+          <Botao onClick={excluirChave} disabled={ocupado}>{ocupado ? 'Excluindo…' : 'Excluir'}</Botao>
         </div>
       </Folha>
     </Tela>
