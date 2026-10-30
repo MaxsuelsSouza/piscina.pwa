@@ -15,7 +15,9 @@
     "clean:cache": "npm cache clean --force",
     "clean:all": "rm -rf .next out .turbo storybook-static node_modules package-lock.json",
     "clean:reinstall": "npm run clean:all && npm install",
-    "fresh": "npm run clean && npm run dev"
+    "fresh": "npm run clean && npm run dev",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.8",
@@ -62,6 +64,7 @@
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^2.1.9"
   }
 }

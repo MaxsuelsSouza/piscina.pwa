@@ -63,6 +63,11 @@ export default function JiuJitsuPage() {
     if (!authLoading && !user) router.replace('/login');
   }, [user, authLoading, router]);
 
+  // Volta direto para a aba Técnicas quando vier de /jiu-jitsu/lutas.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('tab') === 'tecnicas') setTab('tecnicas');
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     fetchAll();
@@ -551,6 +556,15 @@ export default function JiuJitsuPage() {
               <span className="absolute bottom-1 w-5 h-0.5 bg-red-500 rounded-full" />
             )}
           </button>
+          <Link
+            href="/jiu-jitsu/lutas"
+            className="relative flex-1 flex flex-col items-center gap-1 py-3 transition text-stone-600 hover:text-stone-400"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5h5v4H3zM3 15h5v4H3zM8 7h3v10H8M11 12h4M15 10h6v4h-6z" />
+            </svg>
+            <span className="text-[11px] font-medium">Lutas</span>
+          </Link>
         </div>
       </nav>
 

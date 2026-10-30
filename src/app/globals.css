@@ -74,3 +74,27 @@
     animation: fadeIn 0.3s ease-out;
   }
 }
+/* ── Jiu-Jitsu · Lutas ─────────────────────────────────────────────── */
+@keyframes jjFade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes jjSobe { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@keyframes jjPiscar { 0%, 100% { opacity: 1 } 50% { opacity: .45 } }
+@keyframes jjEncher { from { transform: scaleX(0) } to { transform: scaleX(1) } }
+@keyframes jjEsq { from { transform: translateX(-100%) } to { transform: translateX(0) } }
+@keyframes jjDir { from { transform: translateX(100%) } to { transform: translateX(0) } }
+@keyframes jjVEntra {
+  0% { transform: translate(-60px, -2.8px); opacity: 0 }
+  50% { transform: translate(9.9px, -2.8px); opacity: 1 }
+  62% { transform: translate(.9px, -2.8px) }
+  78% { transform: translate(6.4px, -2.8px) }
+  100% { transform: translate(4.9px, -2.8px) }
+}
+@keyframes jjSEntra {
+  0% { transform: translate(60px, 4.2px); opacity: 0 }
+  50% { transform: translate(-12px, 4.2px); opacity: 1 }
+  62% { transform: translate(-3px, 4.2px) }
+  78% { transform: translate(-8.5px, 4.2px) }
+  100% { transform: translate(-7px, 4.2px) }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[jj"], .jj-anim { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
