@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Luta } from '@/lib/jiu-jitsu/chave';
 import type { DetalheChave } from '@/lib/jiu-jitsu/chaves';
 import { Colunas, LutaCaixa, type Nomes } from '../_components/LutaCaixa';
+import { ExcluirChave } from '../_components/ExcluirChave';
 import { Aviso, Botao, Carregando, Folha, IconeTrofeu, Rotulo, Tela } from '../_components/ui';
 import { VsFaixas } from '../_components/VsFaixas';
 import { mensagemDe, useApi, useExigirLogin } from '../_lib/api';
@@ -26,7 +27,9 @@ export default function ChavePage({ params }: { params: { id: string } }) {
   const [vista, setVista] = useState<'chave' | 'lista'>('chave');
   const [confirmarTatame, setConfirmarTatame] = useState(false);
   const [confirmarSorteio, setConfirmarSorteio] = useState(false);
-  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [excluir, setExcluir] = useState(false);
+  const [verAntes, setVerAntes] = useState(false);
   const [ocupado, setOcupado] = useState(false);
 
   const carregar = useCallback(async () => {
@@ -96,18 +99,6 @@ export default function ChavePage({ params }: { params: { id: string } }) {
     }
   };
 
-  const excluirChave = async () => {
-    setOcupado(true);
-    try {
-      await api(`/chaves/${det.id}`, { method: 'DELETE' });
-      router.replace('/jiu-jitsu/lutas');
-    } catch (e) {
-      setErro(mensagemDe(e));
-      setConfirmarExclusao(false);
-      setOcupado(false);
-    }
-  };
-
   const levarAoTatame = async () => {
     setOcupado(true);
     try {
@@ -134,21 +125,10 @@ export default function ChavePage({ params }: { params: { id: string } }) {
   return (
     <Tela
       titulo={det.nome}
-      subtitulo={`${det.atletas.length} atletas · ${STATUS_TXT[det.status]}`}
+      subtitulo={`${chave.atletas.length} atletas · ${STATUS_TXT[det.status]}`}
       voltar="/jiu-jitsu/lutas"
       direita={
         <div className="flex gap-2">
-          {det.status === 'sorteada' && det.tipo === 'principal' && (
-            <button
-              onClick={() => setConfirmarExclusao(true)}
-              aria-label="Excluir chave"
-              className="w-11 h-11 rounded-full bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-red-300 flex items-center justify-center"
-            >
-              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
-              </svg>
-            </button>
-          )}
           {det.status !== 'encerrada' && (
             <Link
               href={`/jiu-jitsu/lutas/${det.id}/chegou`}
@@ -168,6 +148,15 @@ export default function ChavePage({ params }: { params: { id: string } }) {
               </svg>
             </button>
           )}
+          <button
+            onClick={() => setMenu(true)}
+            aria-label="Mais opções"
+            className="w-11 h-11 rounded-full bg-stone-900 hover:bg-stone-800 flex items-center justify-center"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+            </svg>
+          </button>
         </div>
       }
       rodape={
@@ -215,7 +204,7 @@ export default function ChavePage({ params }: { params: { id: string } }) {
       )}
       {det.tipo === 'principal' && !det.repescagemId && det.filaRepescagem.length > 0 && (
         <Aviso>
-          {det.filaRepescagem.length} atrasado(s) esperando a repescagem, que é sorteada quando a 1ª rodada terminar.
+          {det.filaRepescagem.length === 1 ? '1 lutador esperando' : `${det.filaRepescagem.length} lutadores esperando`} a repescagem, que é sorteada quando a 1ª rodada terminar.
         </Aviso>
       )}
       {chave.avisos.map((a) => (
@@ -327,6 +316,28 @@ export default function ChavePage({ params }: { params: { id: string } }) {
         </section>
       )}
 
+      {det.fasesAnteriores.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <button
+            onClick={() => setVerAntes((v) => !v)}
+            aria-expanded={verAntes}
+            className="flex justify-between items-center p-3.5 rounded-2xl bg-stone-900 border border-stone-800 text-left"
+          >
+            <span>
+              <span className="block text-sm font-semibold">Lutas antes de reorganizar</span>
+              <span className="block text-xs text-stone-400">
+                {det.fasesAnteriores.length} luta(s) já feitas · contam no ranking
+              </span>
+            </span>
+            <span className="text-stone-400 text-sm">{verAntes ? '▲' : '▼'}</span>
+          </button>
+          {verAntes &&
+            det.fasesAnteriores.map((l) => (
+              <LutaCaixa key={l.id} luta={l} nomes={nomes} />
+            ))}
+        </section>
+      )}
+
       <Folha aberta={confirmarTatame} aoFechar={() => setConfirmarTatame(false)} titulo="Iniciar as lutas?" subtitulo="As primeiras lutas vão para as áreas e esperam o seu play.">
         <div className="rounded-2xl bg-stone-950 border border-stone-800 divide-y divide-stone-800">
           {fila.slice(0, det.tatame.areas).map((l, i) => (
@@ -355,12 +366,49 @@ export default function ChavePage({ params }: { params: { id: string } }) {
         </div>
       </Folha>
 
-      <Folha aberta={confirmarExclusao} aoFechar={() => setConfirmarExclusao(false)} titulo="Excluir a chave?" subtitulo="Nenhuma luta começou. O sorteio some; os lutadores continuam salvos.">
-        <div className="grid grid-cols-2 gap-2.5">
-          <Botao variante="secundario" onClick={() => setConfirmarExclusao(false)}>Cancelar</Botao>
-          <Botao onClick={excluirChave} disabled={ocupado}>{ocupado ? 'Excluindo…' : 'Excluir'}</Botao>
+      <Folha aberta={menu} aoFechar={() => setMenu(false)} titulo={det.nome}>
+        <div className="flex flex-col gap-2">
+          {det.status !== 'encerrada' && (
+            <Link
+              href={`/jiu-jitsu/lutas/${det.id}/reorganizar`}
+              className="flex items-center gap-3 p-3.5 rounded-2xl bg-stone-950 border border-stone-700 hover:bg-stone-800"
+            >
+              <span className="w-10 h-10 rounded-xl bg-stone-800 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6" />
+                </svg>
+              </span>
+              <span className="flex-1">
+                <span className="block text-[15px] font-semibold">Lutadores da chave</span>
+                <span className="block text-[13px] text-stone-400">Tirar quem saiu, pôr quem faltou ou trocar</span>
+              </span>
+            </Link>
+          )}
+          <button
+            onClick={() => {
+              setMenu(false);
+              setExcluir(true);
+            }}
+            className="flex items-center gap-3 p-3.5 rounded-2xl bg-stone-950 border border-stone-700 hover:bg-stone-800 text-left"
+          >
+            <span className="w-10 h-10 rounded-xl bg-red-950 text-red-300 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+              </svg>
+            </span>
+            <span className="flex-1">
+              <span className="block text-[15px] font-semibold">{det.tipo === 'repescagem' ? 'Excluir a repescagem' : 'Excluir a chave'}</span>
+              <span className="block text-[13px] text-stone-400">Vale mesmo com lutas feitas</span>
+            </span>
+          </button>
         </div>
       </Folha>
+
+      <ExcluirChave
+        chave={excluir ? { id: det.id, nome: det.nome, status: det.status, tipo: det.tipo, temRepescagem: !!det.repescagemId } : null}
+        aoFechar={() => setExcluir(false)}
+        aoExcluir={() => router.replace(det.tipo === 'repescagem' && det.principalId ? `/jiu-jitsu/lutas/${det.principalId}` : '/jiu-jitsu/lutas')}
+      />
     </Tela>
   );
 }

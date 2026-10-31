@@ -22,6 +22,7 @@ import {
   type AtletaChave,
   type Chave,
   type Classificacao,
+  type Luta,
 } from './chave';
 import { calcularNivel } from './nivel';
 import { desempenhoDe, nivelSorteio, type LutadorDoc } from './lutadores';
@@ -64,6 +65,15 @@ export type ChaveDoc = {
   tatame?: ConfigTatame;
   /** Cronômetro e área de cada luta que passou pelo tatame. */
   cronometros?: Record<string, Cronometro>;
+  /**
+   * Quantas vezes "o que faltava" foi sorteado de novo (1 = sorteio original).
+   * Entra no id dos resultados para não misturar lutas de fases diferentes.
+   */
+  fase?: number;
+  /** Lutas já terminadas antes de reorganizar a chave (histórico, não mudam mais). */
+  fasesAnteriores?: Luta[];
+  /** No absoluto: a repescagem foi excluída e não deve nascer de novo. */
+  semRepescagem?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -100,16 +110,18 @@ export function novaChaveDoc(nome: string, inscritos: string[], ownerUid: string
   };
 }
 
-export function statusDaChave(doc: Pick<ChaveDoc, 'chave'>): StatusChave {
+export function statusDaChave(doc: Pick<ChaveDoc, 'chave'> & Partial<Pick<ChaveDoc, 'fasesAnteriores'>>): StatusChave {
   const { chave } = doc;
   if (!chave) return 'rascunho';
   if (classificacao(chave)) return 'encerrada';
-  const comecou = chave.lutas.some((l) => l.status === 'finalizada' || l.status === 'em_andamento');
+  // Depois de reorganizar, as lutas da fase anterior contam como começo.
+  const comecou =
+    (doc.fasesAnteriores?.length ?? 0) > 0 || chave.lutas.some((l) => l.status === 'finalizada' || l.status === 'em_andamento');
   return comecou ? 'em_andamento' : 'sorteada';
 }
 
 /** Inscrições e novo sorteio só antes da primeira luta começar. */
-export function podeAlterarInscricoes(doc: Pick<ChaveDoc, 'chave'>): boolean {
+export function podeAlterarInscricoes(doc: Pick<ChaveDoc, 'chave'> & Partial<Pick<ChaveDoc, 'fasesAnteriores'>>): boolean {
   const status = statusDaChave(doc);
   return status === 'rascunho' || status === 'sorteada';
 }
@@ -218,6 +230,10 @@ export type DetalheChave = {
   principalId: string | null;
   repescagemId: string | null;
   filaRepescagem: string[];
+  /** 1 = sorteio original; sobe a cada reorganização com lutas já feitas. */
+  fase: number;
+  /** Lutas terminadas antes de reorganizar (só leitura). */
+  fasesAnteriores: Luta[];
   sorteadaEm: string | null;
   createdAt: string;
   updatedAt: string;
@@ -248,6 +264,8 @@ export function detalheChave(id: string, doc: ChaveDoc): DetalheChave {
     principalId: doc.principalId ?? null,
     repescagemId: doc.repescagemId ?? null,
     filaRepescagem: doc.filaRepescagem ?? [],
+    fase: doc.fase ?? 1,
+    fasesAnteriores: doc.fasesAnteriores ?? [],
     sorteadaEm: doc.sorteadaEm,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,

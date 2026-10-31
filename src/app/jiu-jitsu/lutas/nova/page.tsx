@@ -1,13 +1,14 @@
 'use client';
 
-/** Tela 2 · Montar chave: busca de alunos salvos, cadastro, inscritos e sorteio. */
+/** Tela 2 · Montar chave: lista rápida de alunos salvos, cadastro, inscritos e sorteio. */
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import type { DetalheChave } from '@/lib/jiu-jitsu/chaves';
 import { MAX_ATLETAS_CHAVE, type Lutador } from '@/lib/jiu-jitsu/schemas';
-import { CadastroLutador, FichaLutador, LinhaLutador } from '../_components/Lutadores';
-import { Aviso, Botao, IconeBusca, IconeMais, Rotulo, Tela } from '../_components/ui';
+import { FichaLutador, LinhaLutador } from '../_components/Lutadores';
+import { SeletorLutadores } from '../_components/SeletorLutadores';
+import { Aviso, Botao, Rotulo, Tela } from '../_components/ui';
 import { lerParametro, mensagemDe, useApi, useExigirLogin } from '../_lib/api';
 import { dataCurta } from '../_lib/formato';
 
@@ -19,10 +20,7 @@ export default function MontarChave() {
   const [chaveId, setChaveId] = useState<string | null>(null);
   const [nome, setNome] = useState(`Sexta da diversão ${dataCurta(new Date().toISOString())}`);
   const [inscritos, setInscritos] = useState<Lutador[]>([]);
-  const [busca, setBusca] = useState('');
-  const [resultados, setResultados] = useState<Lutador[]>([]);
-  const [buscando, setBuscando] = useState(false);
-  const [cadastroAberto, setCadastroAberto] = useState(false);
+  const [aba, setAba] = useState<'alunos' | 'inscritos'>('alunos');
   const [ficha, setFicha] = useState<Lutador | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [sorteando, setSorteando] = useState(false);
@@ -44,31 +42,13 @@ export default function MontarChave() {
     })();
   }, [pronto, api]);
 
-  // Busca com pequena espera para não chamar a API a cada letra.
-  useEffect(() => {
-    const q = busca.trim();
-    if (!q || !pronto) {
-      setResultados([]);
-      return;
-    }
-    setBuscando(true);
-    const t = setTimeout(() => {
-      api<{ lutadores: Lutador[] }>(`/lutadores?q=${encodeURIComponent(q)}`)
-        .then((r) => setResultados(r.lutadores.slice(0, 5)))
-        .catch((e) => setErro(mensagemDe(e)))
-        .finally(() => setBuscando(false));
-    }, 250);
-    return () => clearTimeout(t);
-  }, [busca, pronto, api]);
-
   const ordenados = useMemo(() => [...inscritos].sort((a, b) => a.nivelSorteio - b.nivelSorteio), [inscritos]);
   const ids = new Set(inscritos.map((l) => l.id));
   const cheio = inscritos.length >= MAX_ATLETAS_CHAVE;
 
-  const inscrever = (l: Lutador) => {
-    if (ids.has(l.id) || cheio) return;
-    setInscritos((x) => [...x, l]);
-    setBusca('');
+  const alternar = (l: Lutador) => {
+    if (ids.has(l.id)) setInscritos((x) => x.filter((i) => i.id !== l.id));
+    else if (!cheio) setInscritos((x) => [...x, l]);
   };
   const atualizar = (l: Lutador) => {
     setInscritos((x) => x.map((i) => (i.id === l.id ? l : i)));
@@ -118,93 +98,55 @@ export default function MontarChave() {
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          <label className={`flex-1 min-w-0 h-12 flex items-center gap-2.5 px-3.5 rounded-2xl bg-stone-900 border ${busca ? 'border-red-500' : 'border-stone-700'}`}>
-            <IconeBusca className="w-[18px] h-[18px] text-stone-400 shrink-0" />
-            <span className="sr-only">Buscar aluno pelo nome</span>
-            <input
-              type="search"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar aluno pelo nome"
-              className="flex-1 min-w-0 h-11 bg-transparent outline-none text-[15px] placeholder:text-stone-500"
-            />
-          </label>
-          <Botao className="shrink-0" onClick={() => setCadastroAberto(true)}>
-            <IconeMais className="w-[18px] h-[18px]" /> Novo
-          </Botao>
-        </div>
-
-        {busca.trim() && (
-          <div className="flex flex-col gap-1.5 p-2 rounded-2xl bg-stone-900 border border-stone-700">
-            <span className="px-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-stone-400">
-              {cheio ? `Chave cheia (${MAX_ATLETAS_CHAVE} de ${MAX_ATLETAS_CHAVE})` : buscando ? 'Buscando…' : `${resultados.length} encontrado(s)`}
-            </span>
-            {resultados.map((l) => (
-              <LinhaLutador
-                key={l.id}
-                lutador={l}
-                acao={
-                  ids.has(l.id) ? (
-                    <span className="px-2.5 text-xs font-semibold text-green-300">Inscrito</span>
-                  ) : (
-                    <button
-                      onClick={() => inscrever(l)}
-                      disabled={cheio}
-                      aria-label={`Inscrever ${l.nome}`}
-                      className="w-11 h-11 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 flex items-center justify-center shrink-0"
-                    >
-                      <IconeMais />
-                    </button>
-                  )
-                }
-              />
-            ))}
-            {!buscando && resultados.length === 0 && (
-              <button
-                onClick={() => setCadastroAberto(true)}
-                className="flex items-center gap-2.5 h-12 px-3 rounded-xl border border-dashed border-stone-600 text-sm text-stone-200"
-              >
-                <IconeMais className="w-[18px] h-[18px] text-red-400" />
-                Ninguém com esse nome · cadastrar novo lutador
-              </button>
-            )}
-          </div>
-        )}
+      <div role="tablist" aria-label="Lista" className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-stone-900 border border-stone-800">
+        {(['alunos', 'inscritos'] as const).map((x) => (
+          <button
+            key={x}
+            role="tab"
+            aria-selected={aba === x}
+            onClick={() => setAba(x)}
+            className={`h-10 rounded-xl text-sm font-semibold ${aba === x ? 'bg-red-600 text-white' : 'text-stone-400'}`}
+          >
+            {x === 'alunos' ? 'Alunos' : `Inscritos · ${inscritos.length}`}
+          </button>
+        ))}
       </div>
 
-      <section className="flex flex-col gap-2">
-        <div className="flex justify-between items-baseline">
-          <Rotulo>Inscritos · por nível</Rotulo>
-          <span className="text-[13px] font-semibold">
-            {inscritos.length} <span className="font-normal text-stone-400">de {MAX_ATLETAS_CHAVE}</span>
-          </span>
-        </div>
-        {ordenados.map((l) => (
-          <LinhaLutador
-            key={l.id}
-            lutador={l}
-            aoAbrir={() => setFicha(l)}
-            acao={
-              <button
-                onClick={() => setInscritos((x) => x.filter((i) => i.id !== l.id))}
-                aria-label={`Tirar ${l.nome} da chave`}
-                className="w-9 h-9 rounded-lg text-stone-400 hover:bg-stone-800 flex items-center justify-center shrink-0"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            }
-          />
-        ))}
-        {inscritos.length === 0 && (
-          <p className="p-5 text-center text-sm text-stone-400 rounded-2xl border border-dashed border-stone-700">
-            Busque um aluno ou cadastre um lutador novo.
-          </p>
-        )}
-      </section>
+      {aba === 'alunos' ? (
+        <SeletorLutadores selecionados={ids} aoAlternar={alternar} cheio={cheio} rotuloMarcado="Inscrito" />
+      ) : (
+        <section className="flex flex-col gap-2">
+          <div className="flex justify-between items-baseline">
+            <Rotulo>Inscritos · por nível</Rotulo>
+            <span className="text-[13px] font-semibold">
+              {inscritos.length} <span className="font-normal text-stone-400">de {MAX_ATLETAS_CHAVE}</span>
+            </span>
+          </div>
+          {ordenados.map((l) => (
+            <LinhaLutador
+              key={l.id}
+              lutador={l}
+              aoAbrir={() => setFicha(l)}
+              acao={
+                <button
+                  onClick={() => setInscritos((x) => x.filter((i) => i.id !== l.id))}
+                  aria-label={`Tirar ${l.nome} da chave`}
+                  className="w-9 h-9 rounded-lg text-stone-400 hover:bg-stone-800 flex items-center justify-center shrink-0"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
+              }
+            />
+          ))}
+          {inscritos.length === 0 && (
+            <p className="p-5 text-center text-sm text-stone-400 rounded-2xl border border-dashed border-stone-700">
+              Toque no + dos alunos para inscrever.
+            </p>
+          )}
+        </section>
+      )}
 
       <div className="p-3.5 rounded-2xl bg-stone-900 border border-stone-700 text-[13px] text-stone-300 flex flex-col gap-1">
         <Rotulo>Como vai sortear</Rotulo>
@@ -213,15 +155,6 @@ export default function MontarChave() {
 
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
 
-      <CadastroLutador
-        aberta={cadastroAberto}
-        nomeInicial={busca.trim()}
-        aoFechar={() => setCadastroAberto(false)}
-        aoSalvar={(l, maisUm) => {
-          inscrever(l);
-          if (!maisUm) setCadastroAberto(false);
-        }}
-      />
       <FichaLutador lutador={ficha} aoFechar={() => setFicha(null)} aoAtualizar={atualizar} />
     </Tela>
   );

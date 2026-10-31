@@ -4,15 +4,16 @@
  * PATCH  /api/jiu-jitsu/chaves/:id - renomeia, altera inscritos (só antes da 1ª luta;
  *                                    desfaz o sorteio) e/ou configura o tatame
  *                                    { tatame: { areas, duracaoSeg } }
- * DELETE /api/jiu-jitsu/chaves/:id - exclui (bloqueado com lutas em andamento)
+ * DELETE /api/jiu-jitsu/chaves/:id[?desfazer=1] - exclui em qualquer estado (o absoluto leva a repescagem junto)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { exigirUsuario } from '@/lib/jiu-jitsu/auth';
-import { ChavePatchSchema, detalheChave, podeAlterarInscricoes, statusDaChave, type ChaveDoc } from '@/lib/jiu-jitsu/chaves';
+import { ChavePatchSchema, detalheChave, podeAlterarInscricoes, type ChaveDoc } from '@/lib/jiu-jitsu/chaves';
 import { ErroHttp, lerCorpo, respostaDeErro } from '@/lib/jiu-jitsu/http';
 import { lerChaveDoUsuario, lerLutadoresDoUsuario, refChave } from '@/lib/jiu-jitsu/repositorio';
+import { excluirChaveCompleta } from '@/lib/jiu-jitsu/resultados';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,21 +86,12 @@ export async function DELETE(request: NextRequest, { params }: Contexto) {
   if (!auth.ok) return auth.resposta;
 
   try {
-    const db = adminDb();
-    const ref = refChave(db, params.id);
-    await db.runTransaction(async (tx) => {
-      const atual = await lerChaveDoUsuario(tx, ref, auth.usuario.uid);
-      if (statusDaChave(atual) === 'em_andamento') {
-        throw new ErroHttp(409, 'Não é possível excluir uma chave com lutas em andamento');
-      }
-      // A repescagem pertence à chave principal (que guarda o id dela).
-      if ((atual.tipo ?? 'principal') === 'repescagem') {
-        throw new ErroHttp(409, 'A repescagem faz parte da chave principal e não pode ser excluída sozinha');
-      }
-      tx.delete(ref);
-    });
-    return new NextResponse(null, { status: 204 });
+    // ?desfazer=1: também apaga as lutas da tabela e desfaz o efeito no nível dos lutadores.
+    const desfazer = request.nextUrl.searchParams.get('desfazer') === '1';
+    const r = await excluirChaveCompleta(adminDb(), auth.usuario.uid, params.id, desfazer);
+    return NextResponse.json(r);
   } catch (error) {
     return respostaDeErro(error, 'Erro ao excluir chave');
   }
 }
+

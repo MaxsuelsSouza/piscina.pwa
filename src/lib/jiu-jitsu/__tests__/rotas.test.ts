@@ -133,7 +133,7 @@ describe('rotas de chaves', () => {
   it('exclui chave e responde 404 para quem não é dono', async () => {
     const id = (await (await chaves.POST(req('/x', { method: 'POST', body: { nome: 'S' } }))).json()).chave.id;
     expect((await chave.DELETE(req(`/x`, { method: 'DELETE', uid: 'maria' }), { params: { id } })).status).toBe(404);
-    expect((await chave.DELETE(req(`/x`, { method: 'DELETE' }), { params: { id } })).status).toBe(204);
+    expect((await chave.DELETE(req(`/x`, { method: 'DELETE' }), { params: { id } })).status).toBe(200);
     expect((await chave.GET(req(`/x`), { params: { id } })).status).toBe(404);
   });
 });
@@ -194,7 +194,8 @@ describe('rotas de resultado', () => {
     await iniciar.POST(req('/x', { method: 'POST' }), ctx(id, 'A-1-1'));
     expect((await sortear.POST(req('/x', { method: 'POST' }), { params: { id } })).status).toBe(409);
     expect((await chave.PATCH(req('/x', { method: 'PATCH', body: { inscritos: [] } }), { params: { id } })).status).toBe(409);
-    expect((await chave.DELETE(req('/x', { method: 'DELETE' }), { params: { id } })).status).toBe(409);
+    // Excluir, porém, vale em qualquer estado.
+    expect((await chave.DELETE(req('/x', { method: 'DELETE' }), { params: { id } })).status).toBe(200);
   });
 
   it('desfaz resultado, mas bloqueia se a luta seguinte já começou', async () => {
@@ -485,13 +486,98 @@ describe('desempenho, repescagem, entradas e ranking pelas rotas', () => {
     expect((await POST(req('/x', { method: 'POST', body: { tipo: 'incluir', lutadorIds: [dois[0]] } }), { params: { id: cheia.id } })).status).toBe(200);
   });
 
-  it('excluir: sorteada sem luta pode; repescagem sozinha não', async () => {
-    const a = await montar(4);
-    expect((await chave.DELETE(req('/x', { method: 'DELETE' }), { params: { id: a.id } })).status).toBe(204);
+  it('excluir chave iniciada: leva a repescagem junto e mantém o histórico das lutas', async () => {
+    let { id, det } = await montar(8);
+    const venc = lutaDe(det, 'A-1-1').azul!;
+    for (const l of ['A-1-1', 'A-1-2', 'B-1-1', 'B-1-2']) det = await vencer(id, det, l);
+    const repId = det.repescagemId!;
+    const res = await chave.DELETE(req('/x', { method: 'DELETE' }), { params: { id } });
+    expect(res.status).toBe(200);
+    expect((await res.json()).excluidas).toEqual([id, repId]);
+    expect((await chave.GET(req('/x'), { params: { id: repId } })).status).toBe(404);
+    // Sem ?desfazer, a luta fica no histórico e no nível do lutador.
+    expect((await lerLutador(venc)).desempenho.lutas).toBe(1);
+    const { GET } = await historico();
+    expect((await (await GET(req('/x'), { params: { id: venc } })).json()).lutas).toHaveLength(1);
+  });
 
+  it('excluir com ?desfazer=1 apaga as lutas da tabela e volta o nível dos lutadores', async () => {
+    let { id, det } = await montar(4);
+    const a = lutaDe(det, 'A-1-1').azul!;
+    const b = lutaDe(det, 'A-1-1').branco!;
+    det = await vencer(id, det, 'A-1-1', 'finalizacao');
+    det = await vencer(id, det, 'B-1-1');
+    const res = await chave.DELETE(req('/x?desfazer=1', { method: 'DELETE' }), { params: { id } });
+    expect((await res.json()).lutasDesfeitas).toBe(2);
+    for (const lid of [a, b]) expect((await lerLutador(lid)).desempenho).toMatchObject({ ajuste: 0, lutas: 0, vitorias: 0 });
+    const { GET } = await historico();
+    expect((await (await GET(req('/x'), { params: { id: a } })).json()).lutas).toEqual([]);
+  });
+
+  it('excluir só a repescagem: o absoluto não sorteia outra', async () => {
     let { id, det } = await montar(8);
     for (const l of ['A-1-1', 'A-1-2', 'B-1-1', 'B-1-2']) det = await vencer(id, det, l);
-    expect((await chave.DELETE(req('/x', { method: 'DELETE' }), { params: { id: det.repescagemId! } })).status).toBe(409);
+    expect((await chave.DELETE(req('/x', { method: 'DELETE' }), { params: { id: det.repescagemId! } })).status).toBe(200);
+    const principal = (await (await chave.GET(req('/x'), { params: { id } })).json()).chave;
+    expect(principal.repescagemId).toBeNull();
+    // A rodada seguinte segue normal e nenhuma repescagem nova aparece.
+    const depois = await vencer(id, principal, 'A-2-1');
+    expect(depois.repescagemId).toBeNull();
+  });
+
+  it('reorganizar no meio: tira quem saiu, põe quem faltou e mantém as lutas feitas', async () => {
+    const reorganizar = await import('@/app/api/jiu-jitsu/chaves/[id]/reorganizar/route');
+    let { id, det } = await montar(8);
+    det = await vencer(id, det, 'A-1-1');
+    det = await vencer(id, det, 'A-1-2');
+    const vivos = det.chave.lutas
+      .filter((l) => l.status !== 'finalizada')
+      .flatMap((l) => [l.azul, l.branco])
+      .filter((x): x is string => !!x);
+    const venceuA11 = lutaDe(det, 'A-1-1').azul!;
+    const saiu = lutaDe(det, 'B-1-1').azul!;
+    const novos = [(await cadastrar('Esquecido 1', { peso: 70 })).id, (await cadastrar('Esquecido 2', { peso: 75 })).id];
+    const manter = [...new Set([...vivos, venceuA11, lutaDe(det, 'A-1-2').azul!])].filter((x) => x !== saiu);
+
+    const res = await reorganizar.POST(req('/x', { method: 'POST', body: { manter, novos } }), { params: { id } });
+    expect(res.status).toBe(200);
+    const r = (await res.json()).chave;
+    expect(r.fase).toBe(2);
+    expect(r.fasesAnteriores.map((l: { id: string }) => l.id)).toEqual(['F1-A-1-1', 'F1-A-1-2']);
+    expect(r.status).toBe('em_andamento');
+    const naChave = r.chave.lutas.flatMap((l: { azul: string | null; branco: string | null }) => [l.azul, l.branco]);
+    expect(naChave).toContain(novos[0]);
+    expect(naChave).not.toContain(saiu);
+    // Nem sortear de novo do zero, nem mudar inscritos: as lutas antigas contam.
+    expect((await sortear.POST(req('/x', { method: 'POST' }), { params: { id } })).status).toBe(409);
+
+    // A primeira luta da fase nova grava resultado com id próprio (não colide com A-1-1 antigo).
+    const nova = await resultado.POST(
+      req('/x', { method: 'POST', body: { vencedor: r.chave.lutas.find((l: { id: string }) => l.id === 'A-1-1').azul, metodo: 'decisao' } }),
+      ctx(id, 'A-1-1')
+    );
+    expect(nova.status).toBe(200);
+    const { GET } = await historico();
+    const linhas = (await (await GET(req('/x'), { params: { id: venceuA11 } })).json()).lutas;
+    expect(linhas.length).toBeGreaterThanOrEqual(1);
+
+    // Ranking conta as lutas das duas fases.
+    const { GET: rank } = await ranking();
+    const rk = await (await rank(req(`/api/jiu-jitsu/ranking?ano=${new Date().getUTCFullYear()}`))).json();
+    const vitorias = (Object.values(rk.faixas).flat() as { vitorias: number }[]).reduce((n, l) => n + l.vitorias, 0);
+    expect(vitorias).toBe(3);
+  });
+
+  it('reorganizar recusa luta rolando, gente fora da disputa e chave terminada', async () => {
+    const reorganizar = await import('@/app/api/jiu-jitsu/chaves/[id]/reorganizar/route');
+    let { id, det } = await montar(4);
+    await iniciar.POST(req('/x', { method: 'POST' }), ctx(id, 'A-1-1'));
+    const todos = det.chave.lutas.flatMap((l) => [l.azul, l.branco]).filter((x): x is string => !!x);
+    expect((await reorganizar.POST(req('/x', { method: 'POST', body: { manter: todos, novos: [] } }), { params: { id } })).status).toBe(409);
+
+    det = await vencer(id, det, 'A-1-1');
+    const perdedor = lutaDe(det, 'A-1-1').branco!;
+    expect((await reorganizar.POST(req('/x', { method: 'POST', body: { manter: [perdedor, lutaDe(det, 'B-1-1').azul!], novos: [] } }), { params: { id } })).status).toBe(409);
   });
 
   it('ranking pelas rotas', async () => {

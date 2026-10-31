@@ -58,8 +58,10 @@ export function calcularRanking(chaves: Entrada[], ano: number): Ranking {
     const atleta = (aid: string) => doc.atletas.find((a) => a.id === aid);
 
     // Participação: quem lutou ou entrou nessa chave.
+    // Lutas de antes de uma reorganização também valem.
+    const lutas = [...(doc.fasesAnteriores ?? []), ...chave.lutas];
     const participantes = new Set(
-      chave.lutas.filter((l) => l.status !== 'recusada').flatMap((l) => [l.azul, l.branco]).filter((x): x is string => !!x)
+      lutas.filter((l) => l.status !== 'recusada' && l.status !== 'proposta').flatMap((l) => [l.azul, l.branco]).filter((x): x is string => !!x)
     );
     for (const aid of participantes) {
       const a = atleta(aid);
@@ -73,7 +75,7 @@ export function calcularRanking(chaves: Entrada[], ano: number): Ranking {
     }
 
     // Vitórias de verdade (bye e W.O. ficam de fora).
-    for (const luta of chave.lutas.filter((l) => l.status === 'finalizada' && l.metodo !== 'wo' && l.vencedor)) {
+    for (const luta of lutas.filter((l) => l.status === 'finalizada' && l.metodo !== 'wo' && l.vencedor)) {
       const a = atleta(luta.vencedor!);
       if (!a) continue;
       const l = linha(a.faixa, a.id, a.nome);

@@ -5,7 +5,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { ResumoChave } from '@/lib/jiu-jitsu/chaves';
-import { Aviso, Botao, Carregando, Folha, IconeMais, IconeTrofeu, Rotulo } from './_components/ui';
+import { ExcluirChave } from './_components/ExcluirChave';
+import { Aviso, Carregando, IconeMais, IconeTrofeu, Rotulo } from './_components/ui';
 import { mensagemDe, useApi, useExigirLogin } from './_lib/api';
 import { dataCurta } from './_lib/formato';
 
@@ -22,23 +23,6 @@ export default function LutasInicio() {
   const [chaves, setChaves] = useState<ResumoChave[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [excluir, setExcluir] = useState<ResumoChave | null>(null);
-  const [ocupado, setOcupado] = useState(false);
-
-  const confirmarExclusao = async () => {
-    if (!excluir) return;
-    setOcupado(true);
-    try {
-      await api(`/chaves/${excluir.id}`, { method: 'DELETE' });
-      setChaves((cs) => cs?.filter((c) => c.id !== excluir.id) ?? null);
-      setExcluir(null);
-    } catch (e) {
-      setErro(mensagemDe(e));
-      setExcluir(null);
-    } finally {
-      setOcupado(false);
-    }
-  };
-
   useEffect(() => {
     if (!pronto) return;
     api<{ chaves: ResumoChave[] }>('/chaves')
@@ -90,8 +74,6 @@ export default function LutasInicio() {
             <Rotulo>Em andamento</Rotulo>
             {abertas.map((c) => {
               const href = c.status === 'rascunho' ? `/jiu-jitsu/lutas/nova?chave=${c.id}` : `/jiu-jitsu/lutas/${c.id}`;
-              // Só dá para excluir enquanto nenhuma luta começou.
-              const podeExcluir = c.status === 'rascunho' || c.status === 'sorteada';
               return (
                 <div key={c.id} className="flex flex-col gap-3 p-4 rounded-[18px] bg-stone-900 border border-stone-700">
                   <Link href={href} className="flex flex-col gap-3">
@@ -111,16 +93,12 @@ export default function LutasInicio() {
                     </span>
                   </Link>
                   <span className="flex justify-between items-center -mb-1">
-                    {podeExcluir ? (
-                      <button
-                        onClick={() => setExcluir(c)}
-                        className="flex items-center gap-1.5 h-9 -ml-2 px-2 rounded-lg text-[13px] text-stone-400 hover:text-red-300 hover:bg-stone-800"
-                      >
-                        <IconeLixo /> Excluir
-                      </button>
-                    ) : (
-                      <span />
-                    )}
+                    <button
+                      onClick={() => setExcluir(c)}
+                      className="flex items-center gap-1.5 h-9 -ml-2 px-2 rounded-lg text-[13px] text-stone-400 hover:text-red-300 hover:bg-stone-800"
+                    >
+                      <IconeLixo /> Excluir
+                    </button>
                     <Link href={href} className="h-9 flex items-center text-[13px] text-red-400 font-semibold">
                       Continuar
                     </Link>
@@ -135,22 +113,30 @@ export default function LutasInicio() {
           <section className="flex flex-col gap-2.5">
             <Rotulo>Histórico</Rotulo>
             {encerradas.map((c) => (
-              <Link
-                key={c.id}
-                href={`/jiu-jitsu/lutas/${c.id}/resultado`}
-                className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-stone-900 border border-stone-800 hover:bg-stone-800 transition"
-              >
-                <span className="w-10 h-10 rounded-xl bg-stone-800 text-amber-400 flex items-center justify-center shrink-0">
-                  <IconeTrofeu />
-                </span>
-                <span className="flex-1 min-w-0 flex flex-col">
-                  <span className="text-sm font-semibold truncate">{c.nome}</span>
-                  <span className="text-xs text-stone-400">
-                    {c.totalAtletas} atletas · {dataCurta(c.createdAt)}
+              <div key={c.id} className="flex items-center gap-1 pr-1.5 rounded-2xl bg-stone-900 border border-stone-800">
+                <Link
+                  href={`/jiu-jitsu/lutas/${c.id}/resultado`}
+                  className="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-2 py-3.5 rounded-2xl hover:bg-stone-800 transition"
+                >
+                  <span className="w-10 h-10 rounded-xl bg-stone-800 text-amber-400 flex items-center justify-center shrink-0">
+                    <IconeTrofeu />
                   </span>
-                </span>
-                <span className="text-[13px] font-semibold text-amber-400">{c.campeao}</span>
-              </Link>
+                  <span className="flex-1 min-w-0 flex flex-col">
+                    <span className="text-sm font-semibold truncate">{c.nome}</span>
+                    <span className="text-xs text-stone-400">
+                      {c.totalAtletas} atletas · {dataCurta(c.createdAt)}
+                    </span>
+                  </span>
+                  <span className="text-[13px] font-semibold text-amber-400 truncate max-w-[30%]">{c.campeao}</span>
+                </Link>
+                <button
+                  onClick={() => setExcluir(c)}
+                  aria-label={`Excluir ${c.nome}`}
+                  className="w-10 h-10 rounded-xl text-stone-500 hover:text-red-300 hover:bg-stone-800 flex items-center justify-center shrink-0"
+                >
+                  <IconeLixo />
+                </button>
+              </div>
             ))}
           </section>
         )}
@@ -162,17 +148,14 @@ export default function LutasInicio() {
         )}
       </main>
 
-      <Folha
-        aberta={!!excluir}
+      <ExcluirChave
+        chave={excluir}
         aoFechar={() => setExcluir(null)}
-        titulo="Excluir a chave?"
-        subtitulo={excluir ? `"${excluir.nome}" e o sorteio somem. Os lutadores continuam salvos.` : undefined}
-      >
-        <div className="grid grid-cols-2 gap-2.5">
-          <Botao variante="secundario" onClick={() => setExcluir(null)}>Cancelar</Botao>
-          <Botao onClick={confirmarExclusao} disabled={ocupado}>{ocupado ? 'Excluindo…' : 'Excluir'}</Botao>
-        </div>
-      </Folha>
+        aoExcluir={() => {
+          setChaves((cs) => cs?.filter((c) => c.id !== excluir?.id) ?? null);
+          setExcluir(null);
+        }}
+      />
 
       <NavJiuJitsu />
     </div>

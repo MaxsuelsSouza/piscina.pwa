@@ -12,8 +12,8 @@ import { useCallback, useEffect, useState } from 'react';
 import type { DetalheChave } from '@/lib/jiu-jitsu/chaves';
 import type { OpcoesComNomes } from '@/lib/jiu-jitsu/entradas-servidor';
 import type { Lutador } from '@/lib/jiu-jitsu/schemas';
-import { CadastroLutador, LinhaLutador } from '../../_components/Lutadores';
-import { Aviso, Botao, Carregando, IconeBusca, IconeMais, Rotulo, Tela } from '../../_components/ui';
+import { SeletorLutadores } from '../../_components/SeletorLutadores';
+import { Aviso, Botao, Carregando, Tela } from '../../_components/ui';
 import { lerParametro, mensagemDe, useApi, useExigirLogin } from '../../_lib/api';
 import { nivelTxt } from '../../_lib/formato';
 
@@ -71,14 +71,11 @@ export default function ChegouPage({ params }: { params: { id: string } }) {
   const voltar = `/jiu-jitsu/lutas/${params.id}`;
 
   const [det, setDet] = useState<DetalheChave | null>(null);
-  const [busca, setBusca] = useState('');
-  const [resultados, setResultados] = useState<Lutador[]>([]);
   const [selecionados, setSelecionados] = useState<Lutador[]>([]);
   const [passo, setPasso] = useState<'quem' | 'onde'>('quem');
   const [opcoes, setOpcoes] = useState<Record<string, OpcoesComNomes>>({});
   const [escolhas, setEscolhas] = useState<Record<string, Escolha | null>>({});
   const [incluir, setIncluir] = useState(false);
-  const [cadastro, setCadastro] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -129,23 +126,9 @@ export default function ChegouPage({ params }: { params: { id: string } }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pronto, api, params.id]);
 
-  useEffect(() => {
-    const q = busca.trim();
-    if (!q || !pronto) return setResultados([]);
-    const t = setTimeout(() => {
-      api<{ lutadores: Lutador[] }>(`/lutadores?q=${encodeURIComponent(q)}`)
-        .then((r) => setResultados(r.lutadores.slice(0, 6)))
-        .catch((e) => setErro(mensagemDe(e)));
-    }, 250);
-    return () => clearTimeout(t);
-  }, [busca, pronto, api]);
-
   const naChave = new Set((det?.chave?.lutas ?? []).filter((l) => l.status !== 'recusada').flatMap((l) => [l.azul, l.branco]));
   const marcado = (id: string) => selecionados.some((s) => s.id === id);
-  const marcar = (l: Lutador) => {
-    setSelecionados((s) => (s.some((x) => x.id === l.id) ? s : [...s, l]));
-    setBusca('');
-  };
+  const marcar = (l: Lutador) => setSelecionados((s) => (s.some((x) => x.id === l.id) ? s : [...s, l]));
   const desmarcar = (id: string) => setSelecionados((s) => s.filter((x) => x.id !== id));
 
   const continuar = () => {
@@ -276,6 +259,7 @@ export default function ChegouPage({ params }: { params: { id: string } }) {
 
   // ── Passo 1: quem chegou ──
   const n = selecionados.length;
+  const indisponiveis = Object.fromEntries([...naChave].filter((x): x is string => !!x).map((id) => [id, 'na chave']));
   return (
     <Tela
       titulo="Chegou alguém"
@@ -287,82 +271,13 @@ export default function ChegouPage({ params }: { params: { id: string } }) {
         </Botao>
       }
     >
-      {n > 0 && (
-        <section className="flex flex-col gap-2">
-          <Rotulo>Chegaram · {n}</Rotulo>
-          {selecionados.map((l) => (
-            <LinhaLutador
-              key={l.id}
-              lutador={l}
-              acao={
-                <button
-                  onClick={() => desmarcar(l.id)}
-                  aria-label={`Tirar ${l.nome}`}
-                  className="w-9 h-9 rounded-lg text-stone-400 hover:bg-stone-800 flex items-center justify-center shrink-0"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6L6 18" />
-                  </svg>
-                </button>
-              }
-            />
-          ))}
-        </section>
-      )}
-
-      <label className="h-12 flex items-center gap-2.5 px-3.5 rounded-2xl bg-stone-900 border border-stone-700 focus-within:border-red-500">
-        <IconeBusca className="w-[18px] h-[18px] text-stone-400" />
-        <span className="sr-only">Buscar aluno</span>
-        <input
-          type="search"
-          autoFocus
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar aluno pelo nome"
-          className="flex-1 h-11 bg-transparent outline-none placeholder:text-stone-500"
-        />
-      </label>
-      {resultados
-        .filter((l) => !naChave.has(l.id))
-        .map((l) => (
-          <LinhaLutador
-            key={l.id}
-            lutador={l}
-            aoAbrir={() => marcar(l)}
-            acao={
-              marcado(l.id) ? (
-                <span className="px-2.5 text-xs font-semibold text-green-300">Marcado</span>
-              ) : (
-                <button
-                  onClick={() => marcar(l)}
-                  aria-label={`Marcar ${l.nome}`}
-                  className="w-11 h-11 rounded-xl bg-red-600 hover:bg-red-500 flex items-center justify-center shrink-0"
-                >
-                  <IconeMais />
-                </button>
-              )
-            }
-          />
-        ))}
-      {busca.trim() && resultados.length > 0 && resultados.every((l) => naChave.has(l.id)) && (
-        <p className="text-sm text-stone-400">Quem tem esse nome já está na chave.</p>
-      )}
-      <button
-        onClick={() => setCadastro(true)}
-        className="flex items-center justify-center gap-2 h-12 rounded-2xl border border-dashed border-stone-600 text-sm"
-      >
-        <IconeMais className="w-[18px] h-[18px] text-red-400" /> Cadastrar novo lutador
-      </button>
-      {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <CadastroLutador
-        aberta={cadastro}
-        nomeInicial={busca.trim()}
-        aoFechar={() => setCadastro(false)}
-        aoSalvar={(l) => {
-          setCadastro(false);
-          marcar(l);
-        }}
+      <SeletorLutadores
+        selecionados={new Set(selecionados.map((s) => s.id))}
+        aoAlternar={(l) => (marcado(l.id) ? desmarcar(l.id) : marcar(l))}
+        indisponiveis={indisponiveis}
+        rotuloMarcado="Chegou"
       />
+      {erro && <Aviso tipo="erro">{erro}</Aviso>}
     </Tela>
   );
 }

@@ -18,7 +18,8 @@ import { LutadorSchema, primeiraMensagemErro } from '@/lib/jiu-jitsu/schemas';
 
 export const dynamic = 'force-dynamic';
 
-const LIMITE_RESULTADOS = 50;
+// Sem busca, devolve a academia inteira para a lista rápida.
+const LIMITE_RESULTADOS = 500;
 
 export async function GET(request: NextRequest) {
   const auth = await exigirUsuario(request);

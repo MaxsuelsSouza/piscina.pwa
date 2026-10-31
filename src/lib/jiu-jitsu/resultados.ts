@@ -44,7 +44,9 @@ export type ResultadoDoc = {
   deltaPerdedor: number;
 };
 
-const idResultado = (chaveId: string, lutaId: string) => `${chaveId}__${lutaId}`;
+/** Id do resultado; depois de reorganizar a chave, a fase entra no id (as lutas recomeçam com os mesmos nomes). */
+export const idResultado = (chaveId: string, lutaId: string, fase = 1) =>
+  fase > 1 ? `${chaveId}__f${fase}__${lutaId}` : `${chaveId}__${lutaId}`;
 const refLutador = (db: Firestore, id: string) => db.collection(COLECAO_LUTADORES).doc(id) as DocumentReference<LutadorDoc>;
 
 /** Condição da luta para o peso no desempenho. */
@@ -93,7 +95,7 @@ function planejarRepescagem(
   agora: string
 ): Plano {
   const principal = (doc.tipo ?? 'principal') === 'principal';
-  if (!principal || doc.repescagemId || !doc.chave || !deveGerarRepescagem(doc.chave)) return { doc, repescagem: null };
+  if (!principal || doc.repescagemId || doc.semRepescagem || !doc.chave || !deveGerarRepescagem(doc.chave)) return { doc, repescagem: null };
 
   const perdedores = perdedoresDaPrimeiraRodada(doc.chave);
   const atrasados = (doc.filaRepescagem ?? []).filter((id) => !perdedores.includes(id));
@@ -116,7 +118,7 @@ function planejarRepescagem(
 
 /** Ids extras que precisam ser lidos se a repescagem for nascer agora. */
 function idsParaRepescagem(doc: ChaveDoc): string[] {
-  if ((doc.tipo ?? 'principal') !== 'principal' || doc.repescagemId || !doc.chave || !deveGerarRepescagem(doc.chave)) return [];
+  if ((doc.tipo ?? 'principal') !== 'principal' || doc.repescagemId || doc.semRepescagem || !doc.chave || !deveGerarRepescagem(doc.chave)) return [];
   return [...perdedoresDaPrimeiraRodada(doc.chave), ...(doc.filaRepescagem ?? [])];
 }
 
@@ -141,7 +143,7 @@ export async function registrarResultadoCompleto(
 
     // Leituras (todas antes de qualquer gravação).
     const lutadores = await lerLutadores(tx, db, [vencedorId, perdedorId, ...idsParaRepescagem(proximo)], uid);
-    const resultadoRef = db.collection(COLECAO_RESULTADOS).doc(idResultado(chaveId, lutaId));
+    const resultadoRef = db.collection(COLECAO_RESULTADOS).doc(idResultado(chaveId, lutaId, atual.fase));
 
     // Desempenho.
     const nivel = (id: string) => atual.atletas.find((a) => a.id === id)?.nivel ?? 0;
@@ -188,7 +190,7 @@ export async function desfazerResultadoCompleto(db: Firestore, uid: string, chav
       throw new ErroHttp(409, 'A repescagem já foi sorteada com o resultado dessa luta');
     }
 
-    const resultadoRef = db.collection(COLECAO_RESULTADOS).doc(idResultado(chaveId, lutaId));
+    const resultadoRef = db.collection(COLECAO_RESULTADOS).doc(idResultado(chaveId, lutaId, atual.fase));
     const resultadoSnap = await tx.get(resultadoRef);
     const resultado = resultadoSnap.data() as ResultadoDoc | undefined;
     const lutadores = resultado ? await lerLutadores(tx, db, [resultado.vencedorId, resultado.perdedorId], uid) : new Map();
@@ -225,5 +227,63 @@ export async function registrarWOCompleto(db: Firestore, uid: string, chaveId: s
     tx.set(ref, proximo);
     if (plano.repescagem) tx.set(plano.repescagem.ref, plano.repescagem.doc);
     return proximo;
+  });
+}
+
+/**
+ * Exclui uma chave em qualquer estado. No absoluto, a repescagem vai junto;
+ * excluir só a repescagem avisa o absoluto para não sortear outra.
+ * Com `desfazerLutas`, as lutas saem da tabela e o efeito delas no nível dos
+ * lutadores é desfeito (útil para chave de teste); sem, o histórico fica.
+ */
+export async function excluirChaveCompleta(
+  db: Firestore,
+  uid: string,
+  chaveId: string,
+  desfazerLutas: boolean
+): Promise<{ excluidas: string[]; lutasDesfeitas: number }> {
+  const ref = refChave(db, chaveId);
+  const inicial = await db.runTransaction((tx) => lerChaveDoUsuario(tx, ref, uid));
+  const principal = (inicial.tipo ?? 'principal') === 'principal';
+  const ids = [chaveId, ...(principal && inicial.repescagemId ? [inicial.repescagemId] : [])];
+
+  // Resultados gravados por essas chaves (lidos antes da transação: são consultas).
+  const resultados: { ref: DocumentReference; dados: ResultadoDoc }[] = [];
+  if (desfazerLutas) {
+    for (const id of ids) {
+      const snap = await db.collection(COLECAO_RESULTADOS).where('chaveId', '==', id).get();
+      for (const d of snap.docs) {
+        const dados = d.data() as ResultadoDoc;
+        if (dados.ownerUid === uid) resultados.push({ ref: db.collection(COLECAO_RESULTADOS).doc(d.id), dados });
+      }
+    }
+  }
+
+  return db.runTransaction(async (tx) => {
+    const atual = await lerChaveDoUsuario(tx, ref, uid);
+    const refPrincipal = !principal && atual.principalId ? refChave(db, atual.principalId) : null;
+    const snapPrincipal = refPrincipal ? await tx.get(refPrincipal) : null;
+
+    const envolvidos = [...new Set(resultados.flatMap((r) => [r.dados.vencedorId, r.dados.perdedorId]))];
+    const lutadores = envolvidos.length ? await lerLutadores(tx, db, envolvidos, uid) : new Map<string, LutadorDoc>();
+    const agora = new Date().toISOString();
+
+    // Desfaz o efeito de cada luta no nível (soma dos deltas; a ordem não importa).
+    for (const { dados } of resultados) {
+      const conta = dados.condicao === 'wo' ? null : true;
+      const v = lutadores.get(dados.vencedorId);
+      const p = lutadores.get(dados.perdedorId);
+      if (v) lutadores.set(dados.vencedorId, { ...v, desempenho: reverterDelta(desempenhoDe(v), dados.deltaVencedor, conta && true, agora) });
+      if (p) lutadores.set(dados.perdedorId, { ...p, desempenho: reverterDelta(desempenhoDe(p), dados.deltaPerdedor, conta && false, agora) });
+    }
+    for (const [id, l] of lutadores) tx.set(refLutador(db, id), l);
+    for (const r of resultados) tx.delete(r.ref);
+
+    if (refPrincipal && snapPrincipal?.exists) {
+      const p = snapPrincipal.data() as ChaveDoc;
+      if (p.ownerUid === uid) tx.set(refPrincipal, { ...p, repescagemId: null, semRepescagem: true, updatedAt: agora });
+    }
+    for (const id of ids) tx.delete(refChave(db, id));
+    return { excluidas: ids, lutasDesfeitas: resultados.length };
   });
 }
