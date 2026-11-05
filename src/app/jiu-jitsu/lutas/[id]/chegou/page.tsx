@@ -42,7 +42,7 @@ function usadosPelosOutros(escolhas: Record<string, Escolha | null>, exceto: str
 }
 
 function vagasLivres(o: OpcoesComNomes, u: Usados) {
-  return o.vagas.filter((v) => v.permitida && !u.lutas.has(v.lutaId));
+  return o.vagas.filter((v) => !u.lutas.has(v.lutaId));
 }
 function desafiosLivres(o: OpcoesComNomes, u: Usados) {
   return o.desafios.filter((d) => !u.lutas.has(d.lutaId));
@@ -51,16 +51,16 @@ function substituicoesLivres(o: OpcoesComNomes, u: Usados) {
   return o.substituicoes.filter((s) => !u.ausentes.has(s.atleta));
 }
 
-/** Escolha inicial: a recomendada, se ainda estiver livre; senão a primeira que sobrar. */
+/**
+ * Escolha inicial: lutar com quem passou direto (a vaga livre mais parecida);
+ * senão, desafio. Repescagem nunca é escolhida sozinha: sem vaga nem desafio,
+ * a tela sugere sortear o que falta com quem chegou.
+ */
 function escolhaPadrao(o: OpcoesComNomes, u: Usados): Escolha | null {
   const vaga = vagasLivres(o, u)[0];
+  if (vaga) return { tipo: 'vaga', lutaId: vaga.lutaId };
   const desafio = desafiosLivres(o, u)[0];
-  const ordem: Escolha['tipo'][] = [o.recomendacao, 'vaga', 'desafio', 'repescagem'];
-  for (const tipo of ordem) {
-    if (tipo === 'vaga' && vaga) return { tipo: 'vaga', lutaId: vaga.lutaId };
-    if (tipo === 'desafio' && desafio) return { tipo: 'desafio', lutaId: desafio.lutaId, cor: desafio.cor };
-    if (tipo === 'repescagem' && o.repescagem.aceitaFila) return { tipo: 'repescagem' };
-  }
+  if (desafio) return { tipo: 'desafio', lutaId: desafio.lutaId, cor: desafio.cor };
   return null;
 }
 
@@ -96,7 +96,9 @@ export default function ChegouPage({ params }: { params: { id: string } }) {
       const restantes = lista.filter((l) => ok[l.id]);
       // Distribui as escolhas sem duas pessoas pegarem a mesma luta.
       const iniciais: Record<string, Escolha | null> = {};
-      for (const l of restantes) iniciais[l.id] = escolhaPadrao(ok[l.id], usadosPelosOutros(iniciais, l.id));
+      // Garotas escolhem primeiro, para ficarem com as vagas de outras garotas.
+      const ordem = [...restantes].sort((a, b) => Number(b.sexo === 'F') - Number(a.sexo === 'F'));
+      for (const l of ordem) iniciais[l.id] = escolhaPadrao(ok[l.id], usadosPelosOutros(iniciais, l.id));
       setSelecionados(restantes);
       setOpcoes(ok);
       setEscolhas(iniciais);
@@ -175,6 +177,7 @@ export default function ChegouPage({ params }: { params: { id: string } }) {
     const todosRepescagem = n > 1 && selecionados.every((l) => opcoes[l.id]?.repescagem.aceitaFila);
     const faltaEscolha = !incluir && selecionados.some((l) => !escolhas[l.id]);
     const repescagemSorteada = selecionados.map((l) => opcoes[l.id]?.repescagem.id).find(Boolean);
+    const semEntrada = selecionados.some((l) => opcoes[l.id] && !escolhas[l.id]);
 
     return (
       <Tela
@@ -227,6 +230,18 @@ export default function ChegouPage({ params }: { params: { id: string } }) {
                 Mandar todos para a repescagem
               </button>
             )}
+            <button
+              onClick={() => router.push(`/jiu-jitsu/lutas/${params.id}/reorganizar?novos=${selecionados.map((x) => x.id).join(',')}`)}
+              className={`p-3.5 rounded-2xl text-left text-sm bg-stone-950 ${semEntrada ? 'border-2 border-red-500' : 'border border-stone-700'}`}
+            >
+              <span className="flex items-center gap-2 flex-wrap">
+                <span className="text-[15px] font-bold">Sortear o que falta com {n === 1 ? 'essa pessoa' : 'eles'}</span>
+                {semEntrada && <span className="px-2 py-0.5 rounded-full bg-green-950 text-green-300 text-[11px] font-bold">Recomendado</span>}
+              </span>
+              <span className="block text-stone-300 mt-0.5">
+                {semEntrada ? 'Ninguém está sem luta para receber quem chegou. ' : ''}As lutas feitas ficam no histórico e a chave do que falta é sorteada de novo, com todo mundo.
+              </span>
+            </button>
             {repescagemSorteada && (
               <button
                 onClick={() =>
@@ -365,11 +380,7 @@ function CartaoPessoa({
   const igual = (e: Escolha) => JSON.stringify(e) === JSON.stringify(escolha);
 
   const motivo: Record<Escolha['tipo'], string> = {
-    vaga: o.vagas.some((v) => v.permitida)
-      ? 'A vaga aberta já ficou com outra pessoa que chegou.'
-      : o.vagas.length
-        ? `Ninguém passando direto com nível perto (diferença acima de 3).`
-        : 'Nenhuma vaga de quem passou direto.',
+    vaga: o.vagas.length ? 'As vagas abertas já ficaram com outras pessoas que chegaram.' : 'Ninguém está sem luta esperando para avançar.',
     desafio: o.desafios.length ? 'Os desafios possíveis já foram pegos.' : 'A chave já passou das quartas.',
     substituir: 'Ninguém desistiu.',
     repescagem: o.repescagem.id ? 'A repescagem já foi sorteada.' : 'A repescagem só existe na chave principal.',
@@ -422,9 +433,9 @@ function CartaoPessoa({
 
       {escolha?.tipo === 'vaga' && (
         <div className="flex flex-col gap-1">
-          <p className="text-xs text-green-300">Sem desvantagem · luta com quem ia passar direto</p>
+          <p className="text-xs text-green-300">Sem desvantagem · luta com quem estava sem luta e ia avançar</p>
           {vagas.map((v) =>
-            linha(v.lutaId, igual({ tipo: 'vaga', lutaId: v.lutaId }), () => aoEscolher({ tipo: 'vaga', lutaId: v.lutaId }), <>Contra <strong>{nome(v.ocupante)}</strong></>, `dif. ${nivelTxt(v.diferenca)}`)
+            linha(v.lutaId, igual({ tipo: 'vaga', lutaId: v.lutaId }), () => aoEscolher({ tipo: 'vaga', lutaId: v.lutaId }), <>Contra <strong>{nome(v.ocupante)}</strong>{!v.mesmoSexo && <span className="text-stone-400"> · {lutador.sexo === 'F' ? 'garoto' : 'garota'}</span>}</>, `dif. ${nivelTxt(v.diferenca)}`)
           )}
         </div>
       )}

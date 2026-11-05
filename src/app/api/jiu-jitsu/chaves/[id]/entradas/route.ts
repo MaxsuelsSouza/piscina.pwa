@@ -2,7 +2,7 @@
  * API Route - Entrada de quem chegou depois do sorteio ("Chegou alguém")
  * GET  /api/jiu-jitsu/chaves/:id/entradas?lutador=ID
  *      opções para esse lutador: vagas de quem passou direto (com diferença
- *      de nível e se é permitida), desafios possíveis, quem pode ser
+ *      de nível, preferindo o mesmo sexo), desafios possíveis, quem pode ser
  *      substituído e a recomendação
  * POST /api/jiu-jitsu/chaves/:id/entradas
  *      { tipo: 'vaga', lutadorId, lutaId }

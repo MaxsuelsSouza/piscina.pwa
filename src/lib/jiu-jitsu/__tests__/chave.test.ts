@@ -310,3 +310,60 @@ describe('regra especial da final', () => {
     expect(classificacao(fim)!.campeao).toBe('a1');
   });
 });
+
+describe('garotas lutam entre si primeiro', () => {
+  const g = (id: string, nivel: number): AtletaChave => ({ id, nome: id, nivel, sexo: 'F' });
+  const m = (id: string, nivel: number): AtletaChave => ({ id, nome: id, nivel, sexo: 'M' });
+  const r1 = (c: Chave) => c.lutas.filter((l) => l.rodada === 1);
+  const sexoDe = (c: Chave, id: string | null) => c.atletas.find((a) => a.id === id)?.sexo;
+  const mistas = (c: Chave) => r1(c).filter((l) => l.azul && l.branco && sexoDe(c, l.azul) !== sexoDe(c, l.branco));
+
+  it('4 garotas e 4 garotos: nenhuma luta mista na 1ª rodada nem na 2ª', () => {
+    // Uma garota forte e um garoto fraco: o nível sozinho os misturaria.
+    const c = gerarChave([g('g1', -4), g('g2', -2), g('g3', 1), g('g4', 16), m('m1', -3), m('m2', 5), m('m3', 8), m('m4', 12)]);
+    expect(mistas(c)).toEqual([]);
+    let jogado = c;
+    for (const l of r1(c)) jogado = registrarResultado(jogado, l.id, l.azul!, 'decisao');
+    const r2 = jogado.lutas.filter((l) => l.rodada === 2);
+    expect(r2.every((l) => sexoDe(jogado, l.azul) === sexoDe(jogado, l.branco))).toBe(true);
+  });
+
+  it('número ímpar de garotas: o bye vai para uma garota para as outras se enfrentarem', () => {
+    // 3 garotas + 3 garotos = chave de 8 com 2 byes.
+    const c = gerarChave([g('g1', -4), g('g2', -1), g('g3', 3), m('m1', 2), m('m2', 6), m('m3', 9)]);
+    expect(mistas(c)).toEqual([]);
+    const byes = c.lutas.filter((l) => l.status === 'bye').map((l) => sexoDe(c, l.azul));
+    expect(byes).toContain('F');
+  });
+
+  it('2 garotas numa chave com byes: elas se enfrentam em vez de uma passar direto', () => {
+    const c = gerarChave([g('g1', -4), g('g2', 0), m('m1', -3), m('m2', 6), m('m3', 9), m('m4', 11)]);
+    const luta = r1(c).find((l) => l.azul === 'g1' || l.branco === 'g1')!;
+    expect([luta.azul, luta.branco].sort()).toEqual(['g1', 'g2']);
+  });
+
+  it('uma garota só: cai com o garoto de menor nível do lado dela', () => {
+    const c = gerarChave([g('g1', 2), m('m1', -3), m('m2', 0), m('m3', 6), m('m4', 9), m('m5', 11), m('m6', 13), m('m7', 15)]);
+    const luta = r1(c).find((l) => l.azul === 'g1' || l.branco === 'g1')!;
+    expect([luta.azul, luta.branco]).toContain('m1');
+  });
+
+  it('com sorteio aleatório as garotas continuam juntas', () => {
+    let seed = 7;
+    const aleatorio = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    for (let t = 0; t < 30; t++) {
+      const c = gerarChave(
+        [g('g1', -4), g('g2', -2), g('g3', 5), g('g4', 12), m('m1', -1), m('m2', 3), m('m3', 7), m('m4', 9), m('m5', 14), m('m6', 18)],
+        { aleatorio }
+      );
+      expect(mistas(c)).toEqual([]);
+    }
+  });
+
+  it('sem sexo informado, a chave sai igual à de antes', () => {
+    const semSexo = atletas(11);
+    const comM = semSexo.map((a) => ({ ...a, sexo: 'M' as const }));
+    const ids = (c: Chave) => c.lutas.map((l) => [l.id, l.azul, l.branco].join(':'));
+    expect(ids(gerarChave(comM))).toEqual(ids(gerarChave(semSexo)));
+  });
+});

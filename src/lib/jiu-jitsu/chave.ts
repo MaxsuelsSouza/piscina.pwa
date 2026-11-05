@@ -24,7 +24,11 @@ export type AtletaChave = {
   nivel: number;
   /** Entrou depois do sorteio: não recebe compensação. */
   atrasado?: boolean;
+  /** As garotas lutam entre si primeiro; sem sexo, conta como masculino. */
+  sexo?: 'M' | 'F';
 };
+
+const ehGarota = (a: AtletaChave) => a.sexo === 'F';
 
 export type Formato = 'eliminatoria' | 'chave-de-3' | 'melhor-de-3';
 export type Cor = 'azul' | 'branco';
@@ -106,7 +110,7 @@ export type OpcoesChave = {
 
 export function gerarChave(entrada: AtletaChave[], opcoes: OpcoesChave = {}): Chave {
   validarAtletas(entrada);
-  const ordem = opcoes.aleatorio ? ordenarComSorte(entrada, opcoes.aleatorio) : ordenarPorNivel(entrada);
+  const ordem = opcoes.aleatorio ? ordenarComSorte(entrada, opcoes.aleatorio) : ordenarParaSorteio(entrada);
 
   const chave =
     ordem.length === 2 ? gerarMelhorDeTres(ordem) : ordem.length === 3 ? gerarChaveDeTres(ordem) : gerarEliminatoria(ordem);
@@ -115,10 +119,18 @@ export function gerarChave(entrada: AtletaChave[], opcoes: OpcoesChave = {}): Ch
 }
 
 function ordenarComSorte(atletas: AtletaChave[], aleatorio: () => number): AtletaChave[] {
+  // Garotas primeiro (ficam juntas na chave); dentro de cada grupo, nível com um pouco de sorte.
   return atletas
     .map((a) => ({ a, chave: a.nivel + (aleatorio() - 0.5) * TOLERANCIA_SORTEIO }))
-    .sort((x, y) => x.chave - y.chave)
+    .sort((x, y) => Number(ehGarota(y.a)) - Number(ehGarota(x.a)) || x.chave - y.chave)
     .map((x) => x.a);
+}
+
+/** Ordem do sorteio sem sorte: garotas primeiro, depois por nível. */
+function ordenarParaSorteio(atletas: AtletaChave[]): AtletaChave[] {
+  return [...atletas].sort(
+    (a, b) => Number(ehGarota(b)) - Number(ehGarota(a)) || a.nivel - b.nivel || a.nome.localeCompare(b.nome, 'pt-BR')
+  );
 }
 
 function validarAtletas(atletas: AtletaChave[]) {
@@ -190,14 +202,7 @@ function gerarEliminatoria(atletas: AtletaChave[]): Chave {
     const gente = lados[lado];
     const byes = porLado - gente.length;
 
-    // 1ª rodada: primeiro os byes (menores níveis), depois vizinhos de nível.
-    const pares: [AtletaChave, AtletaChave | null][] = [];
-    let i = 0;
-    for (let b = 0; b < byes; b++) pares.push([gente[i++], null]);
-    while (i < gente.length) {
-      pares.push([gente[i], gente[i + 1]]);
-      i += 2;
-    }
+    const pares = paresDaPrimeiraRodada(gente, porLado - gente.length);
 
     for (let rodada = 1; rodada <= rodadasLado; rodada++) {
       const qtd = porLado / 2 ** rodada;
@@ -245,6 +250,41 @@ function gerarEliminatoria(atletas: AtletaChave[]): Chave {
     );
   }
   return chave;
+}
+
+/**
+ * 1ª rodada de um lado. Sem garotas: byes para os menores níveis e o resto em
+ * pares de vizinhos de nível. Com garotas: elas vêm primeiro e se enfrentam
+ * entre si; os byes são distribuídos para que sobre um número par delas (assim
+ * nenhuma precisa cair com um garoto na 1ª rodada). Como os pares das garotas
+ * ficam lado a lado, elas continuam se cruzando nas rodadas seguintes até
+ * acabarem; só então encontram os garotos.
+ */
+function paresDaPrimeiraRodada(gente: AtletaChave[], byes: number): [AtletaChave, AtletaChave | null][] {
+  const garotas = gente.filter(ehGarota);
+  const garotos = gente.filter((a) => !ehGarota(a));
+
+  let byesGarotas = Math.min(byes, garotas.length % 2);
+  let byesGarotos = byes - byesGarotas;
+  if (byesGarotos > garotos.length) {
+    byesGarotas += byesGarotos - garotos.length;
+    byesGarotos = garotos.length;
+  }
+
+  const pares: [AtletaChave, AtletaChave | null][] = [];
+  const juntar = (lista: AtletaChave[]) => {
+    for (let i = 0; i + 1 < lista.length; i += 2) pares.push([lista[i], lista[i + 1]]);
+    return lista.length % 2 ? lista[lista.length - 1] : null;
+  };
+
+  garotas.slice(0, byesGarotas).forEach((a) => pares.push([a, null]));
+  const sobraGarota = juntar(garotas.slice(byesGarotas));
+  const restoGarotos = garotos.slice(byesGarotos);
+  // Se ainda sobrar uma garota, ela pega o garoto de menor nível.
+  const garotosPareados = sobraGarota && restoGarotos.length ? (pares.push([sobraGarota, restoGarotos[0]]), restoGarotos.slice(1)) : restoGarotos;
+  garotos.slice(0, byesGarotos).forEach((a) => pares.push([a, null]));
+  juntar(garotosPareados);
+  return pares;
 }
 
 function idLuta(lado: Lado, rodada: number, ordem: number) {

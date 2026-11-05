@@ -14,7 +14,7 @@ import { MAX_ATLETAS_CHAVE, type Lutador } from '@/lib/jiu-jitsu/schemas';
 import { LinhaLutador } from '../../_components/Lutadores';
 import { SeletorLutadores } from '../../_components/SeletorLutadores';
 import { Aviso, Botao, Carregando, Folha, Rotulo, Tela } from '../../_components/ui';
-import { mensagemDe, useApi, useExigirLogin } from '../../_lib/api';
+import { lerParametro, mensagemDe, useApi, useExigirLogin } from '../../_lib/api';
 
 const comoLinha = (a: AtletaSnapshot) => ({ ...a, nivelSorteio: a.nivel });
 
@@ -36,6 +36,13 @@ export default function ReorganizarPage({ params }: { params: { id: string } }) 
     api<{ chave: DetalheChave }>(`/chaves/${params.id}`)
       .then((r) => setDet(r.chave))
       .catch((e) => setErro(mensagemDe(e)));
+    // Vindo do "Chegou": já marca quem chegou para entrar.
+    const ids = (lerParametro('novos') ?? '').split(',').filter(Boolean);
+    if (ids.length) {
+      Promise.all(ids.map((id) => api<{ lutador: Lutador }>(`/lutadores/${id}`).then((r) => r.lutador)))
+        .then(setEntram)
+        .catch(() => undefined);
+    }
   }, [pronto, api, params.id]);
 
   const situacao = useMemo(() => (det?.chave ? situacaoDosAtletas(det.chave) : {}), [det]);

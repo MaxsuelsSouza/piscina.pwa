@@ -1,9 +1,9 @@
 /**
  * Entrada de atletas depois do sorteio (funções puras sobre a Chave).
  *
- * - Vaga de quem passou direto: o atrasado vira adversário de quem ia passar
- *   direto na 1ª rodada. Sem desvantagem (não pulou rodada). Só se a
- *   diferença de nível for até LIMITE_DIFERENCA_VAGA.
+ * - Vaga de quem passou direto: o atrasado vira adversário de quem estava sem
+ *   luta e ia avançar. Sem desvantagem (não pulou rodada) e sem limite de
+ *   nível: é o jeito padrão de entrar. Garota prefere a vaga de outra garota.
  * - Desafio de entrada: o atrasado desafia quem ocupa um lugar numa luta que
  *   ainda não começou. O desafiado pode recusar. Quem vencer fica com o lugar.
  *   O atrasado começa em desvantagem (adversário nos 100 kg).
@@ -23,11 +23,11 @@ import {
   type Luta,
 } from './chave';
 
-export const LIMITE_DIFERENCA_VAGA = 3;
 /** Rodadas com pelo menos este número de vagas aceitam desafio ("até as quartas"). */
 export const VAGAS_MINIMAS_DESAFIO = 8;
 
-export type OpcaoVaga = { lutaId: string; ocupante: string; diferenca: number; permitida: boolean };
+/** `permitida` fica sempre verdadeira (sem limite de nível); `mesmoSexo` orienta a preferência. */
+export type OpcaoVaga = { lutaId: string; ocupante: string; diferenca: number; permitida: boolean; mesmoSexo: boolean };
 export type OpcaoDesafio = { lutaId: string; cor: Cor; desafiado: string; diferenca: number; rodada: string };
 export type OpcaoSubstituicao = { lutaId: string; atleta: string; rodada: string; comDesvantagem: boolean };
 export type TipoEntrada = 'vaga' | 'desafio' | 'substituir' | 'repescagem';
@@ -57,6 +57,11 @@ export function aceitaDesafio(chave: Chave, luta: Luta): boolean {
   if (!naoComecou(luta) || temDesafioPendente(chave, luta.id)) return false;
   const vagas = chave.tamanho / 2 ** (luta.rodada - 1);
   return vagas >= VAGAS_MINIMAS_DESAFIO || luta.rodada <= 2;
+}
+
+function mesmoSexo(chave: Chave, id: string, atleta: AtletaChave) {
+  const sexo = chave.atletas.find((x) => x.id === id)?.sexo ?? 'M';
+  return sexo === (atleta.sexo ?? 'M');
 }
 
 function nivelDe(chave: Chave, id: string) {
@@ -101,11 +106,15 @@ export function opcoesDeEntrada(chave: Chave, atleta: AtletaChave): OpcoesEntrad
       const seguinte = buscarLuta(chave, l.destinoVencedor!.lutaId);
       return naoComecou(seguinte) && !temDesafioPendente(chave, seguinte.id);
     })
-    .map((l) => {
-      const diferenca = dif(nivelDe(chave, l.azul!), atleta.nivel);
-      return { lutaId: l.id, ocupante: l.azul!, diferenca, permitida: diferenca <= LIMITE_DIFERENCA_VAGA };
-    })
-    .sort((a, b) => a.diferenca - b.diferenca);
+    .map((l) => ({
+      lutaId: l.id,
+      ocupante: l.azul!,
+      diferenca: dif(nivelDe(chave, l.azul!), atleta.nivel),
+      permitida: true,
+      mesmoSexo: mesmoSexo(chave, l.azul!, atleta),
+    }))
+    // Garota com garota (e garoto com garoto) primeiro; depois, o nível mais perto.
+    .sort((a, b) => Number(b.mesmoSexo) - Number(a.mesmoSexo) || a.diferenca - b.diferenca);
 
   const desafios: OpcaoDesafio[] = chave.lutas
     .filter((l) => aceitaDesafio(chave, l))
@@ -118,9 +127,11 @@ export function opcoesDeEntrada(chave: Chave, atleta: AtletaChave): OpcoesEntrad
           desafiado: l[cor]!,
           diferenca: dif(nivelDe(chave, l[cor]!), atleta.nivel),
           rodada: nomeRodada(chave, l.rodada),
+          igual: mesmoSexo(chave, l[cor]!, atleta),
         }))
     )
-    .sort((a, b) => a.diferenca - b.diferenca);
+    .sort((a, b) => Number(b.igual) - Number(a.igual) || a.diferenca - b.diferenca)
+    .map(({ igual: _igual, ...d }) => d);
 
   const substituicoes: OpcaoSubstituicao[] = chave.lutas
     .filter((l) => naoComecou(l) && l.status !== 'proposta')
@@ -130,7 +141,7 @@ export function opcoesDeEntrada(chave: Chave, atleta: AtletaChave): OpcoesEntrad
         .map((cor) => ({ lutaId: l.id, atleta: l[cor]!, rodada: nomeRodada(chave, l.rodada), comDesvantagem: l.rodada > 1 }))
     );
 
-  const recomendacao: TipoEntrada = vagas.some((v) => v.permitida)
+  const recomendacao: TipoEntrada = vagas.length > 0
     ? 'vaga'
     : desafios.length > 0
       ? 'desafio'
@@ -146,9 +157,6 @@ export function ocuparVaga(chave: Chave, atleta: AtletaChave, byeLutaId: string)
   exigirNovo(chave, atleta);
   const opcao = opcoesDeEntrada(chave, atleta).vagas.find((v) => v.lutaId === byeLutaId);
   if (!opcao) throw new ErroChave('Essa vaga não está mais aberta');
-  if (!opcao.permitida) {
-    throw new ErroChave(`Diferença de nível ${opcao.diferenca} acima do limite de ${LIMITE_DIFERENCA_VAGA} para essa vaga`);
-  }
 
   const proxima = clonarLutas(comAtleta(chave, atleta));
   const bye = buscarLuta(proxima, byeLutaId);

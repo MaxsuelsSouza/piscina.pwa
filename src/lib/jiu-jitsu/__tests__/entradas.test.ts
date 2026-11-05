@@ -27,7 +27,7 @@ describe('vaga de quem passou direto', () => {
   it('7 atletas: a5 (menor nível do lado B) passa direto; atrasado próximo ocupa a vaga sem desvantagem', () => {
     const chave = gerarChave(atletas(7)); // lado A: a1–a4; lado B: a5 (bye), a6 x a7
     const opcoes = opcoesDeEntrada(chave, novo('x', 5.5));
-    expect(opcoes.vagas).toEqual([{ lutaId: 'B-1-1', ocupante: 'a5', diferenca: 0.5, permitida: true }]);
+    expect(opcoes.vagas).toEqual([{ lutaId: 'B-1-1', ocupante: 'a5', diferenca: 0.5, permitida: true, mesmoSexo: true }]);
     expect(opcoes.recomendacao).toBe('vaga');
 
     const depois = ocuparVaga(chave, novo('x', 5.5), 'B-1-1');
@@ -37,10 +37,30 @@ describe('vaga de quem passou direto', () => {
     expect(depois.atletas.find((a) => a.id === 'x')!.atrasado).toBe(true);
   });
 
-  it('recusa vaga com diferença acima de 3', () => {
+  it('vaga não tem limite de nível: quem chega luta com quem passou direto', () => {
     const chave = gerarChave(atletas(7));
-    expect(opcoesDeEntrada(chave, novo('x', 1)).vagas[0].permitida).toBe(false);
-    expect(() => ocuparVaga(chave, novo('x', 1), 'B-1-1')).toThrow(/acima do limite/);
+    const op = opcoesDeEntrada(chave, novo('x', 1));
+    expect(op.vagas[0]).toMatchObject({ lutaId: 'B-1-1', permitida: true });
+    expect(op.recomendacao).toBe('vaga');
+    expect(buscarLuta(ocuparVaga(chave, novo('x', 1), 'B-1-1'), 'B-1-1')).toMatchObject({ azul: 'a5', branco: 'x', status: 'pronta' });
+  });
+
+  it('garota que chega prefere a vaga e o desafio de outra garota, mesmo com nível mais longe', () => {
+    const lista: AtletaChave[] = [
+      { id: 'g1', nome: 'g1', nivel: 10, sexo: 'F' },
+      { id: 'm1', nome: 'm1', nivel: 0, sexo: 'M' },
+      { id: 'm2', nome: 'm2', nivel: 2, sexo: 'M' },
+      { id: 'm3', nome: 'm3', nivel: 4, sexo: 'M' },
+      { id: 'm4', nome: 'm4', nivel: 6, sexo: 'M' },
+      { id: 'm5', nome: 'm5', nivel: 8, sexo: 'M' },
+    ];
+    const chave = gerarChave(lista);
+    const garota: AtletaChave = { id: 'x', nome: 'x', nivel: 0, sexo: 'F' };
+    const op = opcoesDeEntrada(chave, garota);
+    expect(op.vagas.length).toBeGreaterThan(1);
+    expect(op.vagas[0]).toMatchObject({ ocupante: 'g1', mesmoSexo: true });
+    expect(op.vagas.slice(1).every((v) => !v.mesmoSexo)).toBe(true);
+    if (op.desafios.length) expect(op.desafios[0].desafiado).toBe('g1');
   });
 
   it('vaga fecha quando a luta seguinte de quem passou direto já começou', () => {
